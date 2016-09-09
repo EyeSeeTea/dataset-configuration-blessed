@@ -6,6 +6,9 @@ import headerBarStore$ from 'd2-ui/lib/app-header/headerBar.store';
 import withStateFrom from 'd2-ui/lib/component-helpers/withStateFrom';
 
 import Sidebar from 'd2-ui/lib/sidebar/Sidebar.component';
+import DataTable from 'd2-ui/lib/data-table/DataTable.component';
+import 'd2-ui/scss/DataTable.scss';
+
 
 const HeaderBar = withStateFrom(headerBarStore$, HeaderBarComponent);
 
@@ -35,6 +38,11 @@ export default React.createClass({
         log.info('Clicked on ', sideBarItemKey);
     },
 
+    componentDidMount() {
+        this.props.d2.models.organisationUnits.list()
+            .then(da => this.setState({dataElements: da.toArray()}));
+    },
+
     render() {
         const sideBarSections = [
             { key: 'item1', label: 'Item 1' },
@@ -48,7 +56,13 @@ export default React.createClass({
                     sections={sideBarSections}
                     onChangeSection={this._sidebarItemClicked}
                 />
-                <div className="main-content">{`Hello, ${this.props.name}! Your app skeleton set up correctly!`}</div>
+                <div className="main-content">{`Hello, ${this.props.name}! Your app skeleton set up correctly!`}
+                    <DataTable
+                        columns={['name']}
+                        rows={this.state && this.state.dataElements || []}
+                 />
+                </div>
+
             </div>
         );
     },
