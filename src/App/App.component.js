@@ -7,6 +7,7 @@ import ObserverRegistry from '../utils/ObserverRegistry.mixin';
 import HeaderBarComponent from 'd2-ui/lib/app-header/HeaderBar';
 import MainContent from 'd2-ui/lib/layout/main-content/MainContent.component';
 import SinglePanelLayout from 'd2-ui/lib/layout/SinglePanel.component';
+import ListActionBar from '../ListActionBar/ListActionBar.component';
 import LoadingStatus from './LoadingStatus.component';
 import Sidebar from 'd2-ui/lib/sidebar/Sidebar.component';
 import SearchBox from '../SearchBox/SearchBox.component';
@@ -132,6 +133,7 @@ export default React.createClass({
         return (
             <div>
                 <HeaderBar />
+                <ListActionBar />
                 <SinglePanelLayout>
                     <MainContent>
                         <div>
@@ -151,7 +153,7 @@ export default React.createClass({
                                 <div style={styles.dataTableWrap}>
                                     <DataTable
                                         rows={this.state.dataRows}
-                                        columns={['name']}
+                                        columns={['name', 'publicAccess', 'lastUpdated']}
                                         // contextMenuActions={availableActions}
                                         // contextMenuIcons={contextMenuIcons}
                                         // primaryAction={availableActions.edit}
