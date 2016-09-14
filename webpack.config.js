@@ -74,6 +74,7 @@ const webpackConfig = {
             { path: '/dhis-web-commons/*', target: dhisConfig.baseUrl, bypass: log },
             { path: '/icons/*', target: dhisConfig.baseUrl, bypass: log },
             { path: '/css/*', target: 'http://localhost:8081/build', bypass: log },
+            { path: '/i18n/*', target: 'http://localhost:8081/src', bypass: log },
             { path: '/jquery.min.js', target: 'http://localhost:8081/node_modules/jquery/dist', bypass: log },
             { path: '/polyfill.min.js', target: 'http://localhost:8081/node_modules/babel-polyfill/dist', bypass: log },
         ],

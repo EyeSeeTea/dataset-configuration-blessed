@@ -50,7 +50,8 @@ export default React.createClass({
         return {
             isLoading: true,
             pager: { total: 0 },
-            dataRows: []
+            dataRows: [],
+            d2: this.props.d2
         }
     },
 

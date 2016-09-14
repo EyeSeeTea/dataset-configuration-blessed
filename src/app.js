@@ -12,9 +12,8 @@ if (process.env.NODE_ENV !== 'production') {
 
 import React from 'react';
 import { render } from 'react-dom';
+import { init, config, getUserSettings, getManifest } from 'd2/lib/d2';
 import log from 'loglevel';
-import { init, config, getManifest } from 'd2/lib/d2';
-
 import LoadingMask from 'd2-ui/lib/loading-mask/LoadingMask.component';
 
 // The react-tap-event-plugin is required by material-ui to make touch screens work properly with onClick events
@@ -27,6 +26,18 @@ import './App/App.scss';
 // The consecutive render after we did our setup will replace this loading mask
 // with the rendered version of the application.
 render(<LoadingMask />, document.getElementById('app'));
+
+function configI18n(userSettings) {
+    const uiLocale = userSettings.keyUiLocale;
+
+    if (uiLocale !== 'en') {
+        // Add the language sources for the preferred locale
+        config.i18n.sources.add(`./i18n/i18n_module_${uiLocale}.properties`);
+    }
+
+    // Add english as locale for all cases (either as primary or fallback)
+    config.i18n.sources.add('./i18n/i18n_module_en.properties');
+}
 
 /**
  * Renders the application into the page.
@@ -48,6 +59,8 @@ getManifest('./manifest.webapp')
         const baseUrl = process.env.NODE_ENV === 'production' ? manifest.getBaseUrl() : dhisDevConfig.baseUrl;
         config.baseUrl = `${baseUrl}/api`;
     })
+    .then(getUserSettings)
+    .then(configI18n)
     .then(init)
     .then(startApp)
     .catch(log.error.bind(log));
