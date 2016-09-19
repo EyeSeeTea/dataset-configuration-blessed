@@ -18,8 +18,8 @@ import LoadingMask from 'd2-ui/lib/loading-mask/LoadingMask.component';
 
 // The react-tap-event-plugin is required by material-ui to make touch screens work properly with onClick events
 import 'react-tap-event-plugin';
-
-import App from './App/App.component';
+import dhis2 from 'd2-ui/lib/header-bar/dhis2';
+import routes from './router';
 import './App/App.scss';
 
 // Render the a LoadingMask to show the user the app is in loading
@@ -45,7 +45,7 @@ function configI18n(userSettings) {
  * @param d2 Instance of the d2 library that is returned by the `init` function.
  */
 function startApp(d2) {
-    render(<App d2={d2} />, document.getElementById('app'));
+    render(routes, document.getElementById('app'));
 }
 
 
@@ -57,7 +57,14 @@ function startApp(d2) {
 getManifest('./manifest.webapp')
     .then(manifest => {
         const baseUrl = process.env.NODE_ENV === 'production' ? manifest.getBaseUrl() : dhisDevConfig.baseUrl;
-        config.baseUrl = `${baseUrl}/api`;
+        config.baseUrl = `${baseUrl}/api/24`;
+        log.info(`Loading: ${manifest.name} v${manifest.version}`);
+        log.info(`Built ${manifest.manifest_generated_at}`);
+
+        // Set the baseUrl to localhost if we are in dev mode
+        if (process.env.NODE_ENV !== 'production') {
+            dhis2.settings.baseUrl = baseUrl;
+        }
     })
     .then(getUserSettings)
     .then(configI18n)
