@@ -1,15 +1,15 @@
 import React from 'react';
-import { Router, Route, IndexRoute, browserHistory, IndexRedirect } from 'react-router';
+import { Router, Route, IndexRoute, hashHistory, IndexRedirect } from 'react-router';
 import log from 'loglevel';
 import App from './App/App.component';
-import Datasets from './DataSets/DataSets.component';
+import DataSets from './DataSets/DataSets.component';
 import Wizard from './Wizard/Wizard.component';
 
 const routes = (
-    <Router history={browserHistory}>
-        <Route path="/" component={App}>
-            <IndexRedirect to="datasets" />
-            <Route path="datasets" component={Datasets}/>
+    <Router history={hashHistory}>
+        <Route path="/" component={App}>      
+            <IndexRedirect to="datasets" />      
+            <Route path="datasets" component={DataSets}/>
             <Route path="wizard" component={Wizard}/>
         </Route>
     </Router>

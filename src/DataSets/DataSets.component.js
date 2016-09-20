@@ -1,13 +1,9 @@
 import React from 'react';
 import log from 'loglevel';
 
-import headerBarStore$ from 'd2-ui/lib/app-header/headerBar.store';
-import withStateFrom from 'd2-ui/lib/component-helpers/withStateFrom';
 import ObserverRegistry from '../utils/ObserverRegistry.mixin';
-import HeaderBarComponent from 'd2-ui/lib/app-header/HeaderBar';
 import MainContent from 'd2-ui/lib/layout/main-content/MainContent.component';
 import SinglePanelLayout from 'd2-ui/lib/layout/SinglePanel.component';
-import ListActionBar from '../ListActionBar/ListActionBar.component';
 import LoadingStatus from '../LoadingStatus/LoadingStatus.component';
 import Sidebar from 'd2-ui/lib/sidebar/Sidebar.component';
 import SearchBox from '../SearchBox/SearchBox.component';
@@ -15,9 +11,6 @@ import Pagination from 'd2-ui/lib/pagination/Pagination.component';
 import '../Pagination/Pagination.scss';
 import DataTable from 'd2-ui/lib/data-table/DataTable.component';
 import 'd2-ui/scss/DataTable.scss';
-
-
-const HeaderBar = withStateFrom(headerBarStore$, HeaderBarComponent);
 
 export function calculatePageValue(pager) {
     const pageSize = 50; // TODO: Make the page size dynamic
@@ -135,35 +128,37 @@ const DataSets = React.createClass({
             },
         };
 
-        return (
+        return (            
+            <div>
                 <div>
-                    <div>
-                        <div style={{ float: 'left', width: '75%' }}>
-                            <SearchBox searchObserverHandler={this.searchListByName}/>
-                        </div>
-                        <div>
-                            <Pagination {...paginationProps} />
-                        </div>
+                    <div style={{ float: 'left', width: '75%' }}>
+                        <SearchBox searchObserverHandler={this.searchListByName}/>
                     </div>
-                    <LoadingStatus
-                        loadingText="Loading datasets"
-                        isLoading={this.state.isLoading}
-                        />
-                    <div style={styles.listDetailsWrap}>
-                        <div style={styles.dataTableWrap}>
-                            <DataTable
-                                rows={this.state.dataRows}
-                                columns={['name', 'publicAccess', 'lastUpdated']}
-                                // contextMenuActions={availableActions}
-                                // contextMenuIcons={contextMenuIcons}
-                                // primaryAction={availableActions.edit}
-                                // isContextActionAllowed={this.isContextActionAllowed}
-                                />
-                            {this.state.dataRows.length || this.state.isLoading ? null : <div>No results found</div>}
-                        </div>
+                    <div>
+                        <Pagination {...paginationProps} />
                     </div>
                 </div>
+                <LoadingStatus
+                    loadingText="Loading datasets"
+                    isLoading={this.state.isLoading}
+                    />
+                <div style={styles.listDetailsWrap}>
+                    <div style={styles.dataTableWrap}>
+                        <DataTable
+                            rows={this.state.dataRows}
+                            columns={['name', 'publicAccess', 'lastUpdated']}
+                            // contextMenuActions={availableActions}
+                            // contextMenuIcons={contextMenuIcons}
+                            // primaryAction={availableActions.edit}
+                            // isContextActionAllowed={this.isContextActionAllowed}
+                            />
+                        {this.state.dataRows.length || this.state.isLoading ? null : <div>No results found</div>}
+                    </div>
+                </div>
+            </div>
         );
     },
 });
+
+export default DataSets;
 

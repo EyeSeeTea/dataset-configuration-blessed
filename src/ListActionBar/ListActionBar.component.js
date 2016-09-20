@@ -7,6 +7,10 @@ import Auth from 'd2-ui/lib/auth/Auth.mixin';
 const ListActionBar = React.createClass({
     propTypes: {
     },
+    
+    contextTypes: {
+        d2: React.PropTypes.object.isRequired,
+    },    
 
     mixins: [Auth],
 
