@@ -11,6 +11,10 @@ import SearchBox from '../SearchBox/SearchBox.component';
 import Pagination from 'd2-ui/lib/pagination/Pagination.component';
 import '../Pagination/Pagination.scss';
 import DataTable from 'd2-ui/lib/data-table/DataTable.component';
+import DetailsBoxWithScroll from './DetailsBoxWithScroll.component';
+import listActions from './list.actions';
+import { contextActions, contextMenuIcons, isContextActionAllowed } from './context.actions';
+import detailsStore from './details.store';
 import 'd2-ui/scss/DataTable.scss';
 
 export function calculatePageValue(pager) {
@@ -55,6 +59,13 @@ const DataSets = React.createClass({
 
     componentDidMount() {
         this.doSearch();
+        
+        //Sets listener to update detailsbox
+        const detailsStoreDisposable = detailsStore.subscribe(detailsObject => {
+            this.setState({ detailsObject });
+        });
+        
+        this.registerDisposable(detailsStoreDisposable);
     },
 
     doSearch(value) {
@@ -148,13 +159,21 @@ const DataSets = React.createClass({
                         <DataTable
                             rows={this.state.dataRows}
                             columns={['name', 'publicAccess', 'lastUpdated']}
-                            // contextMenuActions={availableActions}
-                            // contextMenuIcons={contextMenuIcons}
-                            // primaryAction={availableActions.edit}
-                            // isContextActionAllowed={this.isContextActionAllowed}
+                            contextMenuActions={contextActions}
+                            contextMenuIcons={contextMenuIcons}
+                            primaryAction={contextActions.details}
+                            isContextActionAllowed={isContextActionAllowed}
                             />
                         {this.state.dataRows.length || this.state.isLoading ? null : <div>No results found</div>}
                     </div>
+                    {
+                        this.state.detailsObject ?
+                            <DetailsBoxWithScroll
+                                style={styles.detailsBoxWrap}
+                                detailsObject={this.state.detailsObject}
+                                onClose={listActions.hideDetailsBox}
+                            />
+                        : null}                    
                 </div>
                 <ListActionBar route="wizard"/>
             </div>            

@@ -45,7 +45,6 @@ function configI18n(userSettings) {
  * @param d2 Instance of the d2 library that is returned by the `init` function.
  */
 function startApp(d2) {
-    // var declaredRoutes = routes(d2);
     render(routes, document.getElementById('app'));
 }
 
