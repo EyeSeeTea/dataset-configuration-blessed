@@ -5,6 +5,7 @@ import ObserverRegistry from '../utils/ObserverRegistry.mixin';
 import MainContent from 'd2-ui/lib/layout/main-content/MainContent.component';
 import SinglePanelLayout from 'd2-ui/lib/layout/SinglePanel.component';
 import LoadingStatus from '../LoadingStatus/LoadingStatus.component';
+import ListActionBar from '../ListActionBar/ListActionBar.component';
 import Sidebar from 'd2-ui/lib/sidebar/Sidebar.component';
 import SearchBox from '../SearchBox/SearchBox.component';
 import Pagination from 'd2-ui/lib/pagination/Pagination.component';
@@ -155,7 +156,8 @@ const DataSets = React.createClass({
                         {this.state.dataRows.length || this.state.isLoading ? null : <div>No results found</div>}
                     </div>
                 </div>
-            </div>
+                <ListActionBar route="wizard"/>
+            </div>            
         );
     },
 });

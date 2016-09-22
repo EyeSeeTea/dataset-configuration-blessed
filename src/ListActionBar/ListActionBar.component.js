@@ -2,10 +2,11 @@ import React from 'react';
 import FloatingActionButton from 'material-ui/lib/floating-action-button';
 import FontIcon from 'material-ui/lib/font-icon';
 import Auth from 'd2-ui/lib/auth/Auth.mixin';
-// import { goToRoute } from '../router';
+import { goToRoute } from '../router';
 
 const ListActionBar = React.createClass({
     propTypes: {
+        route: React.PropTypes.string
     },
     
     contextTypes: {
@@ -14,9 +15,8 @@ const ListActionBar = React.createClass({
 
     mixins: [Auth],
 
-    _addClick() {
-        alert("TODO add dataset");          
-        // goToRoute(`/edit/${this.props.groupName}/${this.props.modelType}/add`);
+    _addClick() {                  
+        goToRoute(this.props.route);
     },
 
     render() {

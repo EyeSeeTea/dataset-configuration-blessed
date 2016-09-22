@@ -5,7 +5,6 @@ import headerBarStore$ from 'd2-ui/lib/app-header/headerBar.store';
 import withStateFrom from 'd2-ui/lib/component-helpers/withStateFrom';
 import HeaderBarComponent from 'd2-ui/lib/app-header/HeaderBar';
 import AppWithD2 from 'd2-ui/lib/app/AppWithD2.component';
-import ListActionBar from '../ListActionBar/ListActionBar.component';
 import LoadingMask from '../LoadingMask/LoadingMask.component';
 import MainContent from 'd2-ui/lib/layout/main-content/MainContent.component';
 import SinglePanelLayout from 'd2-ui/lib/layout/SinglePanel.component';
@@ -28,8 +27,7 @@ class App extends AppWithD2 {
         }        
         return (
             <div>
-                <HeaderBar />
-                <ListActionBar />
+                <HeaderBar />                
                 <SinglePanelLayout>
                     <MainContent>
                         {this.props.children}
