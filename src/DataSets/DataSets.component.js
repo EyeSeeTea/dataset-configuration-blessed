@@ -10,7 +10,10 @@ import Sidebar from 'd2-ui/lib/sidebar/Sidebar.component';
 import SearchBox from '../SearchBox/SearchBox.component';
 import Pagination from 'd2-ui/lib/pagination/Pagination.component';
 import '../Pagination/Pagination.scss';
-import DataTable from 'd2-ui/lib/data-table/DataTable.component';
+
+// import DataTable from 'd2-ui/lib/data-table/DataTable.component';
+import MultipleDataTable from '../MultipleDataTable/MultipleDataTable.component';
+
 import DetailsBoxWithScroll from './DetailsBoxWithScroll.component';
 import listActions from './list.actions';
 import { contextActions, contextMenuIcons, isContextActionAllowed } from './context.actions';
@@ -156,7 +159,7 @@ const DataSets = React.createClass({
                     />
                 <div style={styles.listDetailsWrap}>
                     <div style={styles.dataTableWrap}>
-                        <DataTable
+                        <MultipleDataTable
                             rows={this.state.dataRows}
                             columns={['name', 'publicAccess', 'lastUpdated']}
                             contextMenuActions={contextActions}
