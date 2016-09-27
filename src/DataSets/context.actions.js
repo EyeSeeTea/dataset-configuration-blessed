@@ -24,6 +24,7 @@ const confirm = (message) => new Promise((resolve, reject) => {
 
 contextActions.details
     .subscribe(({ data: model }) => {
+        console.log(model)
         detailsStore.setState(model);
     });
 

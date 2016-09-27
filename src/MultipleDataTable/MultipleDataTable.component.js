@@ -1,10 +1,10 @@
 import isArrayOfStrings from 'd2-utilizr/lib/isArrayOfStrings';
 import isIterable from 'd2-utilizr/lib/isIterable';
 import React from 'react';
-
+import update from 'react-addons-update';
 import MultipleDataTableRow from './MultipleDataTableRow.component';
 import DataTableHeader from 'd2-ui/lib/data-table/DataTableHeader.component';
-import DataTableContextMenu from 'd2-ui/lib/data-table/DataTableContextMenu.component';
+import MultipleDataTableContextMenu from './MultipleDataTableContextMenu.component';
 
 const MultipleDataTable = React.createClass({
     propTypes: {
@@ -31,7 +31,7 @@ const MultipleDataTable = React.createClass({
 
         return {
             columns: isArrayOfStrings(props.columns) ? props.columns : ['name', 'lastUpdated'],
-            dataRows,
+            dataRows
         };
     },
 
@@ -46,7 +46,7 @@ const MultipleDataTable = React.createClass({
             }, {});
 
         return (
-                <DataTableContextMenu
+                <MultipleDataTableContextMenu
                     target={this.state.contextMenuTarget}
                     onRequestClose={this._hideContextMenu}
                     actions={actionsToShow}
@@ -65,6 +65,7 @@ const MultipleDataTable = React.createClass({
     },
 
     renderRows() {
+        console.log("MultipleDataTable.renderRows");
         return this.state.dataRows
             .map((dataRowsSource, dataRowsId) => {
                 return (
@@ -72,15 +73,32 @@ const MultipleDataTable = React.createClass({
                         key={dataRowsId}
                         dataSource={dataRowsSource}
                         columns={this.state.columns}
-                        isActive={this.state.activeRow === dataRowsId}
+                        isActive={this.isRowActive(dataRowsSource)}
                         itemClicked={this.handleRowClick}
                         primaryClick={this.props.primaryAction || (() => {})}
+                        handleContextClick = {this.handleContextClick}
+                        handleClick = {this.handleClick}                        
                     />
                 );
             });
     },
+    
+    isRowActive(dataRowsSource){                
+        if(!this.state.activeRows){
+            return false;
+        }
+        for (var i=0;i<this.state.activeRows.length;i++) {
+            const dataRow = this.state.activeRows[i];
+            if(dataRow === dataRowsSource){
+                console.log("MultipleDataTable.isRowActive: "+dataRowsSource.name+" -> true");
+                return true;
+            }              
+        }        
+        return false;
+    },
 
     render() {
+        console.log("MultipleDataTable.render");
         return (
            <div className="data-table">
                <div className="data-table__headers">
@@ -102,13 +120,59 @@ const MultipleDataTable = React.createClass({
             activeRow: rowSource !== this.state.activeRow ? rowSource : undefined,
         });
     },
-
+       
     _hideContextMenu() {
         this.setState({
-            activeRow: undefined,
+            activeRow: undefined,            
             showContextMenu: false,
         });
-    },
+    },    
+    
+    handleContextClick(event, rowSource) {
+        console.log("MultipleDataTable.handleContextClick: ",event, rowSource);
+        
+        //Update activeRows according to click|ctlr+click
+        var newActiveRows =event.ctrlKey?this.updateSelection(rowSource):[];  
+
+        //Update state        
+        this.setState({
+            contextMenuTarget: event.currentTarget,
+            showContextMenu: true,
+            activeRows: newActiveRows,
+            activeRow: rowSource !== this.state.activeRow ? rowSource : undefined,
+        });        
+    },    
+
+    handleClick(event, rowSource) {
+        console.log("MultipleDataTable.handleClick: "+ rowSource.name);
+        
+        //Click -> Invoke external action (passing event)
+        if(!event.ctrlKey){     
+            //TODO Review: a click creates a plain selection | no selection at all??       
+            this.setState({
+                activeRows: []
+            });            
+            this.props.primaryAction(rowSource);
+            return;
+        }
+        
+        //Ctrl + Click -> Update selection
+        const newActiveRows = this.updateSelection(rowSource);
+        //Update selection
+        this.setState({
+            activeRows:newActiveRows
+        });
+    },  
+    
+    updateSelection(rowSource){        
+        //Already selected ->Remove from selection         
+        if(this.isRowActive(rowSource)){
+            return this.state.activeRows.filter((nRow) => nRow!==rowSource);                      
+        }
+        
+        //Add to selection
+        return update(this.state.activeRows?this.state.activeRows:[], {$push: [rowSource]});            
+    }
 });
 
 export default MultipleDataTable;

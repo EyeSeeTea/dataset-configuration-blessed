@@ -6,8 +6,9 @@ import moment from 'moment';
 import IconButton from 'material-ui/lib/icon-button';
 import MoreVert from 'material-ui/lib/svg-icons/navigation/more-vert';
 import Color from 'd2-ui/lib/data-table/data-value/Color.component';
-
 import Translate from 'd2-ui/lib/i18n/Translate.mixin';
+
+import './MultipleDataTableRow.scss';
 
 function valueTypeGuess(valueType, value) {
     switch (valueType) {
@@ -37,10 +38,13 @@ const MultipleDataTableRow = React.createClass({
     propTypes: {
         columns: React.PropTypes.arrayOf(React.PropTypes.string).isRequired,
         dataSource: React.PropTypes.object,
+        isActive: React.PropTypes.bool,
         isEven: React.PropTypes.bool,
         isOdd: React.PropTypes.bool,
         itemClicked: React.PropTypes.func.isRequired,
         primaryClick: React.PropTypes.func.isRequired,
+        handleClick: React.PropTypes.func.isRequired,
+        handleContextClick: React.PropTypes.func.isRequired,        
     },
 
     mixins: [Translate],
@@ -51,6 +55,7 @@ const MultipleDataTableRow = React.createClass({
             {
                 'data-table__rows__row--even': !this.props.isOdd,
                 'data-table__rows__row--odd': this.props.isOdd,
+                'selected':this.props.isActive  
             });
 
         const columns = this.props.columns.map((columnName, index) => {
@@ -128,11 +133,13 @@ const MultipleDataTableRow = React.createClass({
 
     handleContextClick(event) {
         event && event.preventDefault();
-        this.props.itemClicked(event, this.props.dataSource);
+        this.props.handleContextClick(event,this.props.dataSource);
+        // this.props.itemClicked(event, this.props.dataSource);
     },
 
     handleClick(event) {
-        this.props.primaryClick(this.props.dataSource);
+        this.props.handleClick(event,this.props.dataSource);
+        // this.props.primaryClick(this.props.dataSource);
     },
 });
 
