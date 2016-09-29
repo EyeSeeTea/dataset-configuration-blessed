@@ -166,7 +166,7 @@ const DataSets = React.createClass({
                             contextMenuIcons={contextMenuIcons}
                             primaryAction={contextActions.details}
                             isContextActionAllowed={isContextActionAllowed}
-                            isMultipleSelectionAllowed="true"
+                            isMultipleSelectionAllowed={true}
                             />
                         {this.state.dataRows.length || this.state.isLoading ? null : <div>No results found</div>}
                     </div>

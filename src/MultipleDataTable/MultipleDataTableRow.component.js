@@ -42,9 +42,7 @@ const MultipleDataTableRow = React.createClass({
         isEven: React.PropTypes.bool,
         isOdd: React.PropTypes.bool,
         itemClicked: React.PropTypes.func.isRequired,
-        primaryClick: React.PropTypes.func.isRequired,
-        handleClick: React.PropTypes.func.isRequired,
-        handleContextClick: React.PropTypes.func.isRequired,        
+        primaryClick: React.PropTypes.func.isRequired    
     },
 
     mixins: [Translate],
@@ -129,19 +127,17 @@ const MultipleDataTableRow = React.createClass({
     iconMenuClick(event) {
         event && event.preventDefault() && event.stopPropagation();
         event.isIconMenuClick = true;
-        this.props.handleContextClick(event,this.props.dataSource);
-        //this.props.itemClicked(event, this.props.dataSource);                
+        this.props.itemClicked(event, this.props.dataSource);                
     },
 
     handleContextClick(event) {
         event && event.preventDefault();
-        this.props.handleContextClick(event,this.props.dataSource);
-        // this.props.itemClicked(event, this.props.dataSource);
+        event.isIconMenuClick = false;
+        this.props.itemClicked(event, this.props.dataSource);
     },
 
     handleClick(event) {
-        this.props.handleClick(event,this.props.dataSource);
-        // this.props.primaryClick(this.props.dataSource);
+        this.props.primaryClick(event, this.props.dataSource);
     },
 });
 

@@ -78,10 +78,7 @@ const MultipleDataTable = React.createClass({
                         isActive={this.isRowActive(dataRowsSource)}
                         
                         itemClicked={this.handleRowClick}
-                        primaryClick={this.props.primaryAction || (() => {})}
-                        
-                        handleContextClick = {this.handleContextClick}
-                        handleClick = {this.handleClick}                        
+                        primaryClick={this.handlePrimaryClick}                                                                     
                     />
                 );
             });
@@ -122,21 +119,6 @@ const MultipleDataTable = React.createClass({
     },
 
     handleRowClick(event, rowSource) {
-        this.setState({
-            contextMenuTarget: event.currentTarget,
-            showContextMenu: true,
-            activeRow: rowSource !== this.state.activeRow ? rowSource : undefined,
-        });
-    },
-       
-    _hideContextMenu() {
-        this.setState({
-            activeRow: undefined,            
-            showContextMenu: false,
-        });
-    },    
-    
-    handleContextClick(event, rowSource) {        
         //Update activeRows according to click|ctlr+click
         var newActiveRows;
         //A click on itemMenu clears selection        
@@ -153,10 +135,10 @@ const MultipleDataTable = React.createClass({
             showContextMenu: true,
             activeRows: newActiveRows,
             activeRow: rowSource !== this.state.activeRow ? rowSource : undefined,
-        });        
-    },    
-
-    handleClick(event, rowSource) {        
+        });       
+    },
+    
+    handlePrimaryClick(event, rowSource) {        
         //Click -> Clears selection, Invoke external action (passing event)
         if(!this.isEventCtrlClick(event)){     
             this.setState({
@@ -168,11 +150,17 @@ const MultipleDataTable = React.createClass({
         
         //Ctrl + Click -> Update selection
         const newActiveRows = this.updateSelection(rowSource);
-        //Update selection
         this.setState({
             activeRows:newActiveRows
         });
-    },  
+    },      
+       
+    _hideContextMenu() {
+        this.setState({
+            activeRow: undefined,            
+            showContextMenu: false,
+        });
+    },    
     
     updateSelection(rowSource){        
         //Already selected ->Remove from selection         
