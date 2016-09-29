@@ -12,6 +12,7 @@ const MultipleDataTable = React.createClass({
         contextMenuIcons: React.PropTypes.object,
         primaryAction: React.PropTypes.func,
         isContextActionAllowed: React.PropTypes.func,
+        isMultipleSelectionAllowed: React.PropTypes.bool
     },
 
     getInitialState() {
@@ -99,6 +100,10 @@ const MultipleDataTable = React.createClass({
         }        
         return false;
     },
+    
+    isEventCtrlClick(event){
+        return this.props.isMultipleSelectionAllowed && event && event.ctrlKey;       
+    },
 
     render() {
         console.log("MultipleDataTable.render");
@@ -139,7 +144,7 @@ const MultipleDataTable = React.createClass({
             newActiveRows = [];
         }else{
             //[Add to|Remove from] selection according to current state
-            newActiveRows =event.ctrlKey?this.updateSelection(rowSource):this.state.activeRows;    
+            newActiveRows =this.isEventCtrlClick(event)?this.updateSelection(rowSource):this.state.activeRows;    
         }
           
         //Update state        
@@ -151,12 +156,9 @@ const MultipleDataTable = React.createClass({
         });        
     },    
 
-    handleClick(event, rowSource) {
-        console.log("MultipleDataTable.handleClick: "+ rowSource.name);
-        
-        //Click -> Invoke external action (passing event)
-        if(!event.ctrlKey){     
-            //TODO Review: a click creates a plain selection | no selection at all??       
+    handleClick(event, rowSource) {        
+        //Click -> Clears selection, Invoke external action (passing event)
+        if(!this.isEventCtrlClick(event)){     
             this.setState({
                 activeRows: []
             });            
