@@ -9,7 +9,8 @@ import Paper from 'material-ui/lib/paper';
 const MultipleDataTableContextMenu = React.createClass({
     propTypes: {
         actions: React.PropTypes.objectOf(React.PropTypes.func),
-        activeItem: React.PropTypes.object,
+        // activeItem: React.PropTypes.object,
+        showContextMenu: React.PropTypes.bool,
         activeItems: React.PropTypes.array,
         icons: React.PropTypes.object,
         target: React.PropTypes.object,
@@ -35,7 +36,7 @@ const MultipleDataTableContextMenu = React.createClass({
         return (
             <Popover
                 {...this.props}
-                open={this.props.activeItem ? true : false}
+                open={this.props.showContextMenu}
                 anchorEl={this.props.target}
                 anchorOrigin={{horizontal: 'middle', vertical: 'center'}}
                 animated={false}
@@ -47,7 +48,7 @@ const MultipleDataTableContextMenu = React.createClass({
                         const iconName = this.props.icons[action] ? this.props.icons[action] : action;
 
                         return (<MenuItem key={action}
-                                          data-object-id={this.props.activeItem && this.props.activeItem.id}
+                                          data-object-id={this.props.activeItems}
                                           className={'data-table__context-menu__item'}
                                           onClick={this.handleClick.bind(this, action)}
                                           primaryText={this.getTranslation(action)}
@@ -60,8 +61,8 @@ const MultipleDataTableContextMenu = React.createClass({
     },
 
     handleClick(action) {
-        const items = this.props.activeItems && this.props.activeItems.length>0?this.props.activeItems:[this.props.activeItem];
-        this.props.actions[action].apply(this.props.actions, items);
+        // const items = this.props.activeItems && this.props.activeItems.length>0?this.props.activeItems:[this.props.activeItem];
+        this.props.actions[action].apply(this.props.actions, this.props.activeItems);
         this.props.onRequestClose && this.props.onRequestClose();
     },
 });
