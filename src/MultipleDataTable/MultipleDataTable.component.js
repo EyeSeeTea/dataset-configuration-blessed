@@ -98,17 +98,11 @@ const MultipleDataTable = React.createClass({
         );
     },    
     
-    isRowActive(dataRowsSource){                
+    isRowActive(rowSource){                
         if(!this.state.activeRows){
             return false;
         }
-        for (var i=0;i<this.state.activeRows.length;i++) {
-            const dataRow = this.state.activeRows[i];
-            if(dataRow === dataRowsSource){                
-                return true;
-            }              
-        }        
-        return false;
+        return this.state.activeRows.filter((row) => row===rowSource).length>0;
     },
     
     isEventCtrlClick(event){
