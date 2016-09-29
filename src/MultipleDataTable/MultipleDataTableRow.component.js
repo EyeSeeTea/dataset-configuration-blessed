@@ -128,7 +128,9 @@ const MultipleDataTableRow = React.createClass({
 
     iconMenuClick(event) {
         event && event.preventDefault() && event.stopPropagation();
-        this.props.itemClicked(event, this.props.dataSource);
+        event.isIconMenuClick = true;
+        this.props.handleContextClick(event,this.props.dataSource);
+        //this.props.itemClicked(event, this.props.dataSource);                
     },
 
     handleContextClick(event) {

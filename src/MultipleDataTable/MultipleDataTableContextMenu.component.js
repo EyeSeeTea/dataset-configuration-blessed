@@ -10,6 +10,7 @@ const MultipleDataTableContextMenu = React.createClass({
     propTypes: {
         actions: React.PropTypes.objectOf(React.PropTypes.func),
         activeItem: React.PropTypes.object,
+        activeItems: React.PropTypes.array,
         icons: React.PropTypes.object,
         target: React.PropTypes.object,
     },
@@ -59,7 +60,8 @@ const MultipleDataTableContextMenu = React.createClass({
     },
 
     handleClick(action) {
-        this.props.actions[action].apply(this.props.actions, [this.props.activeItem]);
+        const items = this.props.activeItems && this.props.activeItems.length>0?this.props.activeItems:[this.props.activeItem];
+        this.props.actions[action].apply(this.props.actions, items);
         this.props.onRequestClose && this.props.onRequestClose();
     },
 });

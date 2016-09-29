@@ -31,7 +31,7 @@ contextActions.details
 contextActions.edit
     .subscribe(({ data: model }) => getD2()
         .then(d2 => {
-            alert("TODO edit dataset: ");
+            console.log(model)
             goToRoute("wizard");
         })
     );

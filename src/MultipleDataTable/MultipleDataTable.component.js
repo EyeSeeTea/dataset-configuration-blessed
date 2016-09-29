@@ -51,6 +51,7 @@ const MultipleDataTable = React.createClass({
                     onRequestClose={this._hideContextMenu}
                     actions={actionsToShow}
                     activeItem={this.state.activeRow}
+                    activeItems={this.state.activeRows}
                     icons={this.props.contextMenuIcons}
                 />
         );
@@ -74,8 +75,10 @@ const MultipleDataTable = React.createClass({
                         dataSource={dataRowsSource}
                         columns={this.state.columns}
                         isActive={this.isRowActive(dataRowsSource)}
+                        
                         itemClicked={this.handleRowClick}
                         primaryClick={this.props.primaryAction || (() => {})}
+                        
                         handleContextClick = {this.handleContextClick}
                         handleClick = {this.handleClick}                        
                     />
@@ -128,12 +131,17 @@ const MultipleDataTable = React.createClass({
         });
     },    
     
-    handleContextClick(event, rowSource) {
-        console.log("MultipleDataTable.handleContextClick: ",event, rowSource);
-        
+    handleContextClick(event, rowSource) {        
         //Update activeRows according to click|ctlr+click
-        var newActiveRows =event.ctrlKey?this.updateSelection(rowSource):[];  
-
+        var newActiveRows;
+        //A click on itemMenu clears selection        
+        if(event.isIconMenuClick){
+            newActiveRows = [];
+        }else{
+            //[Add to|Remove from] selection according to current state
+            newActiveRows =event.ctrlKey?this.updateSelection(rowSource):this.state.activeRows;    
+        }
+          
         //Update state        
         this.setState({
             contextMenuTarget: event.currentTarget,
