@@ -23,3 +23,7 @@ html {
 .main-content {
   margin-left: $left-bar-width + 30;
 }
+
+@import '../DataSets/DetailsBox';
+@import '../DataSets/List';
+
