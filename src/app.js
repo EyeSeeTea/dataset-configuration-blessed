@@ -15,22 +15,29 @@ import { render } from 'react-dom';
 import { init, config, getUserSettings, getManifest } from 'd2/lib/d2';
 import log from 'loglevel';
 import LoadingMask from 'd2-ui/lib/loading-mask/LoadingMask.component';
+import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 
 // The react-tap-event-plugin is required by material-ui to make touch screens work properly with onClick events
 import 'react-tap-event-plugin';
-import dhis2 from 'd2-ui/lib/header-bar/dhis2';
+import injectTapEventPlugin from 'react-tap-event-plugin';
+injectTapEventPlugin();
+
 import routes from './router';
 import './App/App.scss';
 
 // Render the a LoadingMask to show the user the app is in loading
 // The consecutive render after we did our setup will replace this loading mask
 // with the rendered version of the application.
-render(<LoadingMask />, document.getElementById('app'));
+render(
+  <MuiThemeProvider>
+    <LoadingMask />
+  </MuiThemeProvider>, 
+  document.getElementById('app'));
 
 function configI18n(userSettings) {
     const uiLocale = userSettings.keyUiLocale;
 
-    if (uiLocale !== 'en') {
+    if (uiLocale && uiLocale !== 'en') {
         // Add the language sources for the preferred locale
         config.i18n.sources.add(`./i18n/i18n_module_${uiLocale}.properties`);
     }
@@ -57,14 +64,9 @@ function startApp(d2) {
 getManifest('./manifest.webapp')
     .then(manifest => {
         const baseUrl = process.env.NODE_ENV === 'production' ? manifest.getBaseUrl() : dhisDevConfig.baseUrl;
-        config.baseUrl = `${baseUrl}/api/24`;
+        config.baseUrl = `${baseUrl}/api/26`;
         log.info(`Loading: ${manifest.name} v${manifest.version}`);
         log.info(`Built ${manifest.manifest_generated_at}`);
-
-        // Set the baseUrl to localhost if we are in dev mode
-        if (process.env.NODE_ENV !== 'production') {
-            dhis2.settings.baseUrl = baseUrl;
-        }
     })
     .then(getUserSettings)
     .then(configI18n)

@@ -1,7 +1,7 @@
 import React from 'react';
 import ObservedEvents from '../utils/ObservedEvents.mixin';
 import Translate from 'd2-ui/lib/i18n/Translate.mixin';
-import TextField from 'material-ui/lib/text-field';
+import TextField from 'material-ui/TextField';
 
 const Wizard = React.createClass({
     propTypes: {

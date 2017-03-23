@@ -3,8 +3,8 @@ import classes from 'classnames';
 import isObject from 'd2-utilizr/lib/isObject';
 import isString from 'd2-utilizr/lib/isString';
 import moment from 'moment';
-import IconButton from 'material-ui/lib/icon-button';
-import MoreVert from 'material-ui/lib/svg-icons/navigation/more-vert';
+import IconButton from 'material-ui/IconButton';
+import MoreVert from 'material-ui/svg-icons/navigation/more-vert';
 import Color from 'd2-ui/lib/data-table/data-value/Color.component';
 import Translate from 'd2-ui/lib/i18n/Translate.mixin';
 

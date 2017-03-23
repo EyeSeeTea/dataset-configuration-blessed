@@ -1,6 +1,6 @@
 import React from 'react';
-import FloatingActionButton from 'material-ui/lib/floating-action-button';
-import FontIcon from 'material-ui/lib/font-icon';
+import FloatingActionButton from 'material-ui/FloatingActionButton';
+import FontIcon from 'material-ui/FontIcon';
 import Auth from 'd2-ui/lib/auth/Auth.mixin';
 import { goToRoute } from '../router';
 

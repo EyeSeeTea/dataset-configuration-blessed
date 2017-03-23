@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Observable } from 'rx';
 import DetailsBox from './DetailsBox.component';
-import Paper from 'material-ui/lib/paper';
+import Paper from 'material-ui/Paper';
 
 export default class DetailsBoxWithScroll extends Component {
 
