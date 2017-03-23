@@ -7,14 +7,16 @@
     }
   },
   "appType": "APP",
-  "name": "app-skeleton",
-  "version": "1.0.0",
-  "description": "Skeleton app for a DHIS2 web app",
+  "name": "Dataset Configuration",
+  "version": "0.1.0",
+  "description": "Dataset Configuration User Interface",
   "developer": {
-    "name": "Mark Polak"
+    "url": "https://github.com/EyeSeeTea/dataset-configuration",
+    "name": "EyeSeeTea Team",
+    "company": "EyeSeeTea Ltd.",
+    "email": "hello@eyeseetea.com"
   },
   "icons": {
     "48": "icon.png"
-  },
-  "manifest_generated_at": "Thu Sep 29 2016 14:38:25 GMT+0200 (CEST)"
+  }
 }

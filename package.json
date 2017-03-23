@@ -1,7 +1,7 @@
 {
-  "name": "app-skeleton",
-  "version": "1.0.0",
-  "description": "Skeleton app for a DHIS2 web app",
+  "name": "Dataset Configuration",
+  "version": "0.1.0",
+  "description": "Dataset Configuration User Interface",
   "main": "src/index.html",
   "scripts": {
     "coverage": "babel-node node_modules/.bin/isparta cover --root ./src --report text --report html --report lcov node_modules/mocha/bin/_mocha -- --reporter dot --require config/setup.js --recursive test",
@@ -76,12 +76,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dhis2/app-skeleton.git"
+    "url": "git+https://github.com/EyeSeeTea/dataset-configuration.git"
   },
   "bugs": {
-    "url": "https://github.com/dhis2/app-skeleton/issues"
+    "url": "https://github.com/EyeSeeTea/dataset-configuration/issues"
   },
-  "homepage": "https://github.com/dhis2/app-skeleton#readme",
+  "homepage": "https://github.com/EyeSeeTea/dataset-configuration",
   "manifest.webapp": {
     "icons": {
       "48": "icon.png"
