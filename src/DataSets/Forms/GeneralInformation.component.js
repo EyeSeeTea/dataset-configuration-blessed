@@ -1,14 +1,11 @@
 import React from 'react';
 import Translate from 'd2-ui/lib/i18n/Translate.mixin';
 import FormBuilder from 'd2-ui/lib/forms/FormBuilder.component';
-import CheckBox from 'd2-ui/lib/form-fields/CheckBox.component';
-import TextField from 'd2-ui/lib/form-fields/TextField.js';
-import Dropdown from '../../forms/Dropdown.component';
-import MultiSelect from '../../forms/MultiSelect.component';
 import Validators from 'd2-ui/lib/forms/Validators';
 import periodTypes from '../../config/periodTypes';
 import DataInputPeriods from '../../forms/DataInputPeriods.component';
 import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
+import FormHelpers from '../../forms/FormHelpers';
 
 const GeneralInformation = React.createClass({
     mixins: [Translate],
@@ -40,68 +37,16 @@ const GeneralInformation = React.createClass({
             }));
     },
 
-    _getLabel(name, isRequired = false) {
+    _getLabel(name, isRequired) {
         const translationKey = _.snakeCase(_.last(name.split(".")));
         return this.getTranslation(translationKey) + (isRequired ? " (*)" : "");
-    },
-
-    _getTextField({
-                name, 
-                value = "", 
-                isRequired = false, 
-                multiLine = false, 
-                type = "string", 
-                validators = [],
-                asyncValidators = [],
-            }, otherProps = {}) {
-        return {
-            name: name,
-            value: (value || "").toString(),
-            component: TextField,
-            validators: validators,
-            asyncValidators: asyncValidators,
-            props: {
-                type: type,
-                multiLine: multiLine,
-                style: {width: "100%"},
-                changeEvent: "onBlur",
-                floatingLabelText: this._getLabel(name, isRequired),
-                ...otherProps,
-            },
-        };
-    },
-
-    _getSelectField({name, options, value = undefined, isRequired = false} = {}) {
-        return {
-            name: name,
-            component: Dropdown,
-            value: value,
-            props: {
-                options: options,
-                isRequired: isRequired,
-                labelText: this._getLabel(name, isRequired),
-            },
-        };
-    },
-
-    _getBooleanField({name, onChange, value = false} = {}) {
-        return {
-            name: name,
-            component: CheckBox,
-            value: value,
-            props: {
-                checked: value,
-                label: this._getLabel(name),
-                onCheck: (ev, newValue) => onChange(name, newValue),
-            },
-        };
     },
 
     _onUpdateField(fieldPath, newValue) {
         this.props.onFieldsChange(fieldPath, newValue);
     },
 
-    _getAsyncUniqueValidator(model, field, uid) {
+    _getAsyncUniqueValidator(model, field, uid = null) {
         return (value) => {
             if (!value || !value.trim()) {
                 return Promise.resolve(true);
@@ -125,8 +70,9 @@ const GeneralInformation = React.createClass({
         const {associations, dataset} = this.props.data;
         const projectCode = associations.project && associations.project.code;
         const fields = [
-            this._getTextField({
+            FormHelpers.getTextField({
                 name: "dataset.name",
+                getLabel: this._getLabel,
                 value: dataset.name, 
                 isRequired: true,
                 validators: [{
@@ -134,30 +80,35 @@ const GeneralInformation = React.createClass({
                     message: this.getTranslation(Validators.isRequired.message),
                 }],
             }),
-            this._getTextField({
+            FormHelpers.getTextField({
                 name: "dataset.code",
+                getLabel: this._getLabel,
                 value: dataset.code,
                 asyncValidators: [
-                    this._getAsyncUniqueValidator(this.context.d2.models.dataSet, "code", null),
+                    this._getAsyncUniqueValidator(this.context.d2.models.dataSet, "code"),
                 ],
             }),
-            this._getTextField({
+            FormHelpers.getTextField({
                 name: "dataset.description",
+                getLabel: this._getLabel,
                 value: dataset.description,
                 multiLine: true,
             }),
-            this._getTextField({
+            FormHelpers.getTextField({
                 name: "dataset.expiryDays",
+                getLabel: this._getLabel,
                 value: dataset.expiryDays,
                 type: "number",
             }),
-            this._getTextField({
+            FormHelpers.getTextField({
                 name: "dataset.openFuturePeriods",
+                getLabel: this._getLabel,
                 value: dataset.openFuturePeriods,
                 type: "number",
             }),
-            this._getSelectField({
+            FormHelpers.getSelectField({
                 name: "dataset.periodType", 
+                getLabel: this._getLabel,
                 isRequired: true,
                 options: periodTypes.map(pt => ({text: pt, value: pt})), 
                 value: dataset.periodType,
@@ -173,8 +124,9 @@ const GeneralInformation = React.createClass({
                     labelText: this._getLabel("dataInputPeriods", false),
                 },
             },
-            this._getBooleanField({
+            FormHelpers.getBooleanField({
                 name: "dataset.notifyCompletingUser",
+                getLabel: this._getLabel,
                 value: dataset.notifyCompletingUser,
                 onChange: this._onUpdateField,
             })
