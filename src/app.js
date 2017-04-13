@@ -23,13 +23,14 @@ import injectTapEventPlugin from 'react-tap-event-plugin';
 injectTapEventPlugin();
 
 import routes from './router';
+import appTheme from './App/app.theme';
 import './App/App.scss';
 
 // Render the a LoadingMask to show the user the app is in loading
 // The consecutive render after we did our setup will replace this loading mask
 // with the rendered version of the application.
 render(
-  <MuiThemeProvider>
+  <MuiThemeProvider muiTheme={appTheme}>
     <LoadingMask />
   </MuiThemeProvider>, 
   document.getElementById('app'));
@@ -44,6 +45,11 @@ function configI18n(userSettings) {
 
     // Add english as locale for all cases (either as primary or fallback)
     config.i18n.sources.add('./i18n/i18n_module_en.properties');
+
+    [
+        "cancel",
+        "name",
+    ].forEach(key => config.i18n.strings.add(key));
 }
 
 /**
