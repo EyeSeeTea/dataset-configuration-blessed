@@ -64,7 +64,6 @@ const Wizard = React.createClass({
                         activeItemNumber: {background: "#FF9800"},
                     }}/>
 
-                {this._renderButtons(currentStep)}
 
                 <Card>
                     <CardText>
