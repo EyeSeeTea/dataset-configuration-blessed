@@ -126,8 +126,11 @@ const DataSetFormSteps = React.createClass({
 
     _saveErrors(error) {
         let errors;
+
         if (error instanceof String) {
             errors = [error];
+        } else if (error.response && error.response.errorReports instanceof Array) {
+            errors = error.response.errorReports.map(msg => msg.message);
         } else if (error.messages instanceof Array) {
             errors = error.messages.map(msg => msg.message);
         } else {
