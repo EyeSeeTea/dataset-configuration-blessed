@@ -179,7 +179,7 @@ const DataSets = React.createClass({
                             />
                         : null}                    
                 </div>
-                <ListActionBar route="wizard"/>
+                <ListActionBar route="datasets/add" />
             </div>            
         );
     },
