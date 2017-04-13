@@ -10,9 +10,11 @@ export const afterDeleteHook$ = new Subject();
 const contextActions = Action.createActionsFromNames([
     'edit',
     'share',
-    'delete',
+    'define_associations',
     'details',
-    'assignToOrgUnits'
+    'delete',
+    'clone',
+    'delete',
 ]);
 
 const confirm = (message) => new Promise((resolve, reject) => {
@@ -32,7 +34,7 @@ contextActions.edit
     .subscribe(({ data: model }) => getD2()
         .then(d2 => {
             console.log(model)
-            goToRoute("wizard");
+            alert("TODO: dataset edit");
         })
     );
 
@@ -51,7 +53,7 @@ contextActions.delete
         })
     );
 
-contextActions.assignToOrgUnits
+contextActions.define_associations
     .subscribe(({ data: model }) => getD2()
         .then(d2 => {
             alert("TODO assignToOrgUnits dataset: ");
