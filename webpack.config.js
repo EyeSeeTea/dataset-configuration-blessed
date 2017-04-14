@@ -41,15 +41,7 @@ const webpackConfig = {
         loaders: [
             {
                 test: /\.jsx?$/,
-                exclude: /node_modules/,
-                loader: 'babel',
-                query: {
-                    presets: ['es2015', 'stage-0', 'react'],
-                },
-            },
-             {
-                test: /\.jsx?$/,
-                include: [/node_modules\/d2-ui/],
+                exclude: /node_modules\/(?!(d2-ui)\/).*/,
                 loader: 'babel',
                 query: {
                     presets: ['es2015', 'stage-0', 'react'],
