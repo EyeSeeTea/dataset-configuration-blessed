@@ -47,6 +47,14 @@ const webpackConfig = {
                     presets: ['es2015', 'stage-0', 'react'],
                 },
             },
+             {
+                test: /\.jsx?$/,
+                include: [/node_modules\/d2-ui/],
+                loader: 'babel',
+                query: {
+                    presets: ['es2015', 'stage-0', 'react'],
+                },
+            },
             {
                 test: /\.css$/,
                 loader: 'style!css',
