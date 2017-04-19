@@ -8,15 +8,15 @@
   },
   "appType": "APP",
   "name": "Dataset Configuration",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Dataset Configuration User Interface",
   "developer": {
-    "url": "https://github.com/EyeSeeTea/dataset-configuration",
     "name": "EyeSeeTea Team",
-    "company": "EyeSeeTea Ltd.",
-    "email": "hello@eyeseetea.com"
+    "email": "hello@eyeseetea.com",
+    "url": "https://github.com/EyeSeeTea/dataset-configuration"
   },
   "icons": {
     "48": "icon.png"
-  }
+  },
+  "manifest_generated_at": "Wed Apr 19 2017 10:18:08 GMT+0200 (CEST)"
 }
