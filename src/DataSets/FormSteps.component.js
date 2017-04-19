@@ -52,10 +52,9 @@ const DataSetFormSteps = React.createClass({
         const clonedDataset = dataset.clone();
 
         if (project) {
-            const projectCode = project.code;
             const getOrgUnitIds = (ds) => ds.organisationUnits.toArray().map(ou => ou.id);
-            clonedDataset.name = projectCode ? projectCode : ""
-            clonedDataset.code = projectCode ? projectCode + " Data Set" : ""
+            clonedDataset.name = project.displayName ? project.displayName : "";
+            clonedDataset.code = project.code ? project.code + " Data Set" : "";
             clonedDataset.organisationUnits = project.organisationUnits;
             const overwritten = (
                 (dataset.name && (dataset.name !== clonedDataset.name)) || 
