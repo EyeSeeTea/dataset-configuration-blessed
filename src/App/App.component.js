@@ -43,9 +43,6 @@ class App extends AppWithD2 {
          
 };
 
-window.appgetInstance = getInstance;
-getInstance().then(d2 => console.log("d2-instance-app", d2));
-
 App.defaultProps = {
     d2: getInstance(),
 };
