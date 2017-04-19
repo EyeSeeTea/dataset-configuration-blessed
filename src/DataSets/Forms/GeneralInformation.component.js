@@ -37,11 +37,6 @@ const GeneralInformation = React.createClass({
             }));
     },
 
-    _getLabel(name, isRequired) {
-        const translationKey = _.snakeCase(_.last(name.split(".")));
-        return this.getTranslation(translationKey) + (isRequired ? " (*)" : "");
-    },
-
     _onUpdateField(fieldPath, newValue) {
         this.props.onFieldsChange(fieldPath, newValue);
     },
@@ -72,7 +67,7 @@ const GeneralInformation = React.createClass({
         const fields = [
             FormHelpers.getTextField({
                 name: "dataset.name",
-                getLabel: this._getLabel,
+                label: this.getTranslation("name"),
                 value: dataset.name, 
                 isRequired: true,
                 validators: [{
@@ -82,7 +77,7 @@ const GeneralInformation = React.createClass({
             }),
             FormHelpers.getTextField({
                 name: "dataset.code",
-                getLabel: this._getLabel,
+                label: this.getTranslation("code"),
                 value: dataset.code,
                 asyncValidators: [
                     this._getAsyncUniqueValidator(this.context.d2.models.dataSet, "code"),
@@ -90,25 +85,25 @@ const GeneralInformation = React.createClass({
             }),
             FormHelpers.getTextField({
                 name: "dataset.description",
-                getLabel: this._getLabel,
+                label: this.getTranslation("description"),
                 value: dataset.description,
                 multiLine: true,
             }),
             FormHelpers.getTextField({
                 name: "dataset.expiryDays",
-                getLabel: this._getLabel,
+                label: this.getTranslation("expiry_days"),
                 value: dataset.expiryDays,
                 type: "number",
             }),
             FormHelpers.getTextField({
                 name: "dataset.openFuturePeriods",
-                getLabel: this._getLabel,
+                label: this.getTranslation("open_future_periods"),
                 value: dataset.openFuturePeriods,
                 type: "number",
             }),
             FormHelpers.getSelectField({
                 name: "dataset.periodType", 
-                getLabel: this._getLabel,
+                label: this.getTranslation("period_type"),
                 isRequired: true,
                 options: periodTypes.map(pt => ({text: pt, value: pt})), 
                 value: dataset.periodType,
@@ -121,12 +116,12 @@ const GeneralInformation = React.createClass({
                     model: dataset,
                     onChange: (data) => 
                         this._onUpdateField("dataset.dataInputPeriods", data.target.value),
-                    labelText: this._getLabel("dataInputPeriods", false),
+                    labelText: FormHelpers.getLabel(this.getTranslation("data_input_periods")),
                 },
             },
             FormHelpers.getBooleanField({
                 name: "dataset.notifyCompletingUser",
-                getLabel: this._getLabel,
+                label: this.getTranslation("notify_completing_user"),
                 value: dataset.notifyCompletingUser,
                 onChange: this._onUpdateField,
             })

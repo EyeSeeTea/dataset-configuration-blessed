@@ -12,7 +12,6 @@ const contextActions = Action.createActionsFromNames([
     'share',
     'define_associations',
     'details',
-    'delete',
     'clone',
     'delete',
 ]);

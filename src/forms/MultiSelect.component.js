@@ -5,7 +5,8 @@ import GroupEditor from 'd2-ui/lib/group-editor/GroupEditor.component';
 
 const MultiSelect = React.createClass({
     propTypes: {
-        options: React.PropTypes.arrayOf(React.PropTypes.object).isRequired,
+        options: React.PropTypes.arrayOf(React.PropTypes.object),
+        selected: React.PropTypes.arrayOf(React.PropTypes.string),
         onChange: React.PropTypes.func.isRequired,
         label: React.PropTypes.string,
     },
@@ -14,16 +15,17 @@ const MultiSelect = React.createClass({
         const availableStore = Store.create();
         const assignedStore = Store.create();
         availableStore.setState(this.props.options);
-        assignedStore.setState([]);
+        assignedStore.setState(this.props.selected);
         return {availableStore, assignedStore};
     },
 
     componentWillReceiveProps(nextProps) {
         this.state.availableStore.setState(nextProps.options);
+        this.state.assignedStore.setState(nextProps.selected);
     },
 
     getDefaultProps() {
-        return {height: 300, options: []};
+        return {height: 300, options: [], selected: []};
     },
 
     _onItemAssigned(newItems) {

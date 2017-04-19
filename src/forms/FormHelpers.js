@@ -2,7 +2,13 @@ import TextField from 'd2-ui/lib/form-fields/TextField.js';
 import Dropdown from './Dropdown.component';
 import CheckBox from 'd2-ui/lib/form-fields/CheckBox.component';
 
-function getTextField({name, getLabel, value = "", isRequired = false, multiLine = false, 
+import MultiSelect from './MultiSelect.component';
+
+function getLabel(label, isRequired) {
+    return label + (isRequired ? " (*)" : "");
+}
+
+function getTextField({name, label, value = "", isRequired = false, multiLine = false, 
                        type = "string", validators = [], asyncValidators = []}) {
     return {
         name: name,
@@ -15,12 +21,12 @@ function getTextField({name, getLabel, value = "", isRequired = false, multiLine
             multiLine: multiLine,
             style: {width: "100%"},
             changeEvent: "onBlur",
-            floatingLabelText: getLabel(name, isRequired),
+            floatingLabelText: getLabel(label, isRequired),
         },
     };
 }
 
-function getSelectField({name, getLabel, options, value = undefined, isRequired = false}) {
+function getSelectField({name, label, options, value = undefined, isRequired = false}) {
     return {
         name: name,
         component: Dropdown,
@@ -28,22 +34,36 @@ function getSelectField({name, getLabel, options, value = undefined, isRequired 
         props: {
             options: options,
             isRequired: isRequired,
-            labelText: getLabel(name, isRequired),
+            labelText: getLabel(label, isRequired),
+            style: {width: "100%"},
         },
     };
 }
 
-function getBooleanField({name, getLabel, onChange, value = false}) {
+function getBooleanField({name, label, onChange, value = false}) {
     return {
         name: name,
         component: CheckBox,
         value: value,
         props: {
             checked: value,
-            label: getLabel(name),
+            label: getLabel(label),
             onCheck: (ev, newValue) => onChange(name, newValue),
         },
     };
 }
 
-export default {getTextField, getSelectField, getBooleanField}
+function getMultiSelect({name, label, onChange, options = [], selected = []}) {
+    return {
+        name: name,
+        component: MultiSelect,
+        props: {
+            options: options,
+            onChange: onChange,
+            label: label,
+            selected: selected,
+        }
+    };
+}
+
+export default {getLabel, getTextField, getSelectField, getBooleanField, getMultiSelect}

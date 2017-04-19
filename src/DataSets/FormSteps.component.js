@@ -6,7 +6,7 @@ import { goToRoute } from '../router';
 
 import InitialConfig from './Forms/InitialConfig.component';
 import GeneralInformation from './Forms/GeneralInformation.component';
-import OrganizationUnit from './Forms/OrganizationUnit.component';
+import OrganisationUnit from './Forms/OrganisationUnit.component';
 import Save from './Forms/Save.component';
 
 const DataSetFormSteps = React.createClass({
@@ -52,10 +52,9 @@ const DataSetFormSteps = React.createClass({
         const clonedDataset = dataset.clone();
 
         if (project) {
-            const projectCode = project.code;
             const getOrgUnitIds = (ds) => ds.organisationUnits.toArray().map(ou => ou.id);
-            clonedDataset.name = projectCode ? projectCode : ""
-            clonedDataset.code = projectCode ? projectCode + " Data Set" : ""
+            clonedDataset.name = project.displayName ? project.displayName : "";
+            clonedDataset.code = project.code ? project.code + " Data Set" : "";
             clonedDataset.organisationUnits = project.organisationUnits;
             const overwritten = (
                 (dataset.name && (dataset.name !== clonedDataset.name)) || 
@@ -193,9 +192,9 @@ const DataSetFormSteps = React.createClass({
                 props: props,
             },
             {
-                id: 'organizationUnit',
+                id: 'organisationUnit',
                 title: this.getTranslation("organisation_unit"),
-                component: OrganizationUnit,
+                component: OrganisationUnit,
                 props: props,
             },
             {
