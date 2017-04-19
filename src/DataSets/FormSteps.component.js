@@ -6,7 +6,7 @@ import { goToRoute } from '../router';
 
 import InitialConfig from './Forms/InitialConfig.component';
 import GeneralInformation from './Forms/GeneralInformation.component';
-import OrganizationUnit from './Forms/OrganizationUnit.component';
+import OrganisationUnit from './Forms/OrganisationUnit.component';
 import Save from './Forms/Save.component';
 
 const DataSetFormSteps = React.createClass({
@@ -192,9 +192,9 @@ const DataSetFormSteps = React.createClass({
                 props: props,
             },
             {
-                id: 'organizationUnit',
+                id: 'organisationUnit',
                 title: this.getTranslation("organisation_unit"),
-                component: OrganizationUnit,
+                component: OrganisationUnit,
                 props: props,
             },
             {

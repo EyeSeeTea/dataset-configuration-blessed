@@ -11,7 +11,7 @@ import OrgUnitSelectByLevel from 'd2-ui/lib/org-unit-select/OrgUnitSelectByLevel
 import OrgUnitSelectByGroup from 'd2-ui/lib/org-unit-select/OrgUnitSelectByGroup.component';
 import OrgUnitSelectAll from 'd2-ui/lib/org-unit-select/OrgUnitSelectAll.component';
 
-const OrganizationUnit = React.createClass({
+const OrganisationUnit = React.createClass({
     mixins: [Translate],
 
     propTypes: {
@@ -42,4 +42,4 @@ const OrganizationUnit = React.createClass({
     },
 });
 
-export default OrganizationUnit;
+export default OrganisationUnit;
