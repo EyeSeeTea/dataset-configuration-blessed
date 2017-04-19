@@ -9,6 +9,8 @@ import LoadingMask from '../LoadingMask/LoadingMask.component';
 import MainContent from 'd2-ui/lib/layout/main-content/MainContent.component';
 import SinglePanelLayout from 'd2-ui/lib/layout/SinglePanel.component';
 import { getInstance } from 'd2/lib/d2';
+import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
+import appTheme from './app.theme';
 
 const HeaderBar = withStateFrom(headerBarStore$, HeaderBarComponent);
 
@@ -26,14 +28,16 @@ class App extends AppWithD2 {
             return (<LoadingMask />);
         }        
         return (
-            <div>
-                <HeaderBar />                
-                <SinglePanelLayout>
-                    <MainContent>
-                        {this.props.children}
-                    </MainContent>
-                </SinglePanelLayout>
-            </div>
+            <MuiThemeProvider muiTheme={appTheme}>
+                <div>
+                    <HeaderBar />
+                    <SinglePanelLayout style={{marginTop: "3.5rem"}}>
+                        <MainContent>
+                            {this.props.children}
+                        </MainContent>
+                    </SinglePanelLayout>
+                </div>
+            </MuiThemeProvider>
         );
     }       
          
