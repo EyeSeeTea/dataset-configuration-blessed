@@ -3,8 +3,7 @@ import Translate from 'd2-ui/lib/i18n/Translate.mixin';
 import FormBuilder from 'd2-ui/lib/forms/FormBuilder.component';
 import CheckBox from 'd2-ui/lib/form-fields/CheckBox.component';
 import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
-import Dropdown from '../../forms/Dropdown.component';
-import MultiSelect from '../../forms/MultiSelect.component';
+import FormHelpers from '../../forms/FormHelpers';
 
 const InitialConfig = React.createClass({
     mixins: [Translate],
@@ -105,34 +104,25 @@ const InitialConfig = React.createClass({
     _renderForm() {
         const {associations} = this.props.data;
         const fields = [
-            {
+            FormHelpers.getSelectField({
                 name: 'associations.project',
-                component: Dropdown,
-                value: associations.project && associations.project.id,
-                props: {
-                    options: this._getProjectOptions(),
-                    labelText: this.getTranslation('linked_project'),
-                    style: {width: "100%"},
-                },
-            },
-            {
-                name: 'associations.seeAllProjects',
+                label: this.getTranslation('linked_project'),
+                value: associations.project ? associations.project.id : null,
+                options: this._getProjectOptions(),
+            }),
+            FormHelpers.getBooleanField({
+                name: "associations.seeAllProjects",
+                label: this.getTranslation('show_closed_projects'),
                 value: this.state.seeAllProjects,
-                component: CheckBox,
-                props: {
-                    label: this.getTranslation('show_closed_projects'),
-                    onCheck: this._onSeeAllProjectToggle,
-                },
-            },
-            {
+                onChange: this._onSeeAllProjectToggle,
+            }),
+            FormHelpers.getMultiSelect({
                 name: 'associations.coreCompetencies',
-                component: MultiSelect,
-                props: {
-                    options: this._getCoreCompetenciesOptions(),
-                    onChange: this._onCoreCompetenciesUpdate,
-                    label: this.getTranslation('core_competencies'),
-                }
-            },
+                options: this._getCoreCompetenciesOptions(),
+                onChange: this._onCoreCompetenciesUpdate,
+                label: this.getTranslation('core_competencies'),
+                selected: _.map(associations.coreCompetencies, "id"),
+            }),
         ];
 
         return (

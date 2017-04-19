@@ -2,6 +2,8 @@ import TextField from 'd2-ui/lib/form-fields/TextField.js';
 import Dropdown from './Dropdown.component';
 import CheckBox from 'd2-ui/lib/form-fields/CheckBox.component';
 
+import MultiSelect from './MultiSelect.component';
+
 function getLabel(label, isRequired) {
     return label + (isRequired ? " (*)" : "");
 }
@@ -33,6 +35,7 @@ function getSelectField({name, label, options, value = undefined, isRequired = f
             options: options,
             isRequired: isRequired,
             labelText: getLabel(label, isRequired),
+            style: {width: "100%"},
         },
     };
 }
@@ -50,4 +53,17 @@ function getBooleanField({name, label, onChange, value = false}) {
     };
 }
 
-export default {getLabel, getTextField, getSelectField, getBooleanField}
+function getMultiSelect({name, label, onChange, options = [], selected = []}) {
+    return {
+        name: name,
+        component: MultiSelect,
+        props: {
+            options: options,
+            onChange: onChange,
+            label: label,
+            selected: selected,
+        }
+    };
+}
+
+export default {getLabel, getTextField, getSelectField, getBooleanField, getMultiSelect}
