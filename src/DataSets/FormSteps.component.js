@@ -3,6 +3,8 @@ import Translate from 'd2-ui/lib/i18n/Translate.mixin';
 import fp from 'lodash/fp';
 import Wizard from '../Wizard/Wizard.component';
 import { goToRoute } from '../router';
+import { generateUid } from 'd2/lib/uid';
+import moment from 'moment';
 
 import InitialConfig from './Forms/InitialConfig.component';
 import GeneralInformation from './Forms/GeneralInformation.component';
@@ -47,6 +49,30 @@ const DataSetFormSteps = React.createClass({
         });
     },
 
+    _getDataInputPeriodsFromProject(dataset, project) {
+        if (project && project.startDate && project.endDate) {
+            // Create monthly periods from project.startDate to project.startDate
+            const startDate = moment(project.startDate);
+            const endDate = moment(project.endDate);
+            let currentDate = startDate.clone();
+            let periods = [];
+
+            while (currentDate <= endDate) {
+                const endOfMonth = currentDate.clone().endOf("month").startOf("day");
+                periods.push({
+                    id: generateUid(), 
+                    period: {id: currentDate.format("YYYYMM")}, 
+                    openingDate: currentDate.toDate(), 
+                    closingDate: moment.min(endDate, endOfMonth).toDate(),
+                });
+                currentDate.add(1, "months").startOf("month");
+            }
+            return periods;
+        } else {
+            return [];
+        }
+    },
+
     _updateDatasetFromAssociations(dataset, associations) {
         const {project} = associations;
         const clonedDataset = dataset.clone();
@@ -55,6 +81,7 @@ const DataSetFormSteps = React.createClass({
             const getOrgUnitIds = (ds) => ds.organisationUnits.toArray().map(ou => ou.id);
             clonedDataset.name = project.displayName ? project.displayName : "";
             clonedDataset.code = project.code ? project.code + " Data Set" : "";
+            clonedDataset.dataInputPeriods = this._getDataInputPeriodsFromProject(dataset, project);
             clonedDataset.organisationUnits = project.organisationUnits;
             const overwritten = (
                 (dataset.name && (dataset.name !== clonedDataset.name)) || 
