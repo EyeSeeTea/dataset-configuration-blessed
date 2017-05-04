@@ -62,7 +62,7 @@
     "react": "^15.4.0",
     "react-addons-test-utils": "^15.4.0",
     "react-dom": "^15.4.0",
-    "react-steps": "github:EyeSeeTea/react-steps#feature/custom-styles",
+    "react-steps": "^0.0.5",
     "react-tap-event-plugin": "^2.0.1",
     "rx": "^4.1.0",
     "sass-loader": "^3.2.0",
