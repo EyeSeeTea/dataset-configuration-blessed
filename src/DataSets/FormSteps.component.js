@@ -20,8 +20,8 @@ const DataSetFormSteps = React.createClass({
     },
 
     config: {
-        categoryOptionsProjectsId: "MRwzyV0kXv9",
-        categoryOptionsCoreCompetencyId: "ouNRBWIbnxY",
+        categoryProjectsId: "MRwzyV0kXv9",
+        categoryCoreCompetencyId: "ouNRBWIbnxY",
         categoryComboId: "GmXXE8fiCK5",
     },
 

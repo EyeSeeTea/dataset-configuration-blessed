@@ -22,26 +22,22 @@ const InitialConfig = React.createClass({
         return {isLoading: true};
     },
 
-    _getCategoryOptions(categoryCode, fields = ["*"]) {
+    _getCategoryOptions(categoryId, fields = [":all"]) {
         return this.context.d2
-            .models.categories
-            .filter().on("id").equals(categoryCode)
-            .list({fields: `id, categoryOptions[id, ${fields.join(',')}]`, paging: false})
-            .then(categoriesCollection => 
-                _(categoriesCollection.toArray())
-                    .flatMap(category => category.categoryOptions.toArray())
-                    .keyBy("id")
-                    .value());
+            .models.categoryOptions
+            .filter().on("categories.id").equals(categoryId)
+            .list({fields: `id,${fields.join(',')}`, paging: false})
+            .then(categoryOptionsCollection => _.keyBy(categoryOptionsCollection.toArray(), "id"));
     },
 
     _getProjects() {
-        const fields = ["code", "displayName", "startDate", "endDate", "organisationUnits[*]"];
-        return this._getCategoryOptions(this.props.config.categoryOptionsProjectsId, fields);
+        const fields = ["code", "displayName", "startDate", "endDate", "organisationUnits[:all]"];
+        return this._getCategoryOptions(this.props.config.categoryProjectsId, fields);
     },
 
     _getCoreCompetencies() {
         const fields = ["displayName"];
-        return this._getCategoryOptions(this.props.config.categoryOptionsCoreCompetencyId, fields);
+        return this._getCategoryOptions(this.props.config.categoryCoreCompetencyId, fields);
     },
 
     componentWillReceiveProps(props) {
