@@ -13,9 +13,10 @@ $ yarn start
 
 ## Use the development version of d2-ui
 
-Clone the d2-ui respository and execute:
+Clone the d2-ui respository (branch `dataset-configuration`) and create a link:
 
 ```
+$ git clone -b dataset-configuration https://github.com/eyeseetea/d2-ui
 $ cd d2-ui
 $ yarn install && yarn run build
 $ yarn link
@@ -34,14 +35,14 @@ To set up your DHIS2 instance to work with the development service you will need
 The starter app will look for a DHIS 2 development instance configuration in
 `$DHIS2_HOME/config`. So for example if your `DHIS2_HOME` environment variable is
 set to `~/.dhis2`, the starter app will look for `~/.dhis2/config.js` and then
-`~/.dhis2/config.json` and load the first one it can find.
+`~/.dhis2/config.json` and load the first one it can find. You can use `config/config.template.json` as reference.
 
 The config should export an object with the properties `baseUrl` and
 `authorization`, where authorization is the base64 encoding of your username and
 password. You can obtain this value by opening the console in your browser and
 typing `btoa('user:pass')`.
 
-If no config is found, the default `baseUrl` is `http://localhost:8080/dhis` and
+If no config is found, the default `baseUrl` is `http://localhost:8080/` and
 the default username and password is `admin` and `district`, respectively.
 
 See `webpack.config.js` for details.
