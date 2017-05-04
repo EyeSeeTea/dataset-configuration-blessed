@@ -51,34 +51,27 @@ const InitialConfig = React.createClass({
             .then(([projects, coreCompetencies]) => {
                 this.setState({
                     isLoading: false,
-                    seeAllProjects: false,
                     projects: projects, 
                     coreCompetencies: coreCompetencies, 
                 });
             });
     },
 
-    _onSeeAllProjectToggle(ev, newValue) {
-        this.setState({seeAllProjects: newValue});
+    _filterProjects(projectOptions, controls) {
+        const now = new Date().toISOString();
+        const isProjectOpen = (project) =>
+            project &&
+            (!project.startDate || project.startDate <= now) &&
+            (!project.endDate   || project.endDate > now)
+        
+        return projectOptions.filter(projectOption => 
+            controls.seeAllProjects || isProjectOpen(this.state.projects[projectOption.value]));
     },
 
     _getProjectOptions() {
-        let projects;
-        if (this.state.seeAllProjects) {
-            projects = _.values(this.state.projects);
-        } else {
-            const now = new Date().toISOString();
-            const isProjectOpen = (project) => 
-                (!project.startDate || project.startDate <= now) &&
-                (!project.endDate   || project.endDate > now);
-            projects = _.values(this.state.projects).filter(isProjectOpen);
-        }
-
-        return projects.map(project => ({
+        return _.values(this.state.projects).map(project => ({
             value: project.id, 
             text: project.displayName, 
-            startDate: project.startDate, 
-            endDate: project.endDate,
         }));
     },
 
@@ -100,17 +93,19 @@ const InitialConfig = React.createClass({
     _renderForm() {
         const {associations} = this.props.data;
         const fields = [
-            FormHelpers.getSelectField({
+            FormHelpers.getRichSelectField({
                 name: 'associations.project',
                 label: this.getTranslation('linked_project'),
                 value: associations.project ? associations.project.id : null,
                 options: this._getProjectOptions(),
-            }),
-            FormHelpers.getBooleanField({
-                name: "associations.seeAllProjects",
-                label: this.getTranslation('show_closed_projects'),
-                value: this.state.seeAllProjects,
-                onChange: this._onSeeAllProjectToggle,
+                filterOptions: this._filterProjects,
+                controls: [
+                    {
+                        name: "seeAllProjects",
+                        label: this.getTranslation('show_closed_projects'),
+                        value: false,
+                    },
+                ],
             }),
             FormHelpers.getMultiSelect({
                 name: 'associations.coreCompetencies',
