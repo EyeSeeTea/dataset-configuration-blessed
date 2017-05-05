@@ -101,6 +101,7 @@ class RichDropdown extends React.Component {
             translateOptions,
             isRequired,
             options,
+            filterOptions,
             model,
             fullWidth,
             translateLabel,
