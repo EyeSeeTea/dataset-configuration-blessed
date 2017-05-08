@@ -4,6 +4,7 @@ import FormBuilder from 'd2-ui/lib/forms/FormBuilder.component';
 import CheckBox from 'd2-ui/lib/form-fields/CheckBox.component';
 import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
 import FormHelpers from '../../forms/FormHelpers';
+import moment from 'moment';
 
 const InitialConfig = React.createClass({
     mixins: [Translate],
@@ -58,12 +59,9 @@ const InitialConfig = React.createClass({
     },
 
     _filterProjects(projectOptions, controls) {
-        const now = new Date().toISOString();
+        const today = moment().startOf("day");
         const isProjectOpen = (project) =>
-            project &&
-            (!project.startDate || project.startDate <= now) &&
-            (!project.endDate   || project.endDate > now)
-        
+            project && (!project.endDate || moment(project.endDate) >= today)
         return projectOptions.filter(projectOption => 
             controls.seeAllProjects || isProjectOpen(this.state.projects[projectOption.value]));
     },
