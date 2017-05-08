@@ -78,7 +78,7 @@ const DataSetFormSteps = React.createClass({
             dataInputStartDate: _(baseDataset.dataInputPeriods).map("openingDate").compact().min(),
             dataInputEndDate: _(baseDataset.dataInputPeriods).map("closingDate").compact().max(),
         };
-        const {dataset, associations} = this._getNewData(baseDataset, baseAssociations);
+        const {dataset, associations} = this._getDataFromPorject(baseDataset, baseAssociations);
         return {
             data: {associations, dataset},
             active: 0,
@@ -88,44 +88,36 @@ const DataSetFormSteps = React.createClass({
         };
     },
 
-    _getNewData(dataset, associations) {
+    _getDataFromPorject(dataset, associations) {
         const {project} = associations;
-        const clonedDataset = dataset.clone();
-        const clonedAssociations = _.clone(associations);
 
         if (project) {
+            const clonedDataset = dataset.clone();
+            const clonedAssociations = _.clone(associations);
             const getOrgUnitIds = (ds) => ds.organisationUnits.toArray().map(ou => ou.id);
             clonedDataset.name = project.displayName ? project.displayName : "";
             clonedDataset.code = project.code ? project.code + " Data Set" : "";
-            clonedAssociations.dataInputStartDate = project.startDate ? new Date(project.startDate) : undefined;
-            clonedAssociations.dataInputEndDate = project.endDate ? new Date(project.endDate) : undefined; 
+            clonedAssociations.dataInputStartDate = 
+                project.startDate ? new Date(project.startDate) : undefined;
+            clonedAssociations.dataInputEndDate = 
+                project.endDate ? new Date(project.endDate) : undefined; 
             clonedDataset.dataInputPeriods = this._getDataInputPeriods(
                 clonedAssociations.dataInputStartDate, clonedAssociations.dataInputEndDate);
             clonedDataset.organisationUnits = project.organisationUnits;
-            const overwritten = (
-                (associations.dataInputStartDate && 
-                    associations.dataInputStartDate.getTime() != clonedAssociations.dataInputStartDate.getTime()) ||
-                (associations.dataInputEndDate && 
-                    associations.dataInputEndDate.getTime() != clonedAssociations.dataInputEndDate.getTime()) ||
-                (dataset.name && (dataset.name !== clonedDataset.name)) || 
-                (dataset.code && (dataset.code !== clonedDataset.code)) ||
-                (!_.isEmpty(getOrgUnitIds(dataset)) &&
-                    !_.isEqual(getOrgUnitIds(dataset), getOrgUnitIds(clonedDataset)))
-            );
-            return {overwritten, dataset: clonedDataset, associations: clonedAssociations};
+            return {dataset: clonedDataset, associations: clonedAssociations};
         } else {
-            return {overwritten: false, dataset, associations};
+            return {dataset, associations};
         }
     },
 
-    _updateDataFromAssociations(fieldPath) {
+    _updateDataFromAssociations(fieldPath, oldValue) {
         const {dataset, associations} = this.state.data;
 
         switch (fieldPath) {
             case "associations.project":
-                const {dataset: newDataset, associations: newAssociations, overwritten} = 
-                    this._getNewData(dataset, associations); 
-                if (!overwritten || confirm(this.getTranslation("confirm_project_updates"))) {
+                const {dataset: newDataset, associations: newAssociations} = 
+                    this._getDataFromPorject(dataset, associations); 
+                if (!oldValue || !newAssociations.project || confirm(this.getTranslation("confirm_project_updates"))) {
                     this.state.data = {dataset: newDataset, associations: newAssociations}
                 }
                 break;
@@ -139,8 +131,9 @@ const DataSetFormSteps = React.createClass({
 
     _onFieldsChange(stepId, fieldPath, newValue) {
         const {dataset, associations} = this.state.data;
+        const oldValue = fp.get(fieldPath, this.state.data);
         _.set(this.state.data, fieldPath, newValue);
-        this._updateDataFromAssociations(fieldPath);
+        this._updateDataFromAssociations(fieldPath, oldValue);
         this.setState({data: this.state.data});
     },
 
