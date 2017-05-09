@@ -1,5 +1,6 @@
-d2 Starter app
-==============
+# dataset-configuration
+
+A DHIS2 webapp for managing dataset objects.
 
 ## Start a development server
 
@@ -13,11 +14,12 @@ $ yarn start
 
 ## Use the development version of d2-ui
 
-Clone the d2-ui respository (branch `dataset-configuration`) and create a link:
+Clone the d2-ui repository, checkout the branch you want to test and create a link using `yarn`:
 
 ```
-$ git clone -b dataset-configuration https://github.com/eyeseetea/d2-ui
+$ git clone https://github.com/eyeseetea/d2-ui
 $ cd d2-ui
+$ git checkout BRANCH_TO_TEST
 $ yarn install && yarn run build
 $ yarn link
 ```
