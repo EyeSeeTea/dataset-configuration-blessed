@@ -78,7 +78,7 @@ const DataSetFormSteps = React.createClass({
             dataInputStartDate: _(baseDataset.dataInputPeriods).map("openingDate").compact().min(),
             dataInputEndDate: _(baseDataset.dataInputPeriods).map("closingDate").compact().max(),
         };
-        const {dataset, associations} = this._getDataFromPorject(baseDataset, baseAssociations);
+        const {dataset, associations} = this._getDataFromProject(baseDataset, baseAssociations);
         return {
             data: {associations, dataset},
             active: 0,
@@ -88,7 +88,7 @@ const DataSetFormSteps = React.createClass({
         };
     },
 
-    _getDataFromPorject(dataset, associations) {
+    _getDataFromProject(dataset, associations) {
         const {project} = associations;
 
         if (project) {
@@ -116,7 +116,7 @@ const DataSetFormSteps = React.createClass({
         switch (fieldPath) {
             case "associations.project":
                 const {dataset: newDataset, associations: newAssociations} = 
-                    this._getDataFromPorject(dataset, associations); 
+                    this._getDataFromProject(dataset, associations); 
                 if (!oldValue || !newAssociations.project || confirm(this.getTranslation("confirm_project_updates"))) {
                     this.state.data = {dataset: newDataset, associations: newAssociations}
                 }
