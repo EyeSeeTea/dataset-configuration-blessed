@@ -75,6 +75,7 @@ const GeneralInformation = React.createClass({
                     message: this.getTranslation(Validators.isRequired.message),
                 }],
             }),
+
             FormHelpers.getTextField({
                 name: "dataset.code",
                 label: this.getTranslation("code"),
@@ -83,24 +84,28 @@ const GeneralInformation = React.createClass({
                     this._getAsyncUniqueValidator(this.context.d2.models.dataSet, "code"),
                 ],
             }),
+
             FormHelpers.getTextField({
                 name: "dataset.description",
                 label: this.getTranslation("description"),
                 value: dataset.description,
                 multiLine: true,
             }),
+
             FormHelpers.getTextField({
                 name: "dataset.expiryDays",
                 label: this.getTranslation("expiry_days"),
                 value: dataset.expiryDays,
                 type: "number",
             }),
+
             FormHelpers.getTextField({
                 name: "dataset.openFuturePeriods",
                 label: this.getTranslation("open_future_periods"),
                 value: dataset.openFuturePeriods,
                 type: "number",
             }),
+
             FormHelpers.getSelectField({
                 name: "dataset.periodType", 
                 label: this.getTranslation("period_type"),
@@ -108,23 +113,27 @@ const GeneralInformation = React.createClass({
                 options: periodTypes.map(pt => ({text: pt, value: pt})), 
                 value: dataset.periodType,
             }),
-            {
-                name: "dataset.dataInputPeriods",
-                component: DataInputPeriods,
-                value: dataset.dataInputPeriods,
-                props: {
-                    model: dataset,
-                    onChange: (data) => 
-                        this._onUpdateField("dataset.dataInputPeriods", data.target.value),
-                    labelText: FormHelpers.getLabel(this.getTranslation("data_input_periods")),
-                },
-            },
+
+            FormHelpers.getDateField({
+                name: "associations.dataInputStartDate",
+                value: associations.dataInputStartDate,
+                label: FormHelpers.getLabel(this.getTranslation("data_input_start_date")),
+                onChange: (date) => this._onUpdateField("associations.dataInputStartDate", date),
+            }),
+
+            FormHelpers.getDateField({
+                name: "associations.dataInputEndDate",
+                value: associations.dataInputEndDate,
+                label: FormHelpers.getLabel(this.getTranslation("data_input_end_date")),
+                onChange: (date) => this._onUpdateField("associations.dataInputEndDate", date),
+            }),
+
             FormHelpers.getBooleanField({
                 name: "dataset.notifyCompletingUser",
                 label: this.getTranslation("notify_completing_user"),
                 value: dataset.notifyCompletingUser,
                 onChange: this._onUpdateField,
-            })
+            }),
         ];
 
         return (

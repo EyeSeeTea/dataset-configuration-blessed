@@ -1,8 +1,9 @@
 import TextField from 'd2-ui/lib/form-fields/TextField.js';
 import Dropdown from './Dropdown.component';
+import RichDropdown from './RichDropdown.component';
 import CheckBox from 'd2-ui/lib/form-fields/CheckBox.component';
-
 import MultiSelect from './MultiSelect.component';
+import DateSelect from './form-fields/date-select';
 
 function getLabel(label, isRequired) {
     return label + (isRequired ? " (*)" : "");
@@ -40,6 +41,23 @@ function getSelectField({name, label, options, value = undefined, isRequired = f
     };
 }
 
+function getRichSelectField({name, label, options, filterOptions, 
+                             value = undefined, isRequired = false, controls = []}) {
+    return {
+        name: name,
+        component: RichDropdown,
+        value: value,
+        props: {
+            options: options,
+            filterOptions: filterOptions,
+            isRequired: isRequired,
+            labelText: getLabel(label, isRequired),
+            style: {width: "100%"},
+            controls: controls,
+        },
+    };
+}
+
 function getBooleanField({name, label, onChange, value = false}) {
     return {
         name: name,
@@ -66,4 +84,25 @@ function getMultiSelect({name, label, onChange, options = [], selected = []}) {
     };
 }
 
-export default {getLabel, getTextField, getSelectField, getBooleanField, getMultiSelect}
+function getDateField({name, label, onChange, value = undefined, isRequired = false}) {
+    return {
+        name: name,
+        component: DateSelect,
+        value: value,
+        props: {
+            labelText: getLabel(label, isRequired),
+            onChange: (data) => onChange(data.target.value),
+            fullWidth: true,
+        },
+    };
+}
+
+export default {
+    getLabel, 
+    getTextField, 
+    getSelectField, 
+    getRichSelectField,
+    getBooleanField, 
+    getMultiSelect,
+    getDateField,
+}

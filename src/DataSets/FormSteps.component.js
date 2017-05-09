@@ -3,6 +3,8 @@ import Translate from 'd2-ui/lib/i18n/Translate.mixin';
 import fp from 'lodash/fp';
 import Wizard from '../Wizard/Wizard.component';
 import { goToRoute } from '../router';
+import { generateUid } from 'd2/lib/uid';
+import moment from 'moment';
 
 import InitialConfig from './Forms/InitialConfig.component';
 import GeneralInformation from './Forms/GeneralInformation.component';
@@ -18,14 +20,35 @@ const DataSetFormSteps = React.createClass({
     },
 
     config: {
-        categoryOptionsProjectsId: "MRwzyV0kXv9",
-        categoryOptionsCoreCompetencyId: "ouNRBWIbnxY",
+        categoryProjectsId: "MRwzyV0kXv9",
+        categoryCoreCompetencyId: "ouNRBWIbnxY",
         categoryComboId: "GmXXE8fiCK5",
     },
 
     _update(model, attributes) {
         _.forEach(attributes, (k, v) => { model[k] = v; });
         return model;
+    },
+
+    _getDataInputPeriods(startDate, endDate) {
+        if (startDate && endDate) {
+            const endDate_ = moment(endDate);
+            let currentDate = moment(startDate);
+            let periods = [];
+
+            while (currentDate <= endDate_) {
+                periods.push({
+                    id: generateUid(), 
+                    period: {id: currentDate.format("YYYYMM")}, 
+                    openingDate: startDate, 
+                    closingDate: endDate,
+                });
+                currentDate.add(1, "months").startOf("month");
+            }
+            return periods;
+        } else {
+            return [];
+        }
     },
 
     _getInitialModel() {
@@ -47,37 +70,17 @@ const DataSetFormSteps = React.createClass({
         });
     },
 
-    _updateDatasetFromAssociations(dataset, associations) {
-        const {project} = associations;
-        const clonedDataset = dataset.clone();
-
-        if (project) {
-            const getOrgUnitIds = (ds) => ds.organisationUnits.toArray().map(ou => ou.id);
-            clonedDataset.name = project.displayName ? project.displayName : "";
-            clonedDataset.code = project.code ? project.code + " Data Set" : "";
-            clonedDataset.organisationUnits = project.organisationUnits;
-            const overwritten = (
-                (dataset.name && (dataset.name !== clonedDataset.name)) || 
-                (dataset.code && (dataset.code !== clonedDataset.code)) ||
-                (!_.isEmpty(getOrgUnitIds(dataset)) &&
-                    !_.isEqual(getOrgUnitIds(dataset), getOrgUnitIds(clonedDataset)))
-            );
-            return {dataset: clonedDataset, overwritten};
-        } else {
-            return {dataset: dataset, overwritten: false};
-        }
-    },
-
     getInitialState() {
-        const associations = {
+        const baseDataset = this._getInitialModel();
+        const baseAssociations = {
             project: null,
             coreCompetencies: [],
-        }
-        const datasetBase = this._getInitialModel();
-        const {dataset} = this._updateDatasetFromAssociations(datasetBase, associations);
-        const data = {associations: associations, dataset: dataset};
+            dataInputStartDate: _(baseDataset.dataInputPeriods).map("openingDate").compact().min(),
+            dataInputEndDate: _(baseDataset.dataInputPeriods).map("closingDate").compact().max(),
+        };
+        const {dataset, associations} = this._getDataFromProject(baseDataset, baseAssociations);
         return {
-            data: data,
+            data: {associations, dataset},
             active: 0,
             doneUntil: 0,
             validating: false,
@@ -85,22 +88,52 @@ const DataSetFormSteps = React.createClass({
         };
     },
 
-    _associationUpdates(fieldPath, oldValue, newValue) {
-        if (fieldPath == "associations.project") {
-            const {dataset, associations} = this.state.data;
-            const {dataset: newDataset, overwritten} = 
-                this._updateDatasetFromAssociations(dataset, associations);
+    _getDataFromProject(dataset, associations) {
+        const {project} = associations;
 
-            if (!overwritten || confirm(this.getTranslation("confirm_project_updates"))) {
-                this.state.data.dataset = newDataset;
-            }
+        if (project) {
+            const clonedDataset = dataset.clone();
+            const clonedAssociations = _.clone(associations);
+            const getOrgUnitIds = (ds) => ds.organisationUnits.toArray().map(ou => ou.id);
+            clonedDataset.name = project.displayName ? project.displayName : "";
+            clonedDataset.code = project.code ? project.code + " Data Set" : "";
+            clonedAssociations.dataInputStartDate = 
+                project.startDate ? new Date(project.startDate) : undefined;
+            clonedAssociations.dataInputEndDate = 
+                project.endDate ? new Date(project.endDate) : undefined; 
+            clonedDataset.dataInputPeriods = this._getDataInputPeriods(
+                clonedAssociations.dataInputStartDate, clonedAssociations.dataInputEndDate);
+            clonedDataset.organisationUnits = project.organisationUnits;
+            return {dataset: clonedDataset, associations: clonedAssociations};
+        } else {
+            return {dataset, associations};
+        }
+    },
+
+    _updateDataFromAssociations(fieldPath, oldValue) {
+        const {dataset, associations} = this.state.data;
+
+        switch (fieldPath) {
+            case "associations.project":
+                const {dataset: newDataset, associations: newAssociations} = 
+                    this._getDataFromProject(dataset, associations); 
+                if (!oldValue || !newAssociations.project || confirm(this.getTranslation("confirm_project_updates"))) {
+                    this.state.data = {dataset: newDataset, associations: newAssociations}
+                }
+                break;
+            case "associations.dataInputStartDate":
+            case "associations.dataInputEndDate":
+                this.state.data.dataset.dataInputPeriods =
+                    this._getDataInputPeriods(associations.dataInputStartDate, associations.dataInputEndDate)
+                break;
         }
     },
 
     _onFieldsChange(stepId, fieldPath, newValue) {
+        const {dataset, associations} = this.state.data;
         const oldValue = fp.get(fieldPath, this.state.data);
         _.set(this.state.data, fieldPath, newValue);
-        this._associationUpdates(fieldPath, oldValue, newValue);
+        this._updateDataFromAssociations(fieldPath, oldValue);
         this.setState({data: this.state.data});
     },
 
