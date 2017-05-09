@@ -1514,7 +1514,7 @@ d2-manifest@^1.0.0:
     minimist "^1.1.0"
     readline-sync "^1.4.1"
 
-"d2-ui@github:EyeSeeTea/d2-ui#feature/installable-from-github":
+"d2-ui@github:EyeSeeTea/d2-ui#dataset-configuration":
   version "26.1.7"
   resolved "https://codeload.github.com/EyeSeeTea/d2-ui/tar.gz/339ae85fbbb9464fd93be80175a1e51d97696fbd"
 
