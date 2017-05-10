@@ -1516,7 +1516,7 @@ d2-manifest@^1.0.0:
 
 "d2-ui@github:EyeSeeTea/d2-ui#dataset-configuration":
   version "26.1.7"
-  resolved "https://codeload.github.com/EyeSeeTea/d2-ui/tar.gz/339ae85fbbb9464fd93be80175a1e51d97696fbd"
+  resolved "https://codeload.github.com/EyeSeeTea/d2-ui/tar.gz/3b525de35d1852b75d00a5f0bb06c25a182614b7"
 
 d2-utilizr@^0.2.9:
   version "0.2.13"
