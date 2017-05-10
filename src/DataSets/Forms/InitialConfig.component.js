@@ -1,7 +1,6 @@
 import React from 'react';
 import Translate from 'd2-ui/lib/i18n/Translate.mixin';
 import FormBuilder from 'd2-ui/lib/forms/FormBuilder.component';
-import CheckBox from 'd2-ui/lib/form-fields/CheckBox.component';
 import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
 import FormHelpers from '../../forms/FormHelpers';
 import moment from 'moment';
@@ -66,18 +65,8 @@ const InitialConfig = React.createClass({
             controls.seeAllProjects || isProjectOpen(this.state.projects[projectOption.value]));
     },
 
-    _getProjectOptions() {
-        return _.values(this.state.projects).map(project => ({
-            value: project.id, 
-            text: project.displayName, 
-        }));
-    },
-
-    _getCoreCompetenciesOptions() {
-        return _.values(this.state.coreCompetencies).map(cc => ({
-            value: cc.id, 
-            text: cc.displayName, 
-        }));
+    _getOptionsFromIndexedObjects(objects) {
+        return _(objects).values().map(obj => ({value: obj.id, text: obj.displayName})).value();
     },
 
     render() {
@@ -95,7 +84,7 @@ const InitialConfig = React.createClass({
                 name: 'associations.project',
                 label: this.getTranslation('linked_project'),
                 value: associations.project ? associations.project.id : null,
-                options: this._getProjectOptions(),
+                options: this._getOptionsFromIndexedObjects(this.state.projects),
                 filterOptions: this._filterProjects,
                 controls: [
                     {
@@ -107,7 +96,7 @@ const InitialConfig = React.createClass({
             }),
             FormHelpers.getMultiSelect({
                 name: 'associations.coreCompetencies',
-                options: this._getCoreCompetenciesOptions(),
+                options: this._getOptionsFromIndexedObjects(this.state.coreCompetencies),
                 onChange: this._onCoreCompetenciesUpdate,
                 label: this.getTranslation('core_competencies'),
                 selected: _.map(associations.coreCompetencies, "id"),
