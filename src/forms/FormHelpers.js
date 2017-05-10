@@ -88,10 +88,10 @@ function getDateField({name, label, onChange, value = undefined, isRequired = fa
     return {
         name: name,
         component: DateSelect,
-        value: value,
+        value: value || undefined,
         props: {
             labelText: getLabel(label, isRequired),
-            onChange: (data) => onChange(data.target.value),
+            onChange: (data) => onChange(data.target.value || undefined),
             fullWidth: true,
         },
     };
