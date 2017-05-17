@@ -20,10 +20,10 @@
     "App"
   ],
   "author": {
-    "name" : "EyeSeeTea Team",
+    "name": "EyeSeeTea Team",
     "email": "hello@eyeseetea.com",
     "url": "https://github.com/EyeSeeTea/dataset-configuration"
-	},
+  },
   "license": "GPL-3.0",
   "dependencies": {
     "jquery": "^2.2.3",
@@ -57,6 +57,7 @@
     "jsdom": "^9.0.0",
     "loglevel": "^1.4.0",
     "material-ui": "^0.17",
+    "material-ui-scrollable-tabs": "^1.0.0",
     "mocha": "^3.2.0",
     "moment": "^2.18.1",
     "node-sass": "^3.4.2",
@@ -91,7 +92,7 @@
   },
   "homepage": "https://github.com/EyeSeeTea/dataset-configuration",
   "manifest.webapp": {
-  	"name": "Dataset Configuration",
+    "name": "Dataset Configuration",
     "icons": {
       "48": "icon.png"
     }
