@@ -5,6 +5,7 @@ import update from 'immutability-helper';
 import MultipleDataTableRow from './MultipleDataTableRow.component';
 import DataTableHeader from 'd2-ui/lib/data-table/DataTableHeader.component';
 import MultipleDataTableContextMenu from './MultipleDataTableContextMenu.component';
+import lodashMixins from '../utils/lodash-mixins';
 
 const MultipleDataTable = React.createClass({
     propTypes: {
@@ -17,12 +18,13 @@ const MultipleDataTable = React.createClass({
         onColumnSort: React.PropTypes.func,
         styles: React.PropTypes.shape({
             table: React.PropTypes.object,
+            header: React.PropTypes.object,
         }),
     },
 
     getDefaultProps() {
         return {
-            styles: {table: {}},
+            styles: {},
         };
     },
 
@@ -72,8 +74,7 @@ const MultipleDataTable = React.createClass({
 
     _onColumnSortingToggle(headerName) {
         const newSortingDirection = this.state.sorting && this.state.sorting[0] == headerName ?
-            (this.state.sorting[1] == "asc" ? "desc" : "asc") : 
-            "asc";
+            (this.state.sorting[1] == "asc" ? "desc" : "asc") : "asc";
         const newSorting = [headerName, newSortingDirection];
         this.setState({sorting: newSorting});
         this.props.onColumnSort && this.props.onColumnSort(newSorting);
@@ -83,21 +84,19 @@ const MultipleDataTable = React.createClass({
         const sortableColumns = this.props.sortableColumns || [];
         const [currentSortedColumn, currentSortedDirection] = (this.state.sorting || []);
 
-        return this.state.columns.map((column, index) => {
-            const headerName = column.name;
-            return (
-                <DataTableHeader 
-                    key={index}
-                    isOdd={Boolean(index % 2)}
-                    name={headerName}
-                    contents={column.contents}
-                    text={column.text}
-                    sortable={!!column.sortable}
-                    sorting={currentSortedColumn == headerName ? currentSortedDirection : null}
-                    onSortingToggle={this._onColumnSortingToggle.bind(this, headerName)}
-                />
-            );
-        });
+        return this.state.columns.map((column, index) => (
+            <DataTableHeader 
+                key={column.name}
+                style={column.style}
+                isOdd={Boolean(index % 2)}
+                name={column.name}
+                contents={column.contents}
+                text={column.text}
+                sortable={!!column.sortable}
+                sorting={currentSortedColumn == column.name ? currentSortedDirection : null}
+                onSortingToggle={this._onColumnSortingToggle.bind(this, column.name)}
+            />
+        ));
     },
 
     renderRows() {
@@ -117,7 +116,11 @@ const MultipleDataTable = React.createClass({
     },
     
     render() {
-        const {styles} = this.props || {};
+        const defaultStyles = {
+            table: {},
+            header: {},
+        }
+        const styles = lodashMixins.deepMerge(defaultStyles, this.props.styles);
 
         return (
            <div className="data-table" style={styles.table}>

@@ -8,6 +8,7 @@ import { config } from 'd2/lib/d2';
 const SearchBox = React.createClass({
     propTypes: {
         searchObserverHandler: React.PropTypes.func.isRequired,
+        debounce: React.PropTypes.number,
     },
 
     mixins: [ObservedEvents, Translate],

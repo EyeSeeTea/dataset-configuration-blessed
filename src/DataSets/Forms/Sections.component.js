@@ -8,12 +8,18 @@ import LoadingStatus from '../../LoadingStatus/LoadingStatus.component';
 import ObserverRegistry from '../../utils/ObserverRegistry.mixin';
 import Action from 'd2-ui/lib/action/Action';
 import Sidebar from 'd2-ui/lib/sidebar/Sidebar.component';
-import {Tabs, Tab} from 'material-ui-scrollable-tabs/Tabs';
+//import {Tabs, Tab} from 'material-ui-scrollable-tabs/Tabs';
+import {Tabs, Tab} from 'material-ui/Tabs';
 import SelectField from 'material-ui/SelectField/SelectField';
 import MenuItem from 'material-ui/MenuItem/MenuItem';
 import Checkbox from 'material-ui/Checkbox/Checkbox';
 import CollapsibleBox from '../../components/collapsible-box/CollapsibleBox';
 import Chip from 'material-ui/Chip/Chip';
+import fp from 'lodash/fp';
+import Popover from 'material-ui/Popover/Popover';
+import MoreVert from 'material-ui/svg-icons/navigation/more-vert';
+import IconButton from 'material-ui/IconButton/IconButton';
+import PopoverAnimationDefault from 'material-ui/Popover/PopoverAnimationDefault';
 
 const Sections = React.createClass({
     mixins: [Translate, ObserverRegistry],
@@ -56,11 +62,17 @@ const Sections = React.createClass({
             },
         ], "id");
 
-        const sections = _([
+        const sectionNames = [
             'Education', 'Education B', 
             'Shelter', 'Shelter B',
             'Food security', 'Food security B',
-        ]).map((sectionName, idx) => ({key: String(idx), label: sectionName})).value();
+        ];
+
+        const sections = _(sectionNames).map((sectionName, idx) => ({
+            key: String(idx), 
+            label: sectionName,
+            config: {show_row_totals: false, show_column_totals: false},
+        })).value();
 
         const subsections = [
             {key: '', label: 'All'},
@@ -70,14 +82,16 @@ const Sections = React.createClass({
 
         return {
             isLoading: true,
-            dataRows: dataRows,
-            currentSection: sections[0],
+            dataRowsBySection: 
+                _(sections).map(section => [section.key, _.clone(dataRows)]).fromPairs().value(),
+            currentSectionKey: sections[0].key,
             sections: sections,
             subsections: subsections,
             sidebarOpen: true,
             filters: {},
             filterName: null,
             sorting: null,
+            sectionConfig: {open: false, anchorEl: null},
         };
     },
 
@@ -112,9 +126,9 @@ const Sections = React.createClass({
         this.setState({filters: newFilters});
     },
 
-    _renderSelectFilter(column, styles) {
+    _renderSelectFilter(dataRowsAll, column, styles) {
         const label = this.getTranslation(column);
-        const entries = _(this.state.dataRows).values().map(column).uniq()
+        const entries = _(dataRowsAll).values().map(column).uniq()
             .map(value => ({value: value, text: value})).value();
         const defaultEntry = {value: null, text: ""};
         const allEntries = [defaultEntry].concat(entries);
@@ -125,114 +139,221 @@ const Sections = React.createClass({
                 value={this.state.filters[column]}
                 onChange={(event, index, value) => this._onFilter(column, value)}
             >
-                {allEntries.map(e => <MenuItem key={e.value} value={e.value} primaryText={e.text} />)}
+                {allEntries.map(e => 
+                    <MenuItem key={e.value} value={e.value} primaryText={e.text} />)}
             </SelectField>
         );
     },
 
-    _selectRows(visibleDataRowIds, selectedHeaderChecked) {
-        const newDataRows = _.mapValues(this.state.dataRows, (dataRow, id) => 
-            !_.includes(visibleDataRowIds, id) ? dataRow :
-                _.merge(dataRow, {selected: selectedHeaderChecked}));
-        this.setState({dataRows: newDataRows});
+    _renderSearchBox() {
+        const {currentSectionKey} = this.state;
+        const wrapperStyle = {
+            display: 'inline-block', 
+            width: '25%', 
+            position: 'relative', 
+            top: '-16px',
+            marginLeft: '10px',
+            marginRight: '10px',
+        };
+
+        return (
+            <div style={wrapperStyle}>
+                <SearchBox
+                    key={currentSectionKey}
+                    searchObserverHandler={this._setFilterName}
+                    debounce={100}
+                />
+            </div>
+        );
     },
 
-    _onActiveChecked(dataRow) {
-        const {dataRows} = this.state;
-        const path = [dataRow.id, "selected"];        
-        const oldValue = _.get(dataRows, path);
-        const newDataRows = _.set(dataRows, path, !oldValue);
-        return this.setState({dataRows: newDataRows});
+    _selectRows(visibleDataRows, selectedHeaderChecked) {
+        const newState = visibleDataRows.reduce(
+            (state, row) => {
+                const path = ["dataRowsBySection", this.state.currentSectionKey, row.id, "selected"];
+                return fp.set(path, selectedHeaderChecked, state);
+            },
+            this.state);
+        this.setState(newState);
+    },
+
+    _onActiveToggled(dataRow) {
+        const {currentSectionKey} = this.state;
+        const path = ["dataRowsBySection", currentSectionKey, dataRow.id, "selected"];        
+        const oldValue = fp.get(path, this.state);
+        this.setState(fp.set(path, !oldValue, this.state));
     },
 
     _onChangeSection(sectionKey) {
-        const newCurrentSection = this.state.sections[sectionKey];
-        this.setState({currentSection: newCurrentSection});
+        this.setState({currentSectionKey: sectionKey, filters: {}, filterName: null});
+    },
+
+    _onSectionConfig(currentSectionKey, key, value) {
+        const {sections} = this.state;
+        const newSections = _(sections)
+            .map(sec => sec.key == currentSectionKey ? fp.set(["config", key], value, sec) : sec)
+            .value();
+        this.setState({sections: newSections});
+    },
+
+    _onSectionConfigRequestOpen(ev) {
+        ev.preventDefault();
+        this.setState({sectionConfig: {open: true, anchorEl: ev.currentTarget}});
+    },
+
+    _onSectionConfigRequestClose() {
+        this.setState(fp.set("sectionConfig.open", false, this.state));
+    },
+
+    _renderSectionConfig() {
+        const {currentSectionKey, sections, sectionConfig} = this.state;
+        const currentSection = sections[currentSectionKey];
+
+        return (
+            <div style={{float: 'right', margin: '10px'}}>
+                <IconButton 
+                    tooltip={this.getTranslation('section_config')} 
+                    onClick={this._onSectionConfigRequestOpen}
+                >
+                    <MoreVert />
+                </IconButton>
+
+                <Popover 
+                    open={sectionConfig.open}
+                    anchorEl={sectionConfig.anchorEl}
+                    anchorOrigin={{horizontal: 'left', vertical: 'bottom'}}
+                    targetOrigin={{horizontal: 'left', vertical: 'top'}}
+                    onRequestClose={this._onSectionConfigRequestClose}
+                    style={{width: 300, padding: 15, overflowY: 'hidden'}}
+                >
+                    <Checkbox 
+                        style={{marginTop: 10, marginBottom: 15}}
+                        label={this.getTranslation("show_row_totals")}
+                        checked={currentSection.config.show_row_totals}
+                        onCheck={(ev, value) =>
+                            this._onSectionConfig(currentSection.key, "show_row_totals", value)} 
+                    />
+
+                    <Checkbox 
+                        style={{marginTop: 10, marginBottom: 15}}
+                        label={this.getTranslation("show_column_totals")}
+                        checked={currentSection.config.show_column_totals}
+                        onCheck={(ev, value) => 
+                            this._onSectionConfig(currentSection.key, "show_column_totals", value)} 
+                    />
+                </Popover>
+            </div>
+        );
+    },
+
+    _renderTabs() {
+        const {subsections, filters} = this.state;
+        const currentSubsectionKey = filters.subsection || subsections[0].key;
+
+        return (
+            <Tabs style={{width: '100%', marginBottom: '0px'}} key={this.state.currentSectionKey}>
+                {subsections.map(subsection => 
+                    <Tab 
+                        key={subsection.key}
+                        style={{fontWeight: 'inherit', fontSize: '12px'}}
+                        buttonStyle={{fontWeight: 'inherit', fontSize: '12px'}}
+                        label={subsection.label} 
+                        onActive={() => this._onFilter("subsection", subsection.key)}
+                    />
+                )}
+            </Tabs>
+        );
+    },
+
+    _renderSidebar() {
+        const {sidebarOpen, sections, currentSectionKey} = this.state;
+        const currentSection = sections[currentSectionKey];
+        const sidebarWidth = 250;
+
+        return (
+            <CollapsibleBox 
+                open={sidebarOpen} 
+                styles={{wrapper: {open: {width: sidebarWidth + 5}}}}
+                onToggle={isOpen => this.setState({sidebarOpen: isOpen})}
+            >
+                <Sidebar
+                    sections={sections}
+                    styles={{leftBar: {width: sidebarWidth}}}
+                    onChangeSection={this._onChangeSection}
+                    currentSection={currentSection.key}
+                />
+            </CollapsibleBox>
+        );
     },
 
     _renderForm() {
-        const styles = {
-            tabs: {
-                width: '100%',
-                marginBottom: '0px',
-                backgroundColor: "#e4e4e4",
-            },
-        };
-
-        const sidebarWidth = 250;
         const contextActions = Action.createActionsFromNames([]);
         const contextMenuIcons = {};
-
-        const dataRows = this._getFilteredDataRows(this.state.dataRows);
-        const selectedHeaderChecked = _.every(dataRows, dr => dr.selected);
+        const {sidebarOpen, currentSectionKey, sections, subsections, filters} = this.state;
+        const dataRowsAll = this.state.dataRowsBySection[currentSectionKey];
+        const dataRows = this._getFilteredDataRows(dataRowsAll);
+        const selectedHeaderChecked = !_.isEmpty(dataRows) && _.every(dataRows, dr => dr.selected);
         const rows = _.map(dataRows, dataRow =>
             _.mapValues(dataRow, (value, name) => 
                 name != "selected" ? value :
-                    <Checkbox checked={value} onCheck={() => this._onActiveChecked(dataRow)} />
+                    <Checkbox 
+                        checked={value} 
+                        iconStyle={{width: 'auto'}} 
+                        onCheck={() => this._onActiveToggled(dataRow)} 
+                    />
             )
         );
-
-        const {sections, subsections} = this.state;
-        
-        const columns = [
+        const currentSection = sections[currentSectionKey];
+        const selectedColumnContents = (
+            <Checkbox 
+                checked={selectedHeaderChecked}
+                onCheck={() => this._selectRows(dataRows, !selectedHeaderChecked)} 
+                iconStyle={{width: 'auto'}}
+            />
+        );
+        const columns = _.compact([
             {
                 name: 'selected', 
+                style: {width: 20},
                 text: "",
                 sortable: false,
-                contents: 
-                    <Checkbox checked={selectedHeaderChecked}
-                              labelStyle={{color: ""}}
-                              label={this.getTranslation("selected")}
-                              onCheck={() => this._selectRows(_.map(dataRows, "id"), !selectedHeaderChecked)} />
+                contents: selectedColumnContents,
             },
-            {name: 'name', sortable: true}, 
-            {name: 'subsection', sortable: true}, 
-            {name: 'origin', sortable: true}, 
-            {name: 'disaggregation', sortable: true},
-        ];
-
-        const {sidebarOpen, currentSection} = this.state;
+            {
+                name: 'name', 
+                sortable: true, 
+                style: {width: '33%'},
+            }, 
+            filters.subsection ? null : {
+                name: 'subsection', 
+                sortable: true,
+            }, 
+            {
+                name: 'origin', 
+                sortable: true,
+            }, 
+            {
+                name: 'disaggregation',
+                sortable: true,
+            },
+        ]);
 
         return (
-            <div>
-                <CollapsibleBox 
-                    open={sidebarOpen} 
-                    styles={{wrapper: {open: {width: sidebarWidth + 5}}}}
-                    onToggle={isOpen => this.setState({sidebarOpen: isOpen})}
-                >
-                    <Sidebar
-                        sections={sections}
-                        styles={{leftBar: {width: sidebarWidth}}}
-                        onChangeSection={this._onChangeSection}
-                        currentSection={this.state.currentSection.key}
-                    />
-                </CollapsibleBox>
+            <div style={{display: 'flex'}}>
+                {this._renderSidebar()}
 
-                <div>
-                    {sidebarOpen ? null : <Chip style={{marginBottom: 10}}>{currentSection.label}</Chip>}
+                <div style={{width: '100%'}}>
+                    <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+                        {sidebarOpen ? null : 
+                            <Chip style={{marginRight: 10}}>{currentSection.label}</Chip>}
+                        {this._renderTabs()}
+                    </div>
 
-                    <Tabs style={styles.tabs} tabType="scrollable-buttons">
-                        {subsections.map(subsection => 
-                            <Tab 
-                                key={subsection.key} 
-                                label={subsection.label} 
-                                onActive={() => this._onFilter("subsection", subsection.key)}
-                            />)}
-                    </Tabs>
+                    {this._renderSectionConfig()}
 
-                    <div>
-                        <div style={{
-                                display: 'inline-block', 
-                                width: '30%', 
-                                position: 'relative', 
-                                top: '-16px',
-                                marginLeft: '10px',
-                                marginRight: '10px',
-                              }}>
-                            <SearchBox searchObserverHandler={this._setFilterName} debounce={100} />
-                        </div>
-
-                        {this._renderSelectFilter('origin', {width: '30%'})}
+                    <div style={{marginTop: -10}}>
+                        {this._renderSearchBox()}
+                        {this._renderSelectFilter(dataRowsAll, 'origin', {width: '30%'})}
                     </div>
 
                     <MultipleDataTable
@@ -249,8 +370,6 @@ const Sections = React.createClass({
                     {rows.length || this.state.isLoading ? 
                         null : <div>{this.getTranslation("no_elements_found")}</div>}
                 </div>
-
-                <div style={{clear: 'both'}}></div>
             </div>
         );
     },
