@@ -36,7 +36,7 @@ function getValueAfterValueTypeGuess(dataSource, columnName) {
 
 const MultipleDataTableRow = React.createClass({
     propTypes: {
-        columns: React.PropTypes.arrayOf(React.PropTypes.string).isRequired,
+        columns: React.PropTypes.array.isRequired,
         dataSource: React.PropTypes.object,
         isActive: React.PropTypes.bool,
         isEven: React.PropTypes.bool,

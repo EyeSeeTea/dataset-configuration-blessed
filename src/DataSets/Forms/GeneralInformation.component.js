@@ -22,7 +22,7 @@ const GeneralInformation = React.createClass({
     },
 
     componentDidMount() {
-        const categoryCombination = this.context.d2
+        this.context.d2
             .models.categoryCombos
             .list({
                 filter: ["dataDimensionType:eq:ATTRIBUTE", "name:eq:default"], 

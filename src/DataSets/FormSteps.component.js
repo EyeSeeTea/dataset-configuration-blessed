@@ -9,6 +9,7 @@ import moment from 'moment';
 import InitialConfig from './Forms/InitialConfig.component';
 import GeneralInformation from './Forms/GeneralInformation.component';
 import OrganisationUnit from './Forms/OrganisationUnit.component';
+import Sections from './Forms/Sections.component';
 import Save from './Forms/Save.component';
 
 const DataSetFormSteps = React.createClass({
@@ -81,8 +82,8 @@ const DataSetFormSteps = React.createClass({
         const {dataset, associations} = this._getDataFromProject(baseDataset, baseAssociations);
         return {
             data: {associations, dataset},
-            active: 0,
-            doneUntil: 0,
+            active: 3,
+            doneUntil: 3,
             validating: false,
             saveState: this.saveStates.DATAENTRY,
         };
@@ -228,6 +229,12 @@ const DataSetFormSteps = React.createClass({
                 id: 'organisationUnit',
                 title: this.getTranslation("organisation_unit"),
                 component: OrganisationUnit,
+                props: props,
+            },
+            {
+                id: 'sections',
+                title: this.getTranslation("step_sections"),
+                component: Sections,
                 props: props,
             },
             {
