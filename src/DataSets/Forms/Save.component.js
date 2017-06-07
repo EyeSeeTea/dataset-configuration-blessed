@@ -8,22 +8,22 @@ import CardText from 'material-ui/Card/CardText';
 const Save = React.createClass({
     mixins: [Translate],
 
-    states: {DATAENTRY: "DATAENTRY", SAVED: "SAVED", SAVE_ERROR: "SAVE_ERROR"},
-
     propTypes: {
         config: React.PropTypes.object,
-        data: React.PropTypes.object,
+        store: React.PropTypes.object,
         state: React.PropTypes.string,
         errors: React.PropTypes.arrayOf(React.PropTypes.string)
     },
 
     render() {
-        const {dataset} = this.props.data;
+        const {dataset} = this.props.store;
         const {state, errors} = this.props;
 
-        if (state == this.states.DATAENTRY) {
+        if (state === "DATAENTRY" || state === "SAVING") {
             return (
                 <div>
+                    {state === "SAVING" ? <LinearProgress /> : null}
+
                     <div>{this.getTranslation("wizard_presave_message")}</div>
 
                     <ul className="list-group">
@@ -39,7 +39,7 @@ const Save = React.createClass({
                     </ul>
                 </div>
             );
-        } else if (state == this.states.SAVE_ERROR) {
+        } else if (state === "SAVE_ERROR") {
             return (
                 <div className="alert alert-danger">
                     <div>{this.getTranslation("wizard_save_error_message")}</div>
@@ -49,7 +49,7 @@ const Save = React.createClass({
                     </ul>
                 </div>
             );
-        } else if (state == this.states.SAVED) {
+        } else if (state === "SAVED") {
             return (
                 <div className="alert alert-success">
                     <div>{this.getTranslation("dataset_saved")}</div>
