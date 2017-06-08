@@ -293,6 +293,10 @@ const Sections = React.createClass({
     _renderForm() {
         const {sidebarOpen, currentSectionName, sections, subsections, filters} = this.state;
         const currentSection = this.state.sections[currentSectionName];
+        if (!currentSection) {
+            return (<div>{this.getTranslation("no_elements_found")}</div>);
+        }
+        
         const dataElementsAll = _.values(currentSection.dataElements);
         const dataElements = this._getFilteredDataElements(dataElementsAll);
         const selectedHeaderChecked =
