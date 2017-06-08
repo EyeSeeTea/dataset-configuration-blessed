@@ -44,10 +44,7 @@ export default class DataSetStore {
         const baseDataset = this.getInitialModel();
         const baseAssociations = {
             project: null,
-            coreCompetencies: [
-                {id: "w9xzchV2HpS", name: "CAMP MANAGEMENT"},
-                {id: "n68b88gTcV8", name: "EDUCATION"},
-            ],
+            coreCompetencies: [],
             dataInputStartDate: _(baseDataset.dataInputPeriods).map("openingDate").compact().min(),
             dataInputEndDate: _(baseDataset.dataInputPeriods).map("closingDate").compact().max(),
             sections: [],
