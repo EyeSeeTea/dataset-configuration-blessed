@@ -10,7 +10,7 @@ const InitialConfig = React.createClass({
 
     propTypes: {
         config: React.PropTypes.object,
-        data: React.PropTypes.object,
+        store: React.PropTypes.object,
         onFieldsChange: React.PropTypes.func,
     },
 
@@ -19,7 +19,7 @@ const InitialConfig = React.createClass({
     },
 
     getInitialState() {
-        return {isLoading: true};
+        return {isLoading: true, errors: {}};
     },
 
     _getCategoryOptions(categoryId, fields = [":all"]) {
@@ -27,22 +27,39 @@ const InitialConfig = React.createClass({
             .models.categoryOptions
             .filter().on("categories.id").equals(categoryId)
             .list({fields: `id,${fields.join(',')}`, paging: false})
-            .then(categoryOptionsCollection => _.keyBy(categoryOptionsCollection.toArray(), "id"));
+            .then(collection => _.keyBy(collection.toArray(), "id"));
+    },
+
+    _getDataElementGroups(dataElementGroupSetId, fields = [":all"]) {
+        return this.context.d2
+            .models.dataElementGroups
+            .filter().on("dataElementGroupSet.id").equals(dataElementGroupSetId)
+            .list({fields: `id,${fields.join(',')}`, paging: false})
+            .then(collection => _.keyBy(collection.toArray(), "id"));
     },
 
     _getProjects() {
-        const fields = ["code", "displayName", "startDate", "endDate", "organisationUnits[:all]"];
+        const fields = ["code", "name", "startDate", "endDate", "organisationUnits[:all]"];
         return this._getCategoryOptions(this.props.config.categoryProjectsId, fields);
     },
 
     _getCoreCompetencies() {
-        const fields = ["displayName"];
-        return this._getCategoryOptions(this.props.config.categoryCoreCompetencyId, fields);
+        const fields = ["name"];
+        const degsId = this.props.config.dataElementGroupSetCoreCompetencyId;
+        return this._getDataElementGroups(degsId, fields);
     },
 
     componentWillReceiveProps(props) {
         if (props.validateOnRender) {
-            props.formStatus(true);
+            const {coreCompetencies} = this.props.store.associations;
+            if (_.isEmpty(coreCompetencies)) {
+                props.formStatus(false);
+                const error = this.getTranslation("select_one_core_competency");
+                this.setState({errors: {coreCompetencies: [error]}});
+            } else {
+                props.formStatus(true);
+                this.setState({errors: {}});
+            }
         }
     },
 
@@ -66,7 +83,7 @@ const InitialConfig = React.createClass({
     },
 
     _getOptionsFromIndexedObjects(objects) {
-        return _(objects).values().map(obj => ({value: obj.id, text: obj.displayName})).value();
+        return _(objects).values().map(obj => ({value: obj.id, text: obj.name})).value();
     },
 
     render() {
@@ -74,11 +91,11 @@ const InitialConfig = React.createClass({
             return (<LinearProgress />);
         } else {
             return this._renderForm();
-        }        
+        }
     },
 
     _renderForm() {
-        const {associations} = this.props.data;
+        const {associations} = this.props.store;
         const fields = [
             FormHelpers.getRichSelectField({
                 name: 'associations.project',
@@ -100,6 +117,7 @@ const InitialConfig = React.createClass({
                 onChange: this._onCoreCompetenciesUpdate,
                 label: this.getTranslation('core_competencies'),
                 selected: _.map(associations.coreCompetencies, "id"),
+                errors: this.state.errors.coreCompetencies,
             }),
         ];
 

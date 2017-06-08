@@ -16,7 +16,7 @@ const OrganisationUnit = React.createClass({
 
     propTypes: {
         config: React.PropTypes.object,
-        data: React.PropTypes.object,
+        store: React.PropTypes.object,
     },
 
     getInitialState() {
@@ -29,11 +29,11 @@ const OrganisationUnit = React.createClass({
 
     render() {
         const modelDefinition = {plural: "dataSets"};
-        const project = this.props.data.associations.project;
-        const model = this.props.data.dataset;
+        const project = this.props.store.associations.project;
+        const model = this.props.store.dataset;
 
         return (
-            <OrganisationUnitTreeMultiSelect 
+            <OrganisationUnitTreeMultiSelect
                 modelDefinition={modelDefinition}
                 model={model}
                 value={model.organisationUnits}

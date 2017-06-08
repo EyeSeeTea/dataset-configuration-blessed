@@ -71,7 +71,7 @@ function getBooleanField({name, label, onChange, value = false}) {
     };
 }
 
-function getMultiSelect({name, label, onChange, options = [], selected = []}) {
+function getMultiSelect({name, label, onChange, options = [], selected = [], errors = []}) {
     return {
         name: name,
         component: MultiSelect,
@@ -80,6 +80,7 @@ function getMultiSelect({name, label, onChange, options = [], selected = []}) {
             onChange: onChange,
             label: label,
             selected: selected,
+            errors: errors,
         }
     };
 }

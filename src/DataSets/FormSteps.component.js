@@ -1,10 +1,7 @@
 import React from 'react';
 import Translate from 'd2-ui/lib/i18n/Translate.mixin';
-import fp from 'lodash/fp';
 import Wizard from '../Wizard/Wizard.component';
 import { goToRoute } from '../router';
-import { generateUid } from 'd2/lib/uid';
-import moment from 'moment';
 
 import InitialConfig from './Forms/InitialConfig.component';
 import GeneralInformation from './Forms/GeneralInformation.component';
@@ -12,130 +9,29 @@ import OrganisationUnit from './Forms/OrganisationUnit.component';
 import Sections from './Forms/Sections.component';
 import Save from './Forms/Save.component';
 
+import DataSetStore from '../models/DataSetStore';
+
 const DataSetFormSteps = React.createClass({
     mixins: [Translate],
-
-    saveStates: {DATAENTRY: "DATAENTRY", SAVED: "SAVED", SAVE_ERROR: "SAVE_ERROR"},
-
-    propTypes: {
-    },
-
-    config: {
-        categoryProjectsId: "MRwzyV0kXv9",
-        categoryCoreCompetencyId: "ouNRBWIbnxY",
-        categoryComboId: "GmXXE8fiCK5",
-    },
-
-    _update(model, attributes) {
-        _.forEach(attributes, (k, v) => { model[k] = v; });
-        return model;
-    },
-
-    _getDataInputPeriods(startDate, endDate) {
-        if (startDate && endDate) {
-            const endDate_ = moment(endDate);
-            let currentDate = moment(startDate);
-            let periods = [];
-
-            while (currentDate <= endDate_) {
-                periods.push({
-                    id: generateUid(), 
-                    period: {id: currentDate.format("YYYYMM")}, 
-                    openingDate: startDate, 
-                    closingDate: endDate,
-                });
-                currentDate.add(1, "months").startOf("month");
-            }
-            return periods;
-        } else {
-            return [];
-        }
-    },
-
-    _getInitialModel() {
-        return this.context.d2.models.dataSet.create({
-            name: undefined,
-            code: undefined,
-            description: undefined,
-            expiryDays: 15,
-            openFuturePeriods: 1,
-            periodType: "Monthly",
-            dataInputPeriods: [],
-            categoryCombo: {id: this.config.categoryComboId},
-            notifyCompletingUser: true,
-            noValueRequiresComment: false,
-            legendSets: [],
-            organisationUnits: [],
-            skipOffline: false,
-            dataElementDecoration: true,
-        });
-    },
+    propTypes: {},
 
     getInitialState() {
-        const baseDataset = this._getInitialModel();
-        const baseAssociations = {
-            project: null,
-            coreCompetencies: [],
-            dataInputStartDate: _(baseDataset.dataInputPeriods).map("openingDate").compact().min(),
-            dataInputEndDate: _(baseDataset.dataInputPeriods).map("closingDate").compact().max(),
-        };
-        const {dataset, associations} = this._getDataFromProject(baseDataset, baseAssociations);
         return {
-            data: {associations, dataset},
-            active: 3,
-            doneUntil: 3,
+            store: new DataSetStore(this.context.d2, this.getTranslation),
+            active: 0,
+            doneUntil: 0,
             validating: false,
-            saveState: this.saveStates.DATAENTRY,
+            saving: false,
         };
-    },
-
-    _getDataFromProject(dataset, associations) {
-        const {project} = associations;
-
-        if (project) {
-            const clonedDataset = dataset.clone();
-            const clonedAssociations = _.clone(associations);
-            const getOrgUnitIds = (ds) => ds.organisationUnits.toArray().map(ou => ou.id);
-            clonedDataset.name = project.displayName ? project.displayName : "";
-            clonedDataset.code = project.code ? project.code + " Data Set" : "";
-            clonedAssociations.dataInputStartDate = 
-                project.startDate ? new Date(project.startDate) : undefined;
-            clonedAssociations.dataInputEndDate = 
-                project.endDate ? new Date(project.endDate) : undefined; 
-            clonedDataset.dataInputPeriods = this._getDataInputPeriods(
-                clonedAssociations.dataInputStartDate, clonedAssociations.dataInputEndDate);
-            clonedDataset.organisationUnits = project.organisationUnits;
-            return {dataset: clonedDataset, associations: clonedAssociations};
-        } else {
-            return {dataset, associations};
-        }
-    },
-
-    _updateDataFromAssociations(fieldPath, oldValue) {
-        const {dataset, associations} = this.state.data;
-
-        switch (fieldPath) {
-            case "associations.project":
-                const {dataset: newDataset, associations: newAssociations} = 
-                    this._getDataFromProject(dataset, associations); 
-                if (!oldValue || !newAssociations.project || confirm(this.getTranslation("confirm_project_updates"))) {
-                    this.state.data = {dataset: newDataset, associations: newAssociations}
-                }
-                break;
-            case "associations.dataInputStartDate":
-            case "associations.dataInputEndDate":
-                this.state.data.dataset.dataInputPeriods =
-                    this._getDataInputPeriods(associations.dataInputStartDate, associations.dataInputEndDate)
-                break;
-        }
     },
 
     _onFieldsChange(stepId, fieldPath, newValue) {
-        const {dataset, associations} = this.state.data;
-        const oldValue = fp.get(fieldPath, this.state.data);
-        _.set(this.state.data, fieldPath, newValue);
-        this._updateDataFromAssociations(fieldPath, oldValue);
-        this.setState({data: this.state.data});
+        this.state.store.updateField(fieldPath, newValue);
+        this.setState({store: this.state.store});
+    },
+
+    _afterSave() {
+        _.delay(() => goToRoute("/"), 3000);
     },
 
     _onCancel() {
@@ -146,35 +42,10 @@ const DataSetFormSteps = React.createClass({
 
     _onStepChange(newIndex) {
         if (newIndex > this.state.active) {
-            this.setState({stepAfterValidation: newIndex});    
+            this.setState({stepAfterValidation: newIndex});
         } else {
             this.setState({active: newIndex, doneUntil: newIndex});
         }
-    },
-
-    _redirectAfterSave() {
-        this.setState({saveState: this.saveStates.SAVED})
-        _.delay(() => goToRoute("/"), 3000);
-    },
-
-    _saveErrors(error) {
-        let errors;
-
-        if (error instanceof String) {
-            errors = [error];
-        } else if (error.response && error.response.errorReports instanceof Array) {
-            errors = error.response.errorReports.map(msg => msg.message);
-        } else if (error.messages instanceof Array) {
-            errors = error.messages.map(msg => msg.message);
-        } else {
-            errors = ["Unknown error"]
-        }
-        this.setState({saveState: this.saveStates.SAVE_ERROR, errors: errors})
-    },
-
-    _onSave() {
-        const {dataset} = this.state.data;
-        dataset.save().then(this._redirectAfterSave).catch(this._saveErrors)
     },
 
     _showButtonFunc(step) {
@@ -193,8 +64,8 @@ const DataSetFormSteps = React.createClass({
 
     render() {
         const props = {
-            config: this.config,
-            data: this.state.data,
+            config: this.state.store.config,
+            store: this.state.store,
             validateOnRender: !!this.state.stepAfterValidation,
             formStatus: this._formStatus,
         };
@@ -207,7 +78,7 @@ const DataSetFormSteps = React.createClass({
             {
                 id: 'save',
                 label: this.getTranslation("save"),
-                onClick: this._onSave,
+                onClick: () => this.setState({saving: true}),
                 showFunc: this._showButtonFunc,
             },
         ];
@@ -241,7 +112,8 @@ const DataSetFormSteps = React.createClass({
                 id: 'save',
                 title: this.getTranslation("save"),
                 component: Save,
-                props: _.merge(props, {state: this.state.saveState, errors: this.state.errors}),
+                props: _.merge(props,
+                    {saving: this.state.saving, afterSave: this._afterSave}),
             },
         ];
 
