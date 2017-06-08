@@ -14,12 +14,6 @@ import DataSetStore from '../models/DataSetStore';
 const DataSetFormSteps = React.createClass({
     mixins: [Translate],
     propTypes: {},
-    saveStates: {
-        DATAENTRY: "DATAENTRY",
-        SAVING: "SAVING",
-        SAVED: "SAVED",
-        SAVE_ERROR: "SAVE_ERROR",
-    },
 
     getInitialState() {
         return {
@@ -27,13 +21,17 @@ const DataSetFormSteps = React.createClass({
             active: 0,
             doneUntil: 0,
             validating: false,
-            saveState: this.saveStates.DATAENTRY,
+            saving: false,
         };
     },
 
     _onFieldsChange(stepId, fieldPath, newValue) {
         this.state.store.updateField(fieldPath, newValue);
         this.setState({store: this.state.store});
+    },
+
+    _afterSave() {
+        _.delay(() => goToRoute("/"), 3000);
     },
 
     _onCancel() {
@@ -48,24 +46,6 @@ const DataSetFormSteps = React.createClass({
         } else {
             this.setState({active: newIndex, doneUntil: newIndex});
         }
-    },
-
-    _redirectAfterSave() {
-        this.setState({saveState: this.saveStates.SAVED})
-        _.delay(() => goToRoute("/"), 3000);
-    },
-
-    _saveErrors(error) {
-        const message = JSON.stringify(error, Object.getOwnPropertyNames(error));
-        this.setState({saveState: this.saveStates.SAVE_ERROR, errors: [message]})
-    },
-
-    _onSave() {
-        this.setState({saveState: this.saveStates.SAVING});
-        this.state.store
-            .save()
-            .then(this._redirectAfterSave)
-            .catch(this._saveErrors);
     },
 
     _showButtonFunc(step) {
@@ -98,7 +78,7 @@ const DataSetFormSteps = React.createClass({
             {
                 id: 'save',
                 label: this.getTranslation("save"),
-                onClick: this._onSave,
+                onClick: () => this.setState({saving: true}),
                 showFunc: this._showButtonFunc,
             },
         ];
@@ -132,7 +112,8 @@ const DataSetFormSteps = React.createClass({
                 id: 'save',
                 title: this.getTranslation("save"),
                 component: Save,
-                props: _.merge(props, {state: this.state.saveState, errors: this.state.errors}),
+                props: _.merge(props,
+                    {saving: this.state.saving, afterSave: this._afterSave}),
             },
         ];
 
