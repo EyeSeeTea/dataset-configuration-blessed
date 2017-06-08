@@ -19,7 +19,7 @@ const InitialConfig = React.createClass({
     },
 
     getInitialState() {
-        return {isLoading: true};
+        return {isLoading: true, errors: {}};
     },
 
     _getCategoryOptions(categoryId, fields = [":all"]) {
@@ -51,7 +51,15 @@ const InitialConfig = React.createClass({
 
     componentWillReceiveProps(props) {
         if (props.validateOnRender) {
-            props.formStatus(true);
+            const {coreCompetencies} = this.props.store.associations;
+            if (_.isEmpty(coreCompetencies)) {
+                props.formStatus(false);
+                const error = this.getTranslation("select_one_core_competency");
+                this.setState({errors: {coreCompetencies: [error]}});
+            } else {
+                props.formStatus(true);
+                this.setState({errors: {}});
+            }
         }
     },
 
@@ -109,6 +117,7 @@ const InitialConfig = React.createClass({
                 onChange: this._onCoreCompetenciesUpdate,
                 label: this.getTranslation('core_competencies'),
                 selected: _.map(associations.coreCompetencies, "id"),
+                errors: this.state.errors.coreCompetencies,
             }),
         ];
 

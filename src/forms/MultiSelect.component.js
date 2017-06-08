@@ -9,8 +9,9 @@ const MultiSelect = React.createClass({
         selected: React.PropTypes.arrayOf(React.PropTypes.string),
         onChange: React.PropTypes.func.isRequired,
         label: React.PropTypes.string,
+        errors: React.PropTypes.arrayOf(React.PropTypes.string),
     },
-    
+
     getInitialState() {
         const availableStore = Store.create();
         const assignedStore = Store.create();
@@ -52,20 +53,27 @@ const MultiSelect = React.createClass({
                 marginTop: '1rem',
                 fontSize: 16,
             },
+            errorStyle: {
+                color: "red",
+            },
         };
+        const {errors, label, ...otherProps} = this.props;
 
         return (
             <div>
                 <label style={styles.labelStyle}>
-                    {this.props.label}
+                    {label}
                 </label>
+                {(errors || []).map((error, idx) =>
+                    <p key={idx} style={styles.errorStyle}>{error}</p>
+                )}
 
                 <GroupEditor
                     itemStore={this.state.availableStore}
                     assignedItemStore={this.state.assignedStore}
                     onAssignItems={this._onItemAssigned}
                     onRemoveItems={this._onItemRemoved}
-                    {...this.props}
+                    {...otherProps}
                 />
             </div>
         );
