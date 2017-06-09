@@ -71,7 +71,7 @@ function getBooleanField({name, label, onChange, value = false}) {
     };
 }
 
-function getMultiSelect({name, label, onChange, options = [], selected = []}) {
+function getMultiSelect({name, label, onChange, options = [], selected = [], errors = []}) {
     return {
         name: name,
         component: MultiSelect,
@@ -80,6 +80,7 @@ function getMultiSelect({name, label, onChange, options = [], selected = []}) {
             onChange: onChange,
             label: label,
             selected: selected,
+            errors: errors,
         }
     };
 }
@@ -88,10 +89,10 @@ function getDateField({name, label, onChange, value = undefined, isRequired = fa
     return {
         name: name,
         component: DateSelect,
-        value: value,
+        value: value || undefined,
         props: {
             labelText: getLabel(label, isRequired),
-            onChange: (data) => onChange(data.target.value),
+            onChange: (data) => onChange(data.target.value || undefined),
             fullWidth: true,
         },
     };

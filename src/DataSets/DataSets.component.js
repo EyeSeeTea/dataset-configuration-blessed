@@ -143,6 +143,12 @@ const DataSets = React.createClass({
             },
         };
 
+        const columns = [
+            {name: 'name'}, 
+            {name: 'publicAccess'}, 
+            {name: 'lastUpdated'},
+        ];
+
         return (            
             <div>
                 <div>
@@ -161,7 +167,7 @@ const DataSets = React.createClass({
                     <div style={styles.dataTableWrap}>
                         <MultipleDataTable
                             rows={this.state.dataRows}
-                            columns={['name', 'publicAccess', 'lastUpdated']}
+                            columns={columns}
                             contextMenuActions={contextActions}
                             contextMenuIcons={contextMenuIcons}
                             primaryAction={contextActions.details}
