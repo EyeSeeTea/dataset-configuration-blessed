@@ -12,7 +12,7 @@ const GeneralInformation = React.createClass({
 
     propTypes: {
         config: React.PropTypes.object,
-        data: React.PropTypes.object,
+        store: React.PropTypes.object,
         onFieldsChange: React.PropTypes.func,
         validateOnRender: React.PropTypes.bool,
     },
@@ -22,11 +22,11 @@ const GeneralInformation = React.createClass({
     },
 
     componentDidMount() {
-        const categoryCombination = this.context.d2
+        this.context.d2
             .models.categoryCombos
             .list({
                 filter: ["dataDimensionType:eq:ATTRIBUTE", "name:eq:default"], 
-                fields: "id, displayName", 
+                fields: "id,name", 
                 paging: false, 
                 rootJunction: "OR",
             })
@@ -62,7 +62,7 @@ const GeneralInformation = React.createClass({
     },
 
     _renderForm() {
-        const {associations, dataset} = this.props.data;
+        const {associations, dataset} = this.props.store;
         const projectCode = associations.project && associations.project.code;
         const fields = [
             FormHelpers.getTextField({

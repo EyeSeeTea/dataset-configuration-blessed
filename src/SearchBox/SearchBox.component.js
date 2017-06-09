@@ -8,6 +8,7 @@ import { config } from 'd2/lib/d2';
 const SearchBox = React.createClass({
     propTypes: {
         searchObserverHandler: React.PropTypes.func.isRequired,
+        debounce: React.PropTypes.number,
     },
 
     mixins: [ObservedEvents, Translate],
@@ -24,7 +25,7 @@ const SearchBox = React.createClass({
 
     componentDidMount() {
         const searchObserver = this.events.searchBox
-            .debounce(400)
+            .debounce(this.props.debounce || 400)
             .map(event => event && event.target && event.target.value ? event.target.value : '')
             .distinctUntilChanged();
 

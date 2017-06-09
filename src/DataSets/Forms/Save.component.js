@@ -8,22 +8,58 @@ import CardText from 'material-ui/Card/CardText';
 const Save = React.createClass({
     mixins: [Translate],
 
-    states: {DATAENTRY: "DATAENTRY", SAVED: "SAVED", SAVE_ERROR: "SAVE_ERROR"},
-
     propTypes: {
         config: React.PropTypes.object,
-        data: React.PropTypes.object,
+        store: React.PropTypes.object,
         state: React.PropTypes.string,
-        errors: React.PropTypes.arrayOf(React.PropTypes.string)
+        errors: React.PropTypes.arrayOf(React.PropTypes.string),
+        afterSave: React.PropTypes.func.isRequired,
+    },
+
+    saveStates: {
+        SHOW: "SHOW",
+        SAVING: "SAVING",
+        SAVED: "SAVED",
+        SAVE_ERROR: "SAVE_ERROR",
+    },
+
+    componentWillReceiveProps(nextProps) {
+        if (nextProps.saving) {
+            this._save();
+        }
+    },
+
+    getInitialState() {
+        return {saveState: this.saveStates.SHOW, errors: []};
+    },
+
+    _redirectAfterSave() {
+        this.setState({saveState: this.saveStates.SAVED})
+        this.props.afterSave();
+    },
+
+    _saveErrors(error) {
+        const message = JSON.stringify(error);
+        this.setState({saveState: this.saveStates.SAVE_ERROR, errors: [message]})
+    },
+
+    _save() {
+        this.setState({saveState: this.saveStates.SAVING});
+        this.props.store
+            .save()
+            .then(this._redirectAfterSave)
+            .catch(this._saveErrors);
     },
 
     render() {
-        const {dataset} = this.props.data;
-        const {state, errors} = this.props;
+        const {dataset} = this.props.store;
+        const {saveState, errors} = this.state;
 
-        if (state == this.states.DATAENTRY) {
+        if (saveState === this.saveStates.SHOW || saveState === this.saveStates.SAVING) {
             return (
                 <div>
+                    {saveState === "SAVING" ? <LinearProgress /> : null}
+
                     <div>{this.getTranslation("wizard_presave_message")}</div>
 
                     <ul className="list-group">
@@ -39,7 +75,7 @@ const Save = React.createClass({
                     </ul>
                 </div>
             );
-        } else if (state == this.states.SAVE_ERROR) {
+        } else if (saveState === this.saveStates.SAVE_ERROR) {
             return (
                 <div className="alert alert-danger">
                     <div>{this.getTranslation("wizard_save_error_message")}</div>
@@ -49,7 +85,7 @@ const Save = React.createClass({
                     </ul>
                 </div>
             );
-        } else if (state == this.states.SAVED) {
+        } else if (saveState === this.saveStates.SAVED) {
             return (
                 <div className="alert alert-success">
                     <div>{this.getTranslation("dataset_saved")}</div>
