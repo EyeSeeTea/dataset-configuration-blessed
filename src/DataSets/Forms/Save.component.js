@@ -4,6 +4,7 @@ import FormBuilder from 'd2-ui/lib/forms/FormBuilder.component';
 import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
 import Card from 'material-ui/Card/Card';
 import CardText from 'material-ui/Card/CardText';
+import snackActions from '../../Snackbar/snack.actions';
 
 const Save = React.createClass({
     mixins: [Translate],
@@ -19,7 +20,6 @@ const Save = React.createClass({
     saveStates: {
         SHOW: "SHOW",
         SAVING: "SAVING",
-        SAVED: "SAVED",
         SAVE_ERROR: "SAVE_ERROR",
     },
 
@@ -34,7 +34,7 @@ const Save = React.createClass({
     },
 
     _redirectAfterSave() {
-        this.setState({saveState: this.saveStates.SAVED})
+        snackActions.show({message: 'dataset_saved', action: 'ok', translate: true});
         this.props.afterSave();
     },
 
@@ -85,13 +85,6 @@ const Save = React.createClass({
                     </ul>
                 </div>
             );
-        } else if (saveState === this.saveStates.SAVED) {
-            return (
-                <div className="alert alert-success">
-                    <div>{this.getTranslation("dataset_saved")}</div>
-                </div>
-            );
-
         }
     },
 });
