@@ -31,7 +31,7 @@ const DataSetFormSteps = React.createClass({
     },
 
     _afterSave() {
-        goToRoute("/");
+        _.delay(() => goToRoute("/"), 3000);
     },
 
     _onCancel() {
