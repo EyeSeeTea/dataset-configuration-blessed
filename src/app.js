@@ -35,6 +35,17 @@ render(
   </MuiThemeProvider>, 
   document.getElementById('app'));
 
+function safeGetUserSettings() {
+    const redirect = (err) => {
+        window.location.assign(config.loginUrl);
+        return Promise.reject(err || "Cannot connect to server");
+    };
+
+    return getUserSettings()
+        .then(settings => typeof(settings) === "object" ? settings : Promise.reject())
+        .catch(redirect);
+}
+
 function configI18n(userSettings) {
     const uiLocale = userSettings.keyUiLocale;
 
@@ -71,10 +82,11 @@ getManifest('./manifest.webapp')
     .then(manifest => {
         const baseUrl = process.env.NODE_ENV === 'production' ? manifest.getBaseUrl() : dhisDevConfig.baseUrl;
         config.baseUrl = `${baseUrl}/api/26`;
+        config.loginUrl = `${baseUrl}/dhis-web-commons/security/login.action`;
         log.info(`Loading: ${manifest.name} v${manifest.version}`);
         log.info(`Built ${manifest.manifest_generated_at}`);
     })
-    .then(getUserSettings)
+    .then(safeGetUserSettings)
     .then(configI18n)
     .then(init)
     .then(startApp)
