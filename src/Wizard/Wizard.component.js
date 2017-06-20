@@ -52,6 +52,7 @@ const Wizard = React.createClass({
                 "isDone": idx < this.props.doneUntil,
             }
         ));
+        const actionsBar = currentStep.actionsBar || ["bottom"];
 
         return (
             <div>
@@ -65,6 +66,8 @@ const Wizard = React.createClass({
                     }}/>
 
 
+                {_(actionsBar).includes("top") && this._renderButtons(currentStep)}
+
                 <Card>
                     <CardText>
                         <currentStep.component 
@@ -75,7 +78,7 @@ const Wizard = React.createClass({
                     </CardText>
                 </Card>
 
-                {this._renderButtons(currentStep)}
+                {_(actionsBar).includes("bottom") && this._renderButtons(currentStep)}
             </div>
         );
     },

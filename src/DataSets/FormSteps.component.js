@@ -106,6 +106,7 @@ const DataSetFormSteps = React.createClass({
                 id: 'sections',
                 title: this.getTranslation("step_sections"),
                 component: Sections,
+                actionsBar: ["top", "bottom"],
                 props: props,
             },
             {
