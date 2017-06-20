@@ -9,7 +9,7 @@ const SessionDialog = React.createClass({
     getInitialState() {
         return {open: false, checkServerIntervalId: null};
     },
-dfdf
+
     componentDidMount() {
         const checkServerIntervalId = setInterval(this.checkServer, 1000*60*15);
         this.setState({checkServerIntervalId});
