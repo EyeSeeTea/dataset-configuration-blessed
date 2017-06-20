@@ -31,7 +31,7 @@ const DataSetFormSteps = React.createClass({
     },
 
     _afterSave() {
-        _.delay(() => goToRoute("/"), 3000);
+        goToRoute("/");
     },
 
     _onCancel() {
@@ -106,6 +106,7 @@ const DataSetFormSteps = React.createClass({
                 id: 'sections',
                 title: this.getTranslation("step_sections"),
                 component: Sections,
+                actionsBar: ["top", "bottom"],
                 props: props,
             },
             {

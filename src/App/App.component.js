@@ -11,6 +11,8 @@ import SinglePanelLayout from 'd2-ui/lib/layout/SinglePanel.component';
 import { getInstance } from 'd2/lib/d2';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import appTheme from './app.theme';
+import SnackbarContainer from '../Snackbar/SnackbarContainer.component';
+import SessionDialog from '../SessionDialog/SessionDialog.component';
 
 const HeaderBar = withStateFrom(headerBarStore$, HeaderBarComponent);
 
@@ -20,13 +22,13 @@ class App extends AppWithD2 {
     }
 
     componentDidMount() {
-        super.componentDidMount();  
-    } 
-    
+        super.componentDidMount();
+    }
+
     render() {
         if (!this.state.d2) {
             return (<LoadingMask />);
-        }        
+        }
         return (
             <MuiThemeProvider muiTheme={appTheme}>
                 <div>
@@ -36,11 +38,13 @@ class App extends AppWithD2 {
                             {this.props.children}
                         </MainContent>
                     </SinglePanelLayout>
+
+                    <SnackbarContainer />
+                    <SessionDialog />
                 </div>
             </MuiThemeProvider>
         );
-    }       
-         
+    }
 };
 
 App.defaultProps = {

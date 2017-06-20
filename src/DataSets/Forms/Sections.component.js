@@ -253,8 +253,9 @@ const Sections = React.createClass({
         this.setState(newState);
     },
 
-    _onSelectedToggled(dataElement, currentSectionName) {
-        const path = ["sections", this.state.currentSectionName, "dataElements", dataElement.id, "selected"];
+    _onSelectedToggled(dataElement) {
+        const {currentSectionName} = this.state;
+        const path = ["sections", currentSectionName, "dataElements", dataElement.id, "selected"];
         const oldValue = fp.get(path, this.state);
         this.setState(fp.set(path, !oldValue, this.state));
     },
@@ -303,12 +304,14 @@ const Sections = React.createClass({
             !_.isEmpty(dataElements) && dataElements.every(dr => dr.selected);
         const rows = _.map(dataElements, dataElement =>
             _.mapValues(dataElement, (value, name) =>
+                // When there many rows, material-ui's rich <Checkbox> slows down the rendering
                 name != "selected" ? value :
-                    <Checkbox
-                        checked={value}
-                        iconStyle={{width: 'auto'}}
-                        onCheck={() => this._onSelectedToggled(dataElement, currentSectionName)}
-                    />
+                    <div onClick={() => this._onSelectedToggled(dataElement)}>
+                        <input type="checkbox" readOnly={true}
+                               checked={value} className="simple-checkbox">
+                        </input>
+                        <span></span>
+                    </div>
             )
         );
         const selectedColumnContents = (
