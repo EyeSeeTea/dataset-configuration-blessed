@@ -56,8 +56,25 @@ const MultipleDataTableRow = React.createClass({
                 'selected':this.props.isActive  
             });
 
+        const dataSource = this.props.dataSource;
+
+        const textWrapStyle = {
+            width: '100%',
+            textOverflow: 'ellipsis',
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+            position: 'absolute',
+            wordBreak: 'break-all',
+            wordWrap: 'break-word',
+            top: 0,
+            bottom: 0,
+            lineHeight: '50px',
+            paddingRight: '1rem',
+        };
+
+
         const columns = this.props.columns.map((columnName, index) => {
-            const rowValue = getValueAfterValueTypeGuess(this.props.dataSource, columnName);
+            const rowValue = getValueAfterValueTypeGuess(dataSource, columnName);
             let displayValue;
 
             // Render objects by name or otherwise by their toString method.
@@ -70,8 +87,6 @@ const MultipleDataTableRow = React.createClass({
 
             // TODO: PublicAccess Hack - need to make it so that value transformers can be registered
             if (columnName === 'publicAccess') {
-                const dataSource = this.props.dataSource;
-
                 if (dataSource[columnName]) {
                     if (dataSource[columnName] === 'rw------') {
                         displayValue = this.getTranslation('public_can_edit');
@@ -86,20 +101,6 @@ const MultipleDataTableRow = React.createClass({
                     }
                 }
             }
-
-            const textWrapStyle = {
-                width: '100%',
-                textOverflow: 'ellipsis',
-                overflow: 'hidden',
-                whiteSpace: 'nowrap',
-                position: 'absolute',
-                wordBreak: 'break-all',
-                wordWrap: 'break-word',
-                top: 0,
-                bottom: 0,
-                lineHeight: '50px',
-                paddingRight: '1rem',
-            };
 
             return (
                 <div
@@ -116,9 +117,6 @@ const MultipleDataTableRow = React.createClass({
             <div className={classList}>
                 {columns}
                 <div className={'data-table__rows__row__column'} style={{width: '1%'}}>
-                    <IconButton tooltip={this.getTranslation('actions')} onClick={this.iconMenuClick}>
-                        <MoreVert />
-                    </IconButton>
                 </div>
             </div>
         );
