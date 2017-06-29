@@ -154,7 +154,8 @@ class RichDropdown extends React.Component {
                     inputStyle={{ cursor: 'pointer' }}
                 />
                 <div
-                    style={{ position: 'absolute', top: 38, right: 4, color: 'rgba(0,0,0,0.25)' }}
+                    onClick={this.openDialog}
+                    style={{ cursor: 'pointer', position: 'relative', color: 'rgba(0,0,0,0.25)' }}
                     className='material-icons'
                 >open_in_new</div>
             </div>

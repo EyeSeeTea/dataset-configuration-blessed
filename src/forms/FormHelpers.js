@@ -52,7 +52,7 @@ function getRichSelectField({name, label, options, filterOptions,
             filterOptions: filterOptions,
             isRequired: isRequired,
             labelText: getLabel(label, isRequired),
-            style: {width: "100%"},
+            style: {width: "30%"},
             controls: controls,
         },
     };
