@@ -129,7 +129,7 @@ const getOutcomeSection = (dataElements, opts) => {
 
 const getSection = (sectionName, dataElements, indicators, filtersToIndicators, opts) => {
     const {d2, config, relations, coreCompetency} = opts;
-    const dataElementsData = dataElements.map(de => {
+    const getDataElementInfo = (de) => {
         const indicators = _([
             filtersToIndicators["id." + de.id],
             filtersToIndicators["code." + de.code],
@@ -147,13 +147,18 @@ const getSection = (sectionName, dataElements, indicators, filtersToIndicators, 
             origin: degSetOrigin ? degSetOrigin.name : "None",
             disaggregation: de.categoryCombo.name == "default" ? "None" : de.categoryCombo.name,
         };
-    });
+    };
+    const indexedDataElementsInfo = _(dataElements)
+        .map(getDataElementInfo)
+        .sortBy(de => [!de.selected, de.name])
+        .keyBy("id")
+        .value();
 
     return {
         name: sectionName,
         showRowTotals: false,
         showColumnTotals: false,
-        dataElements: _.keyBy(dataElementsData, "id"),
+        dataElements: indexedDataElementsInfo,
     };
 };
 
