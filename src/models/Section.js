@@ -104,7 +104,7 @@ const getD2Section = (d2, section) => {
 
 const getOutputSection = (dataElements, opts) => {
     const {d2, config, coreCompetency} = opts;
-    const sectionName = coreCompetency.name;
+    const sectionName = coreCompetency.name + " Outputs";
     const filteredDataElements =
         filterDataElements(dataElements, [coreCompetency.id, config.dataElementGroupOutputId])
     return getSection(sectionName, filteredDataElements, [], {}, opts);
@@ -112,7 +112,7 @@ const getOutputSection = (dataElements, opts) => {
 
 const getOutcomeSection = (dataElements, opts) => {
     const {d2, config, indicatorsByGroupName, coreCompetency} = opts;
-    const sectionName = coreCompetency.name + " (B)";
+    const sectionName = coreCompetency.name + " Outcomes";
     const outcomeDataElements =
         filterDataElements(dataElements, [coreCompetency.id, config.dataElementGroupOutcomeId]);
     const indicators = indicatorsByGroupName[coreCompetency.name];
