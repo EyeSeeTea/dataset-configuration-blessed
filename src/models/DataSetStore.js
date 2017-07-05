@@ -14,6 +14,8 @@ export default class DataSetStore {
             dataElementGroupOutcomeId: "WlNsNnj2sil",
             dataElementGroupGlobalIndicatorMandatoryId: "CQlBGbf2jSs",
             dataElementGroupSetOriginId: "mxv75P8OgZF",
+            dataElementGroupSetThemeId: "chyJVMF3G7k",
+            attributeGroupId: "YxwyKOlG4lP",
         };
         const {associations, dataset} = this.getInitialState();
         this.associations = associations;
@@ -22,7 +24,7 @@ export default class DataSetStore {
 
     getInitialModel() {
         return this.d2.models.dataSet.create({
-            name: undefined ,
+            name: undefined,
             code: undefined,
             description: undefined,
             expiryDays: 15,
@@ -126,13 +128,15 @@ export default class DataSetStore {
 
     save() {
         this.dataset.dirty = true;
+
         return this.dataset.save()
             .then(({response}) => {
+                const datasetId = response.uid;
                 const sections = _(this.associations.sections)
                     .sortBy(section => section.name)
                     .map(section => {
-                        let clonedSection = section.clone();
-                        clonedSection.dataSet = {id: response.uid};
+                        const clonedSection = section.clone();
+                        clonedSection.dataSet = {id: datasetId};
                         return clonedSection;
                     })
                     .value();

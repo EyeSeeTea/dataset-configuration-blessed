@@ -6,7 +6,6 @@ import { generateUid } from 'd2/lib/uid';
         name: string
         showRowTotals: boolean
         showColumnTotals: boolean
-        indicators: [Indicator]
         dataElements: ObjectOf(
             [key] dataElementId: string
             [value] dataElement: {
@@ -43,16 +42,16 @@ export const getSectionsFromCoreCompetencies = (d2, config, coreCompetencies) =>
 	});
 };
 
-/* Return an object with the info the sections:
+/* Return an object with the info of the sections:
 
     {
-        section: Section // D2 Section
-        dataSetElements: [dataElement] // Selected data elements through the required dataSetElements proxy.
+        sections: [e2.models.Section]
+        dataSetElements: [dataElement] // Selected data elements through the required dataSetElements.
         indicators: [Indicator] // Indicators associated to the selected data elements.
     }
 */
 export const getDataSetInfo = (d2, sections) => {
-    const d2Sections = sections.map(section => getD2Section(d2, section));
+    const d2Sections = _(sections).flatMap(section => getD2Sections(d2, section)).value();
     const selectedDataElements = _(sections)
         .flatMap(section => _(section.dataElements).values().filter(de => de.selected).value())
     const dataSetElements = selectedDataElements
@@ -86,20 +85,23 @@ export const getDataSetInfo = (d2, sections) => {
     return {sections: d2Sections, dataSetElements, indicators, errors};
 };
 
-const getD2Section = (d2, section) => {
-    const selectedDataElements = _(section.dataElements).values().filter(de => de.selected);
-    const dataElements = selectedDataElements.map(de => ({id: de.id})).value();
-    const indicators = selectedDataElements
-        .flatMap(de => de.indicators.map(indicator => ({id: indicator.id})))
-        .value();
+const getD2Sections = (d2, section) => {
+    const getD2Section = (dataElements, d2SectionName) => {
+        return d2.models.sections.create({
+            name: d2SectionName,
+            showRowTotals: section.showRowTotals,
+            showColumnTotals: section.showColumnTotals,
+            dataElements: dataElements.map(de => ({id: de.id})),
+            indicators: _(dataElements).flatMap("indicators").map(ind => ({id: ind.id})).value(),
+        });
+    };
 
-    return d2.models.sections.create({
-        name: section.name,
-        showRowTotals: section.showRowTotals,
-        showColumnTotals: section.showColumnTotals,
-        dataElements: dataElements,
-        indicators: indicators,
-    });
+    return _(section.dataElements)
+        .values()
+        .filter(de => de.selected)
+        .groupBy(de => [section.name, de.theme, de.group].join("@").replace(/@*$/, ''))
+        .map(getD2Section)
+        .value();
 };
 
 const getOutputSection = (dataElements, opts) => {
@@ -134,18 +136,24 @@ const getSection = (sectionName, dataElements, indicators, filtersToIndicators, 
             filtersToIndicators["id." + de.id],
             filtersToIndicators["code." + de.code],
         ]).compact().flatten().value();
-        const attributes = _(de.dataElementGroups.toArray())
+        const groupSets = _(de.dataElementGroups.toArray())
             .map(deg => [relations[deg.id], deg]).fromPairs().value();
-        const degSetOrigin = attributes[config.dataElementGroupSetOriginId];
+        const degSetOrigin = groupSets[config.dataElementGroupSetOriginId];
+        const theme = groupSets[config.dataElementGroupSetThemeId];
+        const group = _(de.attributeValues)
+            .find(av => av.attribute.id === config.attributeGroupId)
 
         return {
             id: de.id,
             name: de.name,
             indicators: indicators,
+            theme: theme ? theme.name : null,
+            group: group ? group.value : null,
             selected: degSetOrigin ?
-                degSetOrigin.id == config.dataElementGroupGlobalIndicatorMandatoryId : false,
-            origin: degSetOrigin ? degSetOrigin.name : "None",
-            disaggregation: de.categoryCombo.name == "default" ? "None" : de.categoryCombo.name,
+                degSetOrigin.id === config.dataElementGroupGlobalIndicatorMandatoryId : false,
+            origin: degSetOrigin ? degSetOrigin.name : null,
+            disaggregation: de.categoryCombo.name !== "default" ?
+                de.categoryCombo.name : "None",
         };
     });
 
@@ -228,8 +236,15 @@ const getFilteredItems = (model, filters, listOptions) => {
 };
 
 const getDataElements = (d2, dataElementFilters) => {
-    return getFilteredItems(d2.models.dataElements, dataElementFilters,
-        {fields: "id,name,code,categoryCombo[id,name],dataElementGroups[id,name]"});
+    const fields = [
+        "id",
+        "name",
+        "code",
+        "categoryCombo[id,name]",
+        "dataElementGroups[id,name]",
+        "attributeValues[value,attribute]",
+    ];
+    return getFilteredItems(d2.models.dataElements, dataElementFilters, {fields: fields.join(",")});
 };
 
 const getIndicatorsByGroupName = (d2, coreCompetencies) => {
