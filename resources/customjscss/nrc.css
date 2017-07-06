@@ -270,3 +270,120 @@ background-color: grey;
 }
 
 */
+
+/* NRC web-dataentry */
+
+#contentDiv #tabs .nrcsubsection {
+    background-color: #fff;
+    height: 5px;
+}
+
+#contentDiv #tabs input.entryfield {
+    width: 70px;
+    height: 18px;
+    padding: 2px;
+}
+
+#contentDiv #tabs input.dataelementtotal {
+    width: 70px;
+    height: 16px;
+    padding: 2px;
+}
+
+#contentDiv #tabs input.indicator {
+    width: 70px;
+    height: 18px;
+    padding: 2px;
+}
+
+#contentDiv #tabs tr:hover {
+    background-color: #e5e5e5
+}
+
+#contentDiv #tabs th {
+    border-style: hidden !important;
+}
+
+#contentDiv #tabs td {
+    padding: 2px !important;
+    height: 16px;
+    text-align: center;
+    border-style: none !important;
+}
+
+#contentDiv #tabs td.nrcindicatorName {
+    text-align: left;
+}
+
+#contentDiv #tabs td.lastinrow {
+    background-color: #eee;
+    text-align: center;
+}
+
+#contentDiv #tabs th.nrcinfoheader {
+    text-align: left;
+    border-bottom-style: hidden;
+    border-left-style: hidden;
+    border-top-style: hidden;
+    width: 100%;
+    white-space: nowrap;
+    background-color: #fff;
+    padding: 2px !important;
+}
+
+#contentDiv #tabs th.nrcdataheader {
+    text-align: center;
+    border-bottom: 1px solid #ddd !important;
+    background-color: #eaf7fb;
+    white-space: nowrap;
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+#contentDiv #tabs th.nrctotalheader {
+    text-align: center;
+    border-bottom: 1px solid #ddd !important;
+    background-color: #eee;
+    white-space: nowrap;
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+#contentDiv #tabs .panel {
+    margin-bottom: 7px;
+}
+
+#contentDiv #tabs .panel-body {
+    padding-top: 0;
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-bottom: 4px;
+}
+
+#contentDiv #tabs .panel-default > .panel-heading {
+    background-color: #3c3c3c;
+    border-color: #3c3c3c;
+    padding: 7px;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+
+#contentDiv #tabs a.nrc-panel-title {
+    color: white;
+    cursor: pointer;
+}
+ 
+#contentDiv #tabs .accordion-toggle:after {
+    font-family: FontAwesome;
+    content: "\f077";
+    float: right;
+    color: white !important;
+}
+
+#contentDiv #tabs .panel-heading.collapsed .accordion-toggle:after {
+    content: "\f078";
+}

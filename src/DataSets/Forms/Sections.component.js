@@ -8,7 +8,7 @@ import LoadingStatus from '../../LoadingStatus/LoadingStatus.component';
 import ObserverRegistry from '../../utils/ObserverRegistry.mixin';
 import Action from 'd2-ui/lib/action/Action';
 import Sidebar from 'd2-ui/lib/sidebar/Sidebar.component';
-import {Tabs, Tab} from 'material-ui/Tabs';
+import {Tabs, Tab} from 'material-ui-scrollable-tabs/Tabs';
 import SelectField from 'material-ui/SelectField/SelectField';
 import MenuItem from 'material-ui/MenuItem/MenuItem';
 import Checkbox from 'material-ui/Checkbox/Checkbox';
@@ -158,7 +158,6 @@ const Sections = React.createClass({
         return {
             isLoading: true,
             sections: null, // loaded on componentDidMount
-            subsections: null, // loaded on componentDidMount
             sidebarOpen: true,
             filters: {},
             filterName: null,
@@ -177,7 +176,6 @@ const Sections = React.createClass({
             this.setState({
                 isLoading: false,
                 sections: _.keyBy(sections, "name"),
-                subsections: [], // [{key: '', label: 'All'}, ...];
                 currentSectionName: _.isEmpty(sections) ? null : sections[0].name,
             });
         });
@@ -186,7 +184,7 @@ const Sections = React.createClass({
     _updateModelSections() {
         const {d2} = this.context;
         const stateSections = _.values(this.state.sections);
-        const {sections, dataSetElements, indicators, errors} = 
+        const {sections, dataSetElements, indicators, errors} =
             Section.getDataSetInfo(d2, stateSections);
         this.setState({errors: errors});
 
@@ -226,19 +224,20 @@ const Sections = React.createClass({
 
     _renderSelectFilter(dataElementsAll, column, styles) {
         const label = this.getTranslation(column);
-        const entries = _(dataElementsAll).values().map(column).uniq()
+        const entries = _(dataElementsAll).values().map(column).uniq().compact()
             .map(value => ({value: value, text: value})).value();
         const defaultEntry = {value: null, text: ""};
         const allEntries = [defaultEntry].concat(entries);
 
         return (
             <SelectField
+                style={{marginRight: 5, ...styles}}
                 floatingLabelText={label}
                 value={this.state.filters[column]}
                 onChange={(event, index, value) => this._onFilter(column, value)}
             >
-                {allEntries.map(e => 
-                    <MenuItem key={e.value} value={e.value} primaryText={e.text} />)}
+                {allEntries.map((e, idx) =>
+                    <MenuItem key={idx} value={e.value} primaryText={e.text} />)}
             </SelectField>
         );
     },
@@ -269,30 +268,45 @@ const Sections = React.createClass({
         this.setState(fp.set(path, value, this.state));
     },
 
-    _renderTabs() {
-        if (_.isEmpty(subsections)) {
-            return;
-        }
+    _renderTabs(dataElements) {
+        const subsectionsFromDE = _(dataElements)
+            .map("theme")
+            .uniq()
+            .compact()
+            .map(s => ({key: s, label: s}))
+            .sortBy("label")
+            .value();
+        const subsections = [
+            {key: '', label: this.getTranslation('all')}, 
+            ...subsectionsFromDE
+        ];
 
-        const {subsections, filters} = this.state;
-        const currentSubsectionIdx = filters.subsection || subsections[0].key;
-        return (
-            <Tabs style={{width: '100%', marginBottom: '0px'}} key={this.state.currentSectionName}>
-                {subsections.map(subsection =>
-                    <Tab
-                        key={subsection.key}
-                        style={{fontWeight: 'inherit', fontSize: '12px'}}
-                        buttonStyle={{fontWeight: 'inherit', fontSize: '12px'}}
-                        label={subsection.label}
-                        onActive={() => this._onFilter("subsection", subsection.key)}
-                    />
-                )}
-            </Tabs>
-        );
+        if (subsectionsFromDE.length == 0) {
+            return null;
+        } else {
+            return (
+                <Tabs
+                    style={{width: '100%', marginBottom: '0px'}}
+                    key={this.state.currentSectionName}
+                    tabType="scrollable-buttons"
+                >
+                    {subsections.map(subsection =>
+                        <Tab
+                            key={subsection.key}
+                            style={{fontWeight: 'inherit', fontSize: '12px'}}
+                            buttonStyle={{fontWeight: 'inherit', fontSize: '12px'}}
+                            label={subsection.label}
+                            onActive={() => this._onFilter("theme", subsection.key)}
+                            isMultiLine={true}
+                        />
+                    )}
+                </Tabs>
+            );
+        }
     },
 
     _renderForm() {
-        const {sidebarOpen, currentSectionName, sections, subsections, filters} = this.state;
+        const {sidebarOpen, currentSectionName, sections, filters} = this.state;
         const currentSection = this.state.sections[currentSectionName];
         if (!currentSection) {
             return (<div>{this.getTranslation("no_elements_found")}</div>);
@@ -304,7 +318,8 @@ const Sections = React.createClass({
             !_.isEmpty(dataElements) && dataElements.every(dr => dr.selected);
         const rows = _.map(dataElements, dataElement =>
             _.mapValues(dataElement, (value, name) =>
-                // When there many rows, material-ui's rich <Checkbox> slows down the rendering
+                // When there are many rows, material-ui's rich <Checkbox> slows down the rendering,
+                // use a more simple checkbox and try to mimic the look.
                 name != "selected" ? value :
                     <div onClick={() => this._onSelectedToggled(dataElement)}>
                         <input type="checkbox" readOnly={true}
@@ -334,10 +349,14 @@ const Sections = React.createClass({
                 sortable: true,
                 style: {width: '33%'},
             },
-            /*filters.subsection ? null : {
-                name: 'subsection',
+            filters.theme ? null : {
+                name: 'theme',
                 sortable: true,
-            }, */
+            },
+            {
+                name: 'group',
+                sortable: true,
+            },
             {
                 name: 'origin',
                 sortable: true,
@@ -350,7 +369,6 @@ const Sections = React.createClass({
 
         return (
             <div style={{display: 'flex'}}>
-
                 <SectionsSidebar
                     open={sidebarOpen}
                     sections={_(sections).values().map("name").value()}
@@ -364,13 +382,14 @@ const Sections = React.createClass({
                     <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
                         {sidebarOpen ? null :
                             <Chip style={{marginRight: 10}}>{currentSection.name}</Chip>}
-                        {this._renderTabs()}
+                        {this._renderTabs(dataElementsAll)}
                     </div>
 
                     <SectionConfig section={currentSection} onChange={this._onChange} />
 
                     <div style={{marginTop: -15}}>
                         <SectionsSearchBox name={currentSectionName} onChange={this._setFilterName} />
+                        {this._renderSelectFilter(dataElementsAll, 'group', {width: '30%'})}
                         {this._renderSelectFilter(dataElementsAll, 'origin', {width: '30%'})}
                     </div>
 
