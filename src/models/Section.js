@@ -104,7 +104,7 @@ const getD2Section = (d2, section) => {
 
 const getOutputSection = (dataElements, opts) => {
     const {d2, config, coreCompetency} = opts;
-    const sectionName = coreCompetency.name;
+    const sectionName = coreCompetency.name + " Outputs";
     const filteredDataElements =
         filterDataElements(dataElements, [coreCompetency.id, config.dataElementGroupOutputId])
     return getSection(sectionName, filteredDataElements, [], {}, opts);
@@ -112,7 +112,7 @@ const getOutputSection = (dataElements, opts) => {
 
 const getOutcomeSection = (dataElements, opts) => {
     const {d2, config, indicatorsByGroupName, coreCompetency} = opts;
-    const sectionName = coreCompetency.name + " (B)";
+    const sectionName = coreCompetency.name + " Outcomes";
     const outcomeDataElements =
         filterDataElements(dataElements, [coreCompetency.id, config.dataElementGroupOutcomeId]);
     const indicators = indicatorsByGroupName[coreCompetency.name];
@@ -129,7 +129,7 @@ const getOutcomeSection = (dataElements, opts) => {
 
 const getSection = (sectionName, dataElements, indicators, filtersToIndicators, opts) => {
     const {d2, config, relations, coreCompetency} = opts;
-    const dataElementsData = dataElements.map(de => {
+    const getDataElementInfo = (de) => {
         const indicators = _([
             filtersToIndicators["id." + de.id],
             filtersToIndicators["code." + de.code],
@@ -147,13 +147,18 @@ const getSection = (sectionName, dataElements, indicators, filtersToIndicators, 
             origin: degSetOrigin ? degSetOrigin.name : "None",
             disaggregation: de.categoryCombo.name == "default" ? "None" : de.categoryCombo.name,
         };
-    });
+    };
+    const indexedDataElementsInfo = _(dataElements)
+        .map(getDataElementInfo)
+        .sortBy(de => [!de.selected, de.name])
+        .keyBy("id")
+        .value();
 
     return {
         name: sectionName,
         showRowTotals: false,
         showColumnTotals: false,
-        dataElements: _.keyBy(dataElementsData, "id"),
+        dataElements: indexedDataElementsInfo,
     };
 };
 
