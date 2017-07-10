@@ -14,21 +14,6 @@
 
 (function() {
 
-var runOnMutation = function(contentEl, callback) {
-    var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
-    if (!MutationObserver) throw "Mutation is not supported by this browser";
-    var hasChildrenState = contentEl.children().size() > 0;
-    var observer = new MutationObserver(function() {
-        var hasChildrenCurrent = contentEl.children().size() > 0;
-        if (!hasChildrenState && hasChildrenCurrent) {
-            callback();
-        }
-        hasChildrenState = hasChildrenCurrent;
-    });
-
-    observer.observe(contentEl.get(0), {subtree: true, childList: true});
-};
-
 var loadCss = function(url) {
     $("<link/>", {
         rel: "stylesheet",
@@ -39,10 +24,6 @@ var loadCss = function(url) {
 
 var loadJs = function(url, cb) {
     $.getScript(url, cb);
-};
-
-var injectCss = function(styles) {
-    $("<style/>", {type: "text/css"}).text(styles).appendTo(document.head);
 };
 
 var emptyField = "__undefined";
@@ -85,7 +66,7 @@ var processGroupedTab = function(tabsByTheme, sectionName) {
                             return $("<div/>").append(
                                 showGroupTitle ? $("<h4/>").text(groupName) : $("<span/>"),
                                 $("<div/>").append(_.map(elementsInGroup, (tab) => {
-                                    return getTabContents(tab).clone().children();
+                                    return getTabContents(tab).html();
                                 }))
                             );
                         })
@@ -127,19 +108,28 @@ var groupSubsections = function() {
 
 var init = function() {
     var contentDiv = $("#contentDiv");
-    var isDataEntryPage = dhis2.de.updateIndicators && contentDiv.length > 0;
+    var isDataEntryPage = window.dhis2 && window.dhis2.de &&
+        window.dhis2.de.updateIndicators && contentDiv.length > 0;
+    console.log("CustomJS debug: ", contentDiv.length, !!isDataEntryPage);
 
     if (isDataEntryPage) {
-        console.log("data-entry-contentscript: init");
-        runOnMutation(contentDiv, () => {
-            groupSubsections();
-        });
-
+        console.log("CustomJS: isDataEntryPage");
+        
+        $(document).on( "dhis2.de.event.formLoaded", groupSubsections);
         loadJs("../dhis-web-commons/bootstrap/js/bootstrap.min.js");
         loadCss("../dhis-web-commons/bootstrap/css/bootstrap.min.css");
     }
 };
 
-$(init);
+var safeInit = function() {
+    try {
+        console.log("CustomJS: init");
+        return init();
+    } catch(err) {
+        console.error("CustomJS error: ", err);
+    }
+}
+
+$(safeInit);
 
 })();
