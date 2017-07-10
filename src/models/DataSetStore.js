@@ -22,7 +22,6 @@ export default class DataSetStore {
         this.config = {
             categoryProjectsId: "MRwzyV0kXv9",
             categoryComboId: "GmXXE8fiCK5",
-            categoryComboDefaultId: "eCUWK7qTyeW",
             dataElementGroupSetCoreCompetencyId: "Pyj6SCrmnZy",
             dataElementGroupOutputId: "rldkyVpu4EM",
             dataElementGroupOutcomeId: "WlNsNnj2sil",
