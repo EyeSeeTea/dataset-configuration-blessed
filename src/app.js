@@ -25,6 +25,8 @@ injectTapEventPlugin();
 import routes from './router';
 import appTheme from './App/app.theme';
 import './App/App.scss';
+import {redirectToLogin} from './utils/Dhis2Helpers';
+
 
 // Render the a LoadingMask to show the user the app is in loading
 // The consecutive render after we did our setup will replace this loading mask
@@ -37,7 +39,7 @@ render(
 
 function safeGetUserSettings() {
     const redirect = (err) => {
-        window.location.assign(config.loginUrl);
+        redirectToLogin(config.siteUrl);
         return Promise.reject(err || "Cannot connect to server");
     };
 
@@ -80,9 +82,10 @@ function startApp(d2) {
 // can use it to access the api, translations etc.
 getManifest('./manifest.webapp')
     .then(manifest => {
-        const baseUrl = process.env.NODE_ENV === 'production' ? manifest.getBaseUrl() : dhisDevConfig.baseUrl;
+        const baseUrl = process.env.NODE_ENV === 'production' ?
+            manifest.getBaseUrl() : dhisDevConfig.baseUrl;
+        config.siteUrl = baseUrl;
         config.baseUrl = `${baseUrl}/api/26`;
-        config.loginUrl = `${baseUrl}/dhis-web-commons/security/login.action`;
         log.info(`Loading: ${manifest.name} v${manifest.version}`);
         log.info(`Built ${manifest.manifest_generated_at}`);
     })

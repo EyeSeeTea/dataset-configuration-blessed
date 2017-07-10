@@ -6,7 +6,6 @@ import { generateUid } from 'd2/lib/uid';
         name: string
         showRowTotals: boolean
         showColumnTotals: boolean
-        indicators: [Indicator]
         dataElements: ObjectOf(
             [key] dataElementId: string
             [value] dataElement: {
@@ -43,23 +42,24 @@ export const getSectionsFromCoreCompetencies = (d2, config, coreCompetencies) =>
 	});
 };
 
-/* Return an object with the info the sections:
+/* Return an object with the info of the sections and selected dataElements:
 
     {
-        section: Section // D2 Section
-        dataSetElements: [dataElement] // Selected data elements through the required dataSetElements proxy.
-        indicators: [Indicator] // Indicators associated to the selected data elements.
+        sections: [e2.models.Section]
+        dataSetElements: [dataElement]
+        indicators: [Indicator]
     }
 */
-export const getDataSetInfo = (d2, sections) => {
-    const d2Sections = sections.map(section => getD2Section(d2, section));
+export const getDataSetInfo = (d2, config, sections) => {
+    const d2Sections = _(sections).flatMap(section => getD2Sections(d2, section)).value();
     const selectedDataElements = _(sections)
         .flatMap(section => _(section.dataElements).values().filter(de => de.selected).value())
     const dataSetElements = selectedDataElements
         .map(dataElement => ({
             id: generateUid(),
-            categoryCombo: dataElement.categoryCombo,
+            dataSet: {},
             dataElement: {id: dataElement.id},
+            categoryCombo: dataElement.categoryCombo,
         }))
         .value();
     const indicators = selectedDataElements
@@ -86,25 +86,28 @@ export const getDataSetInfo = (d2, sections) => {
     return {sections: d2Sections, dataSetElements, indicators, errors};
 };
 
-const getD2Section = (d2, section) => {
-    const selectedDataElements = _(section.dataElements).values().filter(de => de.selected);
-    const dataElements = selectedDataElements.map(de => ({id: de.id})).value();
-    const indicators = selectedDataElements
-        .flatMap(de => de.indicators.map(indicator => ({id: indicator.id})))
-        .value();
+const getD2Sections = (d2, section) => {
+    const getD2Section = (dataElements, d2SectionName) => {
+        return d2.models.sections.create({
+            name: d2SectionName,
+            showRowTotals: section.showRowTotals,
+            showColumnTotals: section.showColumnTotals,
+            dataElements: dataElements.map(de => ({id: de.id})),
+            indicators: _(dataElements).flatMap("indicators").map(ind => ({id: ind.id})).value(),
+        });
+    };
 
-    return d2.models.sections.create({
-        name: section.name,
-        showRowTotals: section.showRowTotals,
-        showColumnTotals: section.showColumnTotals,
-        dataElements: dataElements,
-        indicators: indicators,
-    });
+    return _(section.dataElements)
+        .values()
+        .filter(de => de.selected)
+        .groupBy(de => [section.name, de.theme, de.group].join("@").replace(/@*$/, ''))
+        .map(getD2Section)
+        .value();
 };
 
 const getOutputSection = (dataElements, opts) => {
     const {d2, config, coreCompetency} = opts;
-    const sectionName = coreCompetency.name;
+    const sectionName = coreCompetency.name + " Outputs";
     const filteredDataElements =
         filterDataElements(dataElements, [coreCompetency.id, config.dataElementGroupOutputId])
     return getSection(sectionName, filteredDataElements, [], {}, opts);
@@ -112,7 +115,7 @@ const getOutputSection = (dataElements, opts) => {
 
 const getOutcomeSection = (dataElements, opts) => {
     const {d2, config, indicatorsByGroupName, coreCompetency} = opts;
-    const sectionName = coreCompetency.name + " (B)";
+    const sectionName = coreCompetency.name + " Outcomes";
     const outcomeDataElements =
         filterDataElements(dataElements, [coreCompetency.id, config.dataElementGroupOutcomeId]);
     const indicators = indicatorsByGroupName[coreCompetency.name];
@@ -129,31 +132,42 @@ const getOutcomeSection = (dataElements, opts) => {
 
 const getSection = (sectionName, dataElements, indicators, filtersToIndicators, opts) => {
     const {d2, config, relations, coreCompetency} = opts;
-    const dataElementsData = dataElements.map(de => {
+    const getDataElementInfo = (de) => {
         const indicators = _([
             filtersToIndicators["id." + de.id],
             filtersToIndicators["code." + de.code],
         ]).compact().flatten().value();
-        const attributes = _(de.dataElementGroups.toArray())
+        const groupSets = _(de.dataElementGroups.toArray())
             .map(deg => [relations[deg.id], deg]).fromPairs().value();
-        const degSetOrigin = attributes[config.dataElementGroupSetOriginId];
+        const degSetOrigin = groupSets[config.dataElementGroupSetOriginId];
+        const theme = groupSets[config.dataElementGroupSetThemeId];
+        const group = _(de.attributeValues)
+            .find(av => av.attribute.id === config.attributeGroupId)
+        const mandatoryIndicatorId = config.dataElementGroupGlobalIndicatorMandatoryId;
 
         return {
             id: de.id,
             name: de.name,
             indicators: indicators,
-            selected: degSetOrigin ?
-                degSetOrigin.id == config.dataElementGroupGlobalIndicatorMandatoryId : false,
-            origin: degSetOrigin ? degSetOrigin.name : "None",
-            disaggregation: de.categoryCombo.name == "default" ? "None" : de.categoryCombo.name,
+            theme: theme ? theme.name : null,
+            group: group ? group.value : null,
+            categoryCombo: de. categoryCombo,
+            selected: degSetOrigin ? degSetOrigin.id === mandatoryIndicatorId : false,
+            origin: degSetOrigin ? degSetOrigin.name : null,
+            disaggregation: de.categoryCombo.name !== "default" ? de.categoryCombo.name : "None",
         };
-    });
+    };
+    const indexedDataElementsInfo = _(dataElements)
+        .map(getDataElementInfo)
+        .sortBy(de => [!de.selected, de.name])
+        .keyBy("id")
+        .value();
 
     return {
         name: sectionName,
         showRowTotals: false,
         showColumnTotals: false,
-        dataElements: _.keyBy(dataElementsData, "id"),
+        dataElements: indexedDataElementsInfo,
     };
 };
 
@@ -228,8 +242,15 @@ const getFilteredItems = (model, filters, listOptions) => {
 };
 
 const getDataElements = (d2, dataElementFilters) => {
-    return getFilteredItems(d2.models.dataElements, dataElementFilters,
-        {fields: "id,name,code,categoryCombo[id,name],dataElementGroups[id,name]"});
+    const fields = [
+        "id",
+        "name",
+        "code",
+        "categoryCombo[id,name]",
+        "dataElementGroups[id,name]",
+        "attributeValues[value,attribute]",
+    ];
+    return getFilteredItems(d2.models.dataElements, dataElementFilters, {fields: fields.join(",")});
 };
 
 const getIndicatorsByGroupName = (d2, coreCompetencies) => {
