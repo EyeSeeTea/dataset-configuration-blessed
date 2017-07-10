@@ -39,7 +39,7 @@ const Save = React.createClass({
     },
 
     _saveErrors(error) {
-        const message = JSON.stringify(error);
+        const message = _.isEmpty(error) ? error.toString() : JSON.stringify(error, null, 2);
         this.setState({saveState: this.saveStates.SAVE_ERROR, errors: [message]})
     },
 

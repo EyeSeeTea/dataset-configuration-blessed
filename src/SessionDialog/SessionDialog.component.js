@@ -2,6 +2,7 @@ import React from 'react';
 import Dialog from 'material-ui/Dialog';
 import FlatButton from 'material-ui/FlatButton';
 import Translate from 'd2-ui/lib/i18n/Translate.mixin';
+import {redirectToLogin} from '../utils/Dhis2Helpers';
 
 const SessionDialog = React.createClass({
     mixins: [Translate],
@@ -29,12 +30,6 @@ const SessionDialog = React.createClass({
         this.setState({open: false});
     },
 
-    redirectToLogin() {
-        const {baseUrl} = this.context.d2.system.settings.api;
-        const loginUrl = `${baseUrl}/dhis-web-commons/security/login.action`;
-        window.location.assign(loginUrl);
-    },
-
     render() {
         const actions = [
             <FlatButton
@@ -45,7 +40,7 @@ const SessionDialog = React.createClass({
             <FlatButton
                 label={this.getTranslation("login")}
                 primary={true}
-                onTouchTap={this.redirectToLogin}
+                onTouchTap={() => redirectToLogin(this.context.d2.system.settings.api.baseUrl)}
             />,
         ];
 
