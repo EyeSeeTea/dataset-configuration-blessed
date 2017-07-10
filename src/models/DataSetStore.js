@@ -1,6 +1,19 @@
 import fp from 'lodash/fp';
 import { generateUid } from 'd2/lib/uid';
 import moment from 'moment';
+import { getOwnedPropertyJSON } from 'd2/lib/model/helpers/json';
+import { map, pick, get, filter, flatten, compose, identity, head } from 'lodash/fp';
+
+// From maintenance-app/src/EditModel/objectActions.js
+const extractErrorMessagesFromResponse = compose(
+    filter(identity),
+    map(get('message')),
+    flatten,
+    map('errorReports'),
+    flatten,
+    map('objectReports'),
+    get('typeReports')
+);
 
 export default class DataSetStore {
     constructor(d2, getTranslation) {
@@ -38,7 +51,9 @@ export default class DataSetStore {
             organisationUnits: [],
             skipOffline: false,
             dataElementDecoration: true,
+            renderAsTabs: true,
             indicators: [],
+            dataSetElements: [],
         });
     }
 
@@ -126,12 +141,61 @@ export default class DataSetStore {
         this.updateFromAssociations(fieldPath, oldValue);
     }
 
+    saveDataset() {
+        return new Promise(async (complete, error) => {
+            // maintenance-app uses a custom function to save the dataset as it needs to do
+            // some processing  not allowed by dataset.save(). The code in this method is copied
+            // from maintenance-app/src/EditModel/objectActions.js
+            const d2 = this.d2;
+            const api = d2.Api.getApi();
+            const dataSetModel = this.dataset;
+            const dataSetPayload = getOwnedPropertyJSON(dataSetModel);
+
+            if (!dataSetPayload.id) {
+                const dataSetId = await api.get('system/uid', { limit: 1 }).then(({ codes }) => codes[0]);
+                dataSetPayload.id = dataSetId;
+            }
+
+            const dataSetElements = Array
+                .from(dataSetModel.dataSetElements ? dataSetModel.dataSetElements.values() : [])
+                .map(({ dataSet, dataElement, ...other }) => {
+                    return {
+                        dataSet: { ...dataSet, id: dataSet.id || dataSetPayload.id },
+                        ...other,
+                        dataElement: {
+                            id: dataElement.id,
+                        }
+                    }
+                });
+
+            dataSetPayload.dataSetElements = dataSetElements;
+
+            const metadataPayload = {
+                dataSets: [dataSetPayload],
+            };
+
+            try {
+                const response = await api.post('metadata', metadataPayload);
+
+                if (response.status === 'OK') {
+                    complete(dataSetPayload);
+                } else {
+                    const errorMessages = extractErrorMessagesFromResponse(response);
+
+                    error(head(errorMessages) || 'Unknown error!');
+                }
+            } catch (err) {
+                error(err);
+            }
+        });
+    }
+
     save() {
         this.dataset.dirty = true;
 
-        return this.dataset.save()
-            .then(({response}) => {
-                const datasetId = response.uid;
+        return this.saveDataset()
+            .then((dataset) => {
+                const datasetId = dataset.id;
                 const sections = _(this.associations.sections)
                     .sortBy(section => section.name)
                     .map(section => {
@@ -140,8 +204,10 @@ export default class DataSetStore {
                         return clonedSection;
                     })
                     .value();
-                return sections
-                    .reduce((promise, section) => promise.then(() => section.save()), Promise.resolve());
+                return sections.reduce(
+                    (promise, section) => promise.then(() => section.save()), 
+                    Promise.resolve()
+                );
             });
     }
 }

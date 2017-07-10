@@ -42,23 +42,24 @@ export const getSectionsFromCoreCompetencies = (d2, config, coreCompetencies) =>
 	});
 };
 
-/* Return an object with the info of the sections:
+/* Return an object with the info of the sections and selected dataElements:
 
     {
         sections: [e2.models.Section]
-        dataSetElements: [dataElement] // Selected data elements through the required dataSetElements.
-        indicators: [Indicator] // Indicators associated to the selected data elements.
+        dataSetElements: [dataElement]
+        indicators: [Indicator]
     }
 */
-export const getDataSetInfo = (d2, sections) => {
+export const getDataSetInfo = (d2, config, sections) => {
     const d2Sections = _(sections).flatMap(section => getD2Sections(d2, section)).value();
     const selectedDataElements = _(sections)
         .flatMap(section => _(section.dataElements).values().filter(de => de.selected).value())
     const dataSetElements = selectedDataElements
         .map(dataElement => ({
             id: generateUid(),
-            categoryCombo: dataElement.categoryCombo,
+            dataSet: {},
             dataElement: {id: dataElement.id},
+            categoryCombo: dataElement.categoryCombo,
         }))
         .value();
     const indicators = selectedDataElements
@@ -142,6 +143,7 @@ const getSection = (sectionName, dataElements, indicators, filtersToIndicators, 
         const theme = groupSets[config.dataElementGroupSetThemeId];
         const group = _(de.attributeValues)
             .find(av => av.attribute.id === config.attributeGroupId)
+        const mandatoryIndicatorId = config.dataElementGroupGlobalIndicatorMandatoryId;
 
         return {
             id: de.id,
@@ -149,11 +151,10 @@ const getSection = (sectionName, dataElements, indicators, filtersToIndicators, 
             indicators: indicators,
             theme: theme ? theme.name : null,
             group: group ? group.value : null,
-            selected: degSetOrigin ?
-                degSetOrigin.id === config.dataElementGroupGlobalIndicatorMandatoryId : false,
+            categoryCombo: de. categoryCombo,
+            selected: degSetOrigin ? degSetOrigin.id === mandatoryIndicatorId : false,
             origin: degSetOrigin ? degSetOrigin.name : null,
-            disaggregation: de.categoryCombo.name !== "default" ?
-                de.categoryCombo.name : "None",
+            disaggregation: de.categoryCombo.name !== "default" ? de.categoryCombo.name : "None",
         };
     };
     const indexedDataElementsInfo = _(dataElements)
