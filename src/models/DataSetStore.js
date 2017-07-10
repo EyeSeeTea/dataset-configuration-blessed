@@ -51,6 +51,7 @@ export default class DataSetStore {
             organisationUnits: [],
             skipOffline: false,
             dataElementDecoration: true,
+            renderAsTabs: true,
             indicators: [],
             dataSetElements: [],
         });
