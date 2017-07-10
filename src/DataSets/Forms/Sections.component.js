@@ -185,7 +185,7 @@ const Sections = React.createClass({
         const {d2} = this.context;
         const stateSections = _.values(this.state.sections);
         const {sections, dataSetElements, indicators, errors} =
-            Section.getDataSetInfo(d2, stateSections);
+            Section.getDataSetInfo(d2, this.props.config, stateSections);
         this.setState({errors: errors});
 
         this.props.onFieldsChange("associations.stateSections", stateSections);
