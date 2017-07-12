@@ -191,7 +191,7 @@ export default class DataSetStore {
         });
     }
 
-    processCustomDisaggretation(sourceDataset) {
+    applyDisaggregation(sourceDataset) {
         const dataset = sourceDataset.clone();
 
         return getCategoryCombos(this.d2).then(categoryCombos => {
@@ -234,7 +234,7 @@ export default class DataSetStore {
     }
 
     save() {
-        return this.processCustomDisaggretation(this.dataset)
+        return this.applyDisaggregation(this.dataset)
             .then(dataset => this.saveDataset(dataset))
             .then(dataset => {
                 const datasetId = dataset.id;
