@@ -26,9 +26,11 @@ const DataSetFormSteps = React.createClass({
         };
     },
 
-    _onFieldsChange(stepId, fieldPath, newValue) {
+    _onFieldsChange(stepId, fieldPath, newValue, update = true) {
         this.state.store.updateField(fieldPath, newValue);
-        this.setState({store: this.state.store});
+        if (update) {
+            this.forceUpdate();
+        }
     },
 
     _afterSave() {

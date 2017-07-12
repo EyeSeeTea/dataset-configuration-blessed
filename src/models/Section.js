@@ -45,7 +45,7 @@ export const getSectionsFromCoreCompetencies = (d2, config, coreCompetencies) =>
 /* Return an object with the info of the sections and selected dataElements:
 
     {
-        sections: [e2.models.Section]
+        sections: [d2.models.Section]
         dataSetElements: [dataElement]
         indicators: [Indicator]
     }
