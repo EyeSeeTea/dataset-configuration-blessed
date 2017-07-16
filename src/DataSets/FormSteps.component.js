@@ -7,6 +7,7 @@ import InitialConfig from './Forms/InitialConfig.component';
 import GeneralInformation from './Forms/GeneralInformation.component';
 import OrganisationUnit from './Forms/OrganisationUnit.component';
 import Sections from './Forms/Sections.component';
+import Disaggregation from './Forms/Disaggregation.component';
 import Save from './Forms/Save.component';
 
 import DataSetStore from '../models/DataSetStore';
@@ -25,9 +26,11 @@ const DataSetFormSteps = React.createClass({
         };
     },
 
-    _onFieldsChange(stepId, fieldPath, newValue) {
+    _onFieldsChange(stepId, fieldPath, newValue, update = true) {
         this.state.store.updateField(fieldPath, newValue);
-        this.setState({store: this.state.store});
+        if (update) {
+            this.forceUpdate();
+        }
     },
 
     _afterSave() {
@@ -106,6 +109,13 @@ const DataSetFormSteps = React.createClass({
                 id: 'sections',
                 title: this.getTranslation("step_sections"),
                 component: Sections,
+                actionsBar: ["top", "bottom"],
+                props: props,
+            },
+            {
+                id: 'disaggregation',
+                title: this.getTranslation("step_disaggregation"),
+                component: Disaggregation,
                 actionsBar: ["top", "bottom"],
                 props: props,
             },

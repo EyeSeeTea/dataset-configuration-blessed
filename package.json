@@ -26,6 +26,7 @@
   },
   "license": "GPL-3.0",
   "dependencies": {
+    "bluebird": "^3.5.0",
     "jquery": "^2.2.3",
     "json-loader": "^0.5.4",
     "react-router": "^2.8.1",

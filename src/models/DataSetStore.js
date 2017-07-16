@@ -1,8 +1,10 @@
 import fp from 'lodash/fp';
 import { generateUid } from 'd2/lib/uid';
 import moment from 'moment';
+import Promise from 'bluebird';
 import { getOwnedPropertyJSON } from 'd2/lib/model/helpers/json';
 import { map, pick, get, filter, flatten, compose, identity, head } from 'lodash/fp';
+import {getCategoryCombos, collectionToArray} from '../utils/Dhis2Helpers';
 
 // From maintenance-app/src/EditModel/objectActions.js
 const extractErrorMessagesFromResponse = compose(
@@ -141,14 +143,13 @@ export default class DataSetStore {
         this.updateFromAssociations(fieldPath, oldValue);
     }
 
-    saveDataset() {
+    saveDataset(dataSetModel) {
         return new Promise(async (complete, error) => {
             // maintenance-app uses a custom function to save the dataset as it needs to do
             // some processing  not allowed by dataset.save(). The code in this method is copied
             // from maintenance-app/src/EditModel/objectActions.js
             const d2 = this.d2;
             const api = d2.Api.getApi();
-            const dataSetModel = this.dataset;
             const dataSetPayload = getOwnedPropertyJSON(dataSetModel);
 
             if (!dataSetPayload.id) {
@@ -190,11 +191,52 @@ export default class DataSetStore {
         });
     }
 
-    save() {
-        this.dataset.dirty = true;
+    applyDisaggregation(sourceDataset) {
+        const dataset = sourceDataset.clone();
 
-        return this.saveDataset()
-            .then((dataset) => {
+        return getCategoryCombos(this.d2).then(categoryCombos => {
+            const newDataSetElements$ = Promise.map(sourceDataset.dataSetElements, dataSetElement => {
+                const dataElementCategories = dataSetElement.dataElement.categoryCombo.categories;
+                const dataSetElementCategories =
+                    collectionToArray(dataSetElement.categoryCombo.categories);
+                const categories = _(dataElementCategories)
+                    .concat(dataSetElementCategories).uniqBy("id").value();
+                const existingCategoryCombo = _(categoryCombos.toArray()).find(categoryCombo =>
+                    _(categoryCombo.categories.toArray())
+                        .orderBy("id")
+                        .map(c => c.id)
+                        .isEqual(_(categories).orderBy("id").map(c => c.id))
+                );
+
+                if (existingCategoryCombo) {
+                    dataSetElement.categoryCombo = {id: existingCategoryCombo.id};
+                    return Promise.resolve(dataSetElement);
+                } else {
+                    const newCategoryCombo = this.d2.models.categoryCombo.create({
+                        name: _(categories).map("name").join("/"),
+                        categories: _(categories).map(c => ({id: c.id})).value(),
+                        dataDimensionType: "DISAGGREGATION",
+                    })
+                    newCategoryCombo.dirty = true;
+                    return newCategoryCombo.save().then(res => {
+                        dataSetElement.categoryCombo = {id: newCategoryCombo.id};
+                        return dataSetElement;
+                    });
+                }
+            }, {concurrency: 1});
+
+            return newDataSetElements$.then(newDataSetElements => {
+                dataset.dataSetElements = newDataSetElements;
+                dataset.dirty = true;
+                return dataset;
+            })
+        });
+    }
+
+    save() {
+        return this.applyDisaggregation(this.dataset)
+            .then(dataset => this.saveDataset(dataset))
+            .then(dataset => {
                 const datasetId = dataset.id;
                 const sections = _(this.associations.sections)
                     .sortBy(section => section.name)
@@ -204,10 +246,7 @@ export default class DataSetStore {
                         return clonedSection;
                     })
                     .value();
-                return sections.reduce(
-                    (promise, section) => promise.then(() => section.save()), 
-                    Promise.resolve()
-                );
+                return Promise.map(sections, section => section.save(), {concurrency: 1});
             });
     }
 }
