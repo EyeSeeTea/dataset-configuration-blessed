@@ -94,10 +94,12 @@ const getD2Sections = (d2, section) => {
     const getD2Section = (dataElements, d2SectionName) => {
         return d2.models.sections.create({
             name: d2SectionName,
+            displayName: d2SectionName,
             showRowTotals: section.showRowTotals,
             showColumnTotals: section.showColumnTotals,
             dataElements: dataElements.map(de => ({id: de.id})),
             indicators: _(dataElements).flatMap("indicators").map(ind => ({id: ind.id})).value(),
+            greyedFields: [],
         });
     };
 
@@ -152,6 +154,7 @@ const getSection = (sectionName, dataElements, indicators, filtersToIndicators, 
         return {
             id: de.id,
             name: de.name,
+            displayName: de.name,
             indicators: indicators,
             theme: theme ? theme.name : null,
             group: group ? group.value : null,
@@ -250,7 +253,8 @@ const getDataElements = (d2, dataElementFilters) => {
         "id",
         "name",
         "code",
-        "categoryCombo[id,name,displayName,categories[id,name,displayName]]",
+        "categoryCombo[id,name,displayName,categoryOptionCombos[id,displayName,categoryOptions[id,displayName]]," +
+            "categories[id,name,displayName,categoryOptions[id,displayName]]]",
         "dataElementGroups[id,name,displayName]",
         "attributeValues[value,attribute]",
     ];

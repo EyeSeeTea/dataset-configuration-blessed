@@ -119,7 +119,7 @@ function DataSetElementList({ dataSetElements, categoryCombos, onCategoryComboSe
                     <div style={styles.elementListItem}>
                         <CategoryComboSelectField
                             categoryCombos={categoryCombosForSelect}
-                            value={categoryCombo.id}
+                            value={categoryCombo.source ? categoryCombo.source.id : categoryCombo.id}
                             onChange={(categoryCombo) => onCategoryComboSelected(id, categoryCombo)}
                         />
                     </div>

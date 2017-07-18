@@ -1,3 +1,7 @@
+import { generateUid } from 'd2/lib/uid';
+import _ from 'lodash';
+import {cartesianProduct} from './lodash-mixins';
+
 function redirectToLogin(baseUrl) {
     const loginUrl = `${baseUrl}/dhis-web-commons/security/login.action`;
     window.location.assign(loginUrl);
@@ -5,7 +9,11 @@ function redirectToLogin(baseUrl) {
 
 function getCategoryCombos(d2) {
     return d2.models.categoryCombos.list({
-        fields: "id,displayName,categories[id,name]",
+        fields: [
+            'id,displayName',
+            'categories[id,displayName,categoryOptions[id,displayName]]',
+            'categoryOptionCombos[id,displayName,categoryOptions[id,displayName]]',
+        ].join(','),
         filter: "dataDimensionType:eq:DISAGGREGATION",
         paging: false,
     });
@@ -15,4 +23,43 @@ function collectionToArray(collectionOrArray) {
     return collectionOrArray.toArray ? collectionOrArray.toArray() : collectionOrArray;
 }
 
-export {redirectToLogin, getCategoryCombos, collectionToArray};
+function getCustomCategoryCombo(d2, dataElement, categoryCombos, categoryCombo) {
+    const selectedCategories = collectionToArray(categoryCombo.categories);
+    const combinedCategories = _(dataElement.categoryCombo.categories)
+        .concat(selectedCategories).uniqBy("id").value();
+    const existingCategoryCombo = _(categoryCombos).find(categoryCombo =>
+        _(categoryCombo.categories.toArray())
+            .orderBy("id")
+            .map(c => c.id)
+            .isEqual(_(combinedCategories).orderBy("id").map(c => c.id))
+    );
+
+    if (existingCategoryCombo) {
+        return _.merge(existingCategoryCombo, {source: categoryCombo});
+    } else {
+        const allCategoriesById = _(categoryCombos)
+            .flatMap(cc => cc.categories.toArray()).uniqBy("id").keyBy("id").value();
+        const categories = _.at(allCategoriesById, combinedCategories.map(cat => cat.id));
+        const categoryOptions = categories.map(c => c.categoryOptions.toArray());
+        const categoryOptionCombos = cartesianProduct(...categoryOptions).map(cos =>
+            ({
+                id: generateUid(),
+                displayName: name,
+                categoryOptions: cos,
+            })
+        );
+
+        const name = _(categories).map("displayName").join("/");
+        const customCategoryCombo = d2.models.categoryCombo.create({
+            id: "new-" + generateUid(),
+            dataDimensionType: "DISAGGREGATION",
+            name: name,
+            displayName: name,
+            categories: categories,
+            categoryOptionCombos: categoryOptionCombos,
+        });
+        return _.merge(customCategoryCombo, {source: categoryCombo});
+    }
+}
+
+export {redirectToLogin, getCategoryCombos, collectionToArray, getCustomCategoryCombo};

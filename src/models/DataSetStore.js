@@ -17,6 +17,11 @@ const extractErrorMessagesFromResponse = compose(
     get('typeReports')
 );
 
+const merge = (obj1, obj2) => {
+    _(obj2).each((value, key) => { obj1[key] = value; });
+    return obj1;
+};
+
 export default class DataSetStore {
     constructor(d2, getTranslation) {
         this.d2 = d2;
@@ -143,14 +148,23 @@ export default class DataSetStore {
         this.updateFromAssociations(fieldPath, oldValue);
     }
 
-    saveDataset(dataSetModel) {
+    setGreyedFields(greyedFieldsForSections) {
+        if (this.associations.sections.length !== greyedFieldsForSections.length) {
+            throw new Error("setGreyedFields: invalid input array length")
+        }
+        _(this.associations.sections).zip(greyedFieldsForSections).each(([section, greyedFields]) => {
+            section.greyedFields = greyedFields;
+        });
+    }
+
+    _saveDataset(dataset) {
         return new Promise(async (complete, error) => {
             // maintenance-app uses a custom function to save the dataset as it needs to do
             // some processing  not allowed by dataset.save(). The code in this method is copied
             // from maintenance-app/src/EditModel/objectActions.js
             const d2 = this.d2;
             const api = d2.Api.getApi();
-            const dataSetPayload = getOwnedPropertyJSON(dataSetModel);
+            const dataSetPayload = getOwnedPropertyJSON(dataset);
 
             if (!dataSetPayload.id) {
                 const dataSetId = await api.get('system/uid', { limit: 1 }).then(({ codes }) => codes[0]);
@@ -158,7 +172,7 @@ export default class DataSetStore {
             }
 
             const dataSetElements = Array
-                .from(dataSetModel.dataSetElements ? dataSetModel.dataSetElements.values() : [])
+                .from(dataset.dataSetElements ? dataset.dataSetElements.values() : [])
                 .map(({ dataSet, dataElement, ...other }) => {
                     return {
                         dataSet: { ...dataSet, id: dataSet.id || dataSetPayload.id },
@@ -179,7 +193,8 @@ export default class DataSetStore {
                 const response = await api.post('metadata', metadataPayload);
 
                 if (response.status === 'OK') {
-                    complete(dataSetPayload);
+                    dataset.id = dataSetPayload.id;
+                    complete(dataset);
                 } else {
                     const errorMessages = extractErrorMessagesFromResponse(response);
 
@@ -191,62 +206,79 @@ export default class DataSetStore {
         });
     }
 
-    applyDisaggregation(sourceDataset) {
-        const dataset = sourceDataset.clone();
+    _processDisaggregation(sourceDataset, categoryCombos) {
+        const savedCategoryCombos$ = Promise.map(sourceDataset.dataSetElements, dse => {
+            if (dse.categoryCombo.id.startsWith("new-")) {
+                const newCategoryCombo = merge(dse.categoryCombo.clone(), {id: null});
+                return newCategoryCombo.save().then(res => [dse.categoryCombo, newCategoryCombo]);
+            } else {
+                return Promise.resolve([dse.categoryCombo, dse.categoryCombo]);
+            }
+        }, {concurrency: 1});
 
-        return getCategoryCombos(this.d2).then(categoryCombos => {
-            const newDataSetElements$ = Promise.map(sourceDataset.dataSetElements, dataSetElement => {
-                const dataElementCategories = dataSetElement.dataElement.categoryCombo.categories;
-                const dataSetElementCategories =
-                    collectionToArray(dataSetElement.categoryCombo.categories);
-                const categories = _(dataElementCategories)
-                    .concat(dataSetElementCategories).uniqBy("id").value();
-                const existingCategoryCombo = _(categoryCombos.toArray()).find(categoryCombo =>
-                    _(categoryCombo.categories.toArray())
-                        .orderBy("id")
-                        .map(c => c.id)
-                        .isEqual(_(categories).orderBy("id").map(c => c.id))
-                );
+        return savedCategoryCombos$.then(savedCategoryCombos => {
+            return getCategoryCombos(this.d2).then(finalCategoryCombos => {
+                const finalCocsById = _.keyBy(finalCategoryCombos.toArray(), "id");
+                const cocsById = _(sourceDataset.dataSetElements)
+                    .map(dse => [dse.categoryCombo.id, dse.categoryCombo.categoryOptionCombos])
+                    .fromPairs()
+                    .value();
 
-                if (existingCategoryCombo) {
-                    dataSetElement.categoryCombo = {id: existingCategoryCombo.id};
-                    return Promise.resolve(dataSetElement);
-                } else {
-                    const newCategoryCombo = this.d2.models.categoryCombo.create({
-                        name: _(categories).map("name").join("/"),
-                        categories: _(categories).map(c => ({id: c.id})).value(),
-                        dataDimensionType: "DISAGGREGATION",
-                    })
-                    newCategoryCombo.dirty = true;
-                    return newCategoryCombo.save().then(res => {
-                        dataSetElement.categoryCombo = {id: newCategoryCombo.id};
-                        return dataSetElement;
-                    });
-                }
-            }, {concurrency: 1});
+                const sortByCategoryOptions = cocs => {
+                    return _(collectionToArray(cocs))
+                        .orderBy(coc =>
+                            _(collectionToArray(coc.categoryOptions)).map("id").orderBy().join("."))
+                        .value();
+                };
+                const relation = _(savedCategoryCombos)
+                    .flatMap(([oldCc, newCc]) =>
+                        _.zip(
+                            sortByCategoryOptions(cocsById[oldCc.id]).map(coc => coc.id),
+                            sortByCategoryOptions(finalCocsById[newCc.id].categoryOptionCombos),
+                        )
+                    )
+                    .fromPairs()
+                    .value();
 
-            return newDataSetElements$.then(newDataSetElements => {
-                dataset.dataSetElements = newDataSetElements;
-                dataset.dirty = true;
+                const sectionsWithPersistedCocs = this.associations.sections.map(section => {
+                    const persistedGreyedFields = section.greyedFields.map(field =>
+                        merge(field, {categoryOptionCombo: {
+                            id: relation[field.categoryOptionCombo.id].id,
+                        }})
+                    );
+                    return merge(section.clone(), {greyedFields: persistedGreyedFields})
+                });
+
+                const dataset = merge(sourceDataset.clone(), {sections: sectionsWithPersistedCocs});
+                _(dataset.dataSetElements).zip(savedCategoryCombos).each(([dse, [oldCc, newCc]]) => {
+                    dse.categoryCombo = {id: newCc.id};
+                });
                 return dataset;
-            })
-        });
+            });
+        })
+    }
+
+    _createSections(dataset) {
+        const datasetId = dataset.id;
+        const sections = _(dataset.sections)
+            .sortBy(section => section.name)
+            .map(section => merge(section.clone(), {dataSet: {id: datasetId}}))
+            .map(section =>
+                merge(section, {greyedFields: section.greyedFields.map(field =>
+                    merge(field, {categoryOptionCombo: {id: field.categoryOptionCombo.id}}))}))
+            .value();
+
+        return sections.reduce(
+            (promise, section) => promise.then(() => section.save()),
+            Promise.resolve()
+        );
     }
 
     save() {
-        return this.applyDisaggregation(this.dataset)
-            .then(dataset => this.saveDataset(dataset))
-            .then(dataset => {
-                const datasetId = dataset.id;
-                const sections = _(this.associations.sections)
-                    .sortBy(section => section.name)
-                    .map(section => {
-                        const clonedSection = section.clone();
-                        clonedSection.dataSet = {id: datasetId};
-                        return clonedSection;
-                    })
-                    .value();
-                return Promise.map(sections, section => section.save(), {concurrency: 1});
-            });
+        return getCategoryCombos(this.d2).then(categoryCombos => {
+            return this._processDisaggregation(this.dataset, categoryCombos)
+                .then(dataset => this._saveDataset(dataset))
+                .then(dataset => this._createSections(dataset));
+        });
     }
 }
