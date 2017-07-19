@@ -27,8 +27,8 @@ function getCustomCategoryCombo(d2, dataElement, categoryCombos, categoryCombo) 
     const selectedCategories = collectionToArray(categoryCombo.categories);
     const combinedCategories = _(dataElement.categoryCombo.categories)
         .concat(selectedCategories).uniqBy("id").value();
-    const existingCategoryCombo = _(categoryCombos).find(categoryCombo =>
-        _(categoryCombo.categories.toArray())
+    const existingCategoryCombo = _(categoryCombos).find(cc =>
+        _(cc.categories.toArray())
             .orderBy("id")
             .map(c => c.id)
             .isEqual(_(combinedCategories).orderBy("id").map(c => c.id))
@@ -49,7 +49,7 @@ function getCustomCategoryCombo(d2, dataElement, categoryCombos, categoryCombo) 
             })
         );
 
-        const name = _(categories).map("displayName").join("/");
+        const name = [dataElement.categoryCombo, categoryCombo].map(cc => cc.displayName).join("/");
         const customCategoryCombo = d2.models.categoryCombo.create({
             id: "new-" + generateUid(),
             dataDimensionType: "DISAGGREGATION",
