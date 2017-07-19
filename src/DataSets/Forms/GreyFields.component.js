@@ -16,7 +16,6 @@ const GreyFields = React.createClass({
 
     _save(greyedFields) {
         const {sections} = this.props.store.associations;
-        console.log("save", greyedFields);
         this.props.store.setGreyedFields(greyedFields)
     },
 

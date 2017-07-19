@@ -275,31 +275,43 @@ class GreyFieldsTable extends React.Component {
             );
         };
 
+        const changeSection = (ev) => {
+            this.setState({
+                currentSection: _(this.props.sections).keyBy("name").get(ev.target.value),
+                currentCategoryCombo: null,
+            });
+        };
+
+        const changeCategoryCombo = (ev) => {
+            this.setState({
+                currentCategoryCombo:
+                    _(categoryCombosForVisibleSections).keyBy("id").get(ev.target.value),
+            });
+        };
 
         return (
             <div>
-                <DropDown
-                    options={this.props.sections.map(section =>
-                        ({value: section.name, text: section.name}))}
-                    labelText={this.getTranslation('section')}
-                    value={this.state.currentSection && this.state.currentSection.name}
-                    onChange={e => this.setState({
-                        currentSection: _(this.props.sections).keyBy("name").get(e.target.value),
-                    })}
-                    style={{ width: '33%', marginRight: 20 }}
-                />
+                <div>
+                    <DropDown
+                        options={this.props.sections.map(section =>
+                            ({value: section.name, text: section.name.replace("@", "->")}))}
+                        labelText={this.getTranslation('section')}
+                        value={this.state.currentSection && this.state.currentSection.name}
+                        onChange={changeSection}
+                        style={{ width: '33%', marginRight: 20 }}
+                    />
+                </div>
 
-                <DropDown
-                    options={categoryCombosForVisibleSections.map(cc =>
-                        ({value: cc.id, text: cc.displayName}))}
-                    labelText={this.getTranslation('category_combo')}
-                    value={currentCategoryCombo && currentCategoryCombo.id}
-                    onChange={e => this.setState({
-                        currentCategoryCombo:
-                            _(categoryCombosForVisibleSections).keyBy("id").get(e.target.value),
-                    })}
-                    style={{ width: '33%' }}
-                />
+                <div>
+                    <DropDown
+                        options={categoryCombosForVisibleSections.map(cc =>
+                            ({value: cc.id, text: cc.displayName}))}
+                        labelText={this.getTranslation('category_combo')}
+                        value={currentCategoryCombo && currentCategoryCombo.id}
+                        onChange={changeCategoryCombo}
+                        style={{ width: '33%' }}
+                    />
+                </div>
 
                 {categoryCombosToShow.map(categoryCombo => renderTable(categoryCombo))}
             </div>
