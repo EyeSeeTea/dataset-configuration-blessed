@@ -291,27 +291,23 @@ class GreyFieldsTable extends React.Component {
 
         return (
             <div>
-                <div>
-                    <DropDown
-                        options={this.props.sections.map(section =>
-                            ({value: section.name, text: section.name.replace("@", "->")}))}
-                        labelText={this.getTranslation('section')}
-                        value={this.state.currentSection && this.state.currentSection.name}
-                        onChange={changeSection}
-                        style={{ width: '33%', marginRight: 20 }}
-                    />
-                </div>
+                <DropDown
+                    options={this.props.sections.map(section =>
+                        ({value: section.name, text: section.name.replace("@", "->")}))}
+                    labelText={this.getTranslation('section')}
+                    value={this.state.currentSection && this.state.currentSection.name}
+                    onChange={changeSection}
+                    style={{ width: '33%', marginRight: 20 }}
+                />
 
-                <div>
-                    <DropDown
-                        options={categoryCombosForVisibleSections.map(cc =>
-                            ({value: cc.id, text: cc.displayName}))}
-                        labelText={this.getTranslation('category_combo')}
-                        value={currentCategoryCombo && currentCategoryCombo.id}
-                        onChange={changeCategoryCombo}
-                        style={{ width: '33%' }}
-                    />
-                </div>
+                <DropDown
+                    options={categoryCombosForVisibleSections.map(cc =>
+                        ({value: cc.id, text: cc.displayName}))}
+                    labelText={this.getTranslation('category_combo')}
+                    value={currentCategoryCombo && currentCategoryCombo.id}
+                    onChange={changeCategoryCombo}
+                    style={{ width: '33%' }}
+                />
 
                 {categoryCombosToShow.map(categoryCombo => renderTable(categoryCombo))}
             </div>
