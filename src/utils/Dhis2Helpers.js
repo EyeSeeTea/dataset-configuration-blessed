@@ -15,4 +15,24 @@ function collectionToArray(collectionOrArray) {
     return collectionOrArray.toArray ? collectionOrArray.toArray() : collectionOrArray;
 }
 
-export {redirectToLogin, getCategoryCombos, collectionToArray};
+function getAsyncUniqueValidator(model, field, uid = null) {
+    return (value) => {
+        if (!value || !value.trim()) {
+            return Promise.resolve(true);
+        } else {
+            const baseFilteredModel = model.filter().on(field).equals(value);
+            const filteredModel = !uid ? baseFilteredModel :
+                baseFilteredModel.filter().on('id').notEqual(uid);
+
+            return filteredModel.list().then(collection => {
+                if (collection.size > 0) {
+                    return Promise.reject('value_not_unique');
+                } else {
+                    return Promise.resolve(true);
+                }
+            });
+        }
+    };
+};
+
+export {redirectToLogin, getCategoryCombos, collectionToArray, getAsyncUniqueValidator};

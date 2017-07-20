@@ -41,29 +41,8 @@ const GeneralInformation = React.createClass({
         this.props.onFieldsChange(fieldPath, newValue);
     },
 
-    _getAsyncUniqueValidator(model, field, uid = null) {
-        return (value) => {
-            if (!value || !value.trim()) {
-                return Promise.resolve(true);
-            } else {
-                const baseFilteredModel = model.filter().on(field).equals(value);
-                const filteredModel = !uid ? baseFilteredModel : 
-                    baseFilteredModel.filter().on('id').notEqual(uid);
-
-                return filteredModel.list().then(collection => {
-                    if (collection.size > 0) {
-                        return Promise.reject(this.getTranslation('value_not_unique'));
-                    } else {
-                        return Promise.resolve(true);
-                    }
-                });
-            }
-        };
-    },
-
     _renderForm() {
         const {associations, dataset} = this.props.store;
-        const projectCode = associations.project && associations.project.code;
         const fields = [
             FormHelpers.getTextField({
                 name: "dataset.name",
@@ -74,15 +53,6 @@ const GeneralInformation = React.createClass({
                     validator: Validators.isRequired,
                     message: this.getTranslation(Validators.isRequired.message),
                 }],
-            }),
-
-            FormHelpers.getTextField({
-                name: "dataset.code",
-                label: this.getTranslation("code"),
-                value: dataset.code,
-                asyncValidators: [
-                    this._getAsyncUniqueValidator(this.context.d2.models.dataSet, "code"),
-                ],
             }),
 
             FormHelpers.getTextField({
