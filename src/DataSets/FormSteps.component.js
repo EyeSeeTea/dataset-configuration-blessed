@@ -8,6 +8,7 @@ import GeneralInformation from './Forms/GeneralInformation.component';
 import OrganisationUnit from './Forms/OrganisationUnit.component';
 import Sections from './Forms/Sections.component';
 import Disaggregation from './Forms/Disaggregation.component';
+import Sharing from './Forms/Sharing.component';
 import GreyFields from './Forms/GreyFields.component';
 import Save from './Forms/Save.component';
 
@@ -125,6 +126,13 @@ const DataSetFormSteps = React.createClass({
                 title: this.getTranslation("step_grey_fields"),
                 component: GreyFields,
                 actionsBar: ["top", "bottom"],
+                props: props,
+            },
+            {
+                id: 'sharing',
+                title: this.getTranslation("step_sharing"),
+                component: Sharing,
+                actionsBar: ["bottom"],
                 props: props,
             },
             {

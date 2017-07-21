@@ -36,6 +36,7 @@ export default class DataSetStore {
             dataElementGroupSetOriginId: "mxv75P8OgZF",
             dataElementGroupSetThemeId: "chyJVMF3G7k",
             attributeGroupId: "YxwyKOlG4lP",
+            organisationUnitLevelForCountries: 3,
         };
         const {associations, dataset} = this.getInitialState();
         this.associations = associations;
@@ -73,6 +74,7 @@ export default class DataSetStore {
             dataInputEndDate: _(baseDataset.dataInputPeriods).map("closingDate").compact().max(),
             sections: [],
             stateSections: null,
+            country: null,
         };
         return this.getDataFromProject(baseDataset, baseAssociations);
     }
@@ -204,6 +206,89 @@ export default class DataSetStore {
                 error(err);
             }
         });
+    }
+
+    _setSharing(object, userGroupAccessByName) {
+        const [userGroupNames, userGroupAccesses] = _.zip(...userGroupAccessByName);
+        const d2 = this.d2;
+        const api = d2.Api.getApi();
+
+        return d2.models.userGroups.list({
+                filter: "name:in:[" + userGroupNames.join(",") + "]",
+                paging: false,
+            })
+            .then(userGroupsCollection =>
+                _(userGroupsCollection.toArray())
+                    .keyBy(userGroup => userGroup.name)
+                    .at(userGroupNames)
+                    .zip(userGroupAccesses)
+                    .map(([userGroup, access]) =>
+                        userGroup ? {id: userGroup.id, access} : null)
+                    .compact()
+                    .value()
+            ).then(userGroupAccesses => {
+                const payload = {
+                    meta: {
+                        allowPublicAccess: true,
+                        allowExternalAccess: false,
+                    },
+                    object: {
+                        userGroupAccesses: userGroupAccesses,
+                    }
+                }
+                return api.post(`sharing?type=${object.modelDefinition.name}&id=${object.id}`, payload);
+            });
+    }
+
+    saveSharing(dataset) {
+        const setNewCategoryCombosSharing = () => {
+            const countryCode = this.associations.country.code.split("_")[0];
+            const userGroupAccessByName = [
+                [countryCode + "_Users", "r-------"],
+            ];
+            return Promise.map(dataset.newCategoryCombos, categoryCombo => {
+                return this._setSharing(categoryCombo, userGroupAccessByName);
+            });
+        };
+
+        const addDataSetToUserRole = () => {
+            return Promise.map(this.associations.coreCompetencies, coreCompetency => {
+                // userRoleName example: AF__dataset_campmanagement
+                const key = coreCompetency.name.toLocaleLowerCase().replace(/\s+/g, '');
+                const userRoleName = "AF__dataset_" + key;
+                
+                return this.d2.models.userRoles
+                    .list({filter: "name:eq:" + userRoleName})
+                    .then(collection => collection.toArray()[0])
+                    .then(userRole => {
+                        if (userRole) {
+                            userRole.dataSets.set(dataset.id, dataset);
+                            userRole.dirty = true;
+                            return userRole.save();
+                        } else {
+                            console.log("User role not found: " + userRoleName)
+                            return Promise.resolve();
+                        }
+                    })
+            }, {concurrency: 1});
+        };
+
+        const shareWithGroups = () => {
+            // [COUNTRY_PREFIX]_users -> view, [COUNTRY_PREFIX]_admin -> edit, gl_admin -> edit
+            const countryCode = this.associations.country.code.split("_")[0];
+            const userGroupAccessByName = [
+                [countryCode + "_Users", "r-------"],
+                [countryCode + "_Administrators", "rw------"],
+                ["GL_AllAdmins", "rw------"],
+            ];
+            return this._setSharing(dataset, userGroupAccessByName);
+        };
+
+        return Promise.resolve()
+            .then(setNewCategoryCombosSharing)
+            .then(addDataSetToUserRole)
+            .then(shareWithGroups)
+            .then(() => dataset);
     }
 
     _processDisaggregation(sourceDataset, categoryCombos) {
