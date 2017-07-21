@@ -62,4 +62,24 @@ function getCustomCategoryCombo(d2, dataElement, categoryCombos, categoryCombo) 
     }
 }
 
-export {redirectToLogin, getCategoryCombos, collectionToArray, getCustomCategoryCombo};
+function getAsyncUniqueValidator(model, field, uid = null) {
+    return (value) => {
+        if (!value || !value.trim()) {
+            return Promise.resolve(true);
+        } else {
+            const baseFilteredModel = model.filter().on(field).equals(value);
+            const filteredModel = !uid ? baseFilteredModel :
+                baseFilteredModel.filter().on('id').notEqual(uid);
+
+            return filteredModel.list().then(collection => {
+                if (collection.size > 0) {
+                    return Promise.reject('value_not_unique');
+                } else {
+                    return Promise.resolve(true);
+                }
+            });
+        }
+    };
+};
+
+export {redirectToLogin, getCategoryCombos, collectionToArray, getCustomCategoryCombo, getAsyncUniqueValidator};

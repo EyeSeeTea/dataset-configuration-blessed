@@ -4,7 +4,7 @@ import moment from 'moment';
 import Promise from 'bluebird';
 import { getOwnedPropertyJSON } from 'd2/lib/model/helpers/json';
 import { map, pick, get, filter, flatten, compose, identity, head } from 'lodash/fp';
-import {getCategoryCombos, collectionToArray} from '../utils/Dhis2Helpers';
+import {getCategoryCombos, collectionToArray, getAsyncUniqueValidator} from '../utils/Dhis2Helpers';
 
 // From maintenance-app/src/EditModel/objectActions.js
 const extractErrorMessagesFromResponse = compose(
@@ -108,7 +108,6 @@ export default class DataSetStore {
             const clonedAssociations = _.clone(associations);
             const getOrgUnitIds = (ds) => ds.organisationUnits.toArray().map(ou => ou.id);
             clonedDataset.name = project.name ? project.name : "";
-            clonedDataset.code = project.code ? project.code + " Data Set" : "";
             clonedAssociations.dataInputStartDate =
                 project.startDate ? new Date(project.startDate) : undefined;
             clonedAssociations.dataInputEndDate =
@@ -359,9 +358,25 @@ export default class DataSetStore {
         );
     }
 
+    setCode(dataset) {
+        const {project} = this.associations;
+        const projectCode = project ? project.code : null;
+
+        if (projectCode) {
+            const datasetCode = projectCode + " " + "Data Set";
+            const codeValidator = getAsyncUniqueValidator(this.d2.models.dataSet, "code");
+            return codeValidator(datasetCode)
+                .then(() => merge(dataset.clone(), {code: datasetCode}))
+                .catch(err => dataset);
+        } else {
+            return Promise.resolve(dataset);
+        }
+    }
+
     save() {
         return getCategoryCombos(this.d2).then(categoryCombos => {
             return this._processDisaggregation(this.dataset, categoryCombos)
+		.then(dataset => this.setCode(dataset))
                 .then(dataset => this._saveDataset(dataset))
                 .then(dataset => this._createSections(dataset));
         });
