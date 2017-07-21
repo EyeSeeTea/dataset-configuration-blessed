@@ -78,6 +78,8 @@ const Sharing = React.createClass({
 
             return (
                 <div>
+                    <p>{this.getTranslation("sharing_help")}:</p>
+                    
                     <RichDropdown
                         value={getCode(selectedCountry) || currentUserCountryCode}
                         options={countryOptions}
