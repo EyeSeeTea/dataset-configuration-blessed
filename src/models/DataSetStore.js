@@ -239,8 +239,10 @@ export default class DataSetStore {
             });
     }
 
-    saveSharing(dataset) {
+    _saveSharing(dataset) {
         const setNewCategoryCombosSharing = () => {
+            if (!this.associations.country)
+                return Promise.resolve();
             const countryCode = this.associations.country.code.split("_")[0];
             const userGroupAccessByName = [
                 [countryCode + "_Users", "r-------"],
@@ -273,6 +275,8 @@ export default class DataSetStore {
         };
 
         const shareWithGroups = () => {
+            if (!this.associations.country)
+                return Promise.resolve();
             // [COUNTRY_PREFIX]_users -> view, [COUNTRY_PREFIX]_admin -> edit, gl_admin -> edit
             const countryCode = this.associations.country.code.split("_")[0];
             const userGroupAccessByName = [
@@ -290,20 +294,21 @@ export default class DataSetStore {
             .then(() => dataset);
     }
 
-    _processDisaggregation(sourceDataset, categoryCombos) {
-        const savedCategoryCombos$ = Promise.map(sourceDataset.dataSetElements, dse => {
+    _processDisaggregation(dataset) {
+        const items$ = Promise.map(dataset.dataSetElements, dse => {
             if (dse.categoryCombo.id.startsWith("new-")) {
                 const newCategoryCombo = merge(dse.categoryCombo.clone(), {id: null});
-                return newCategoryCombo.save().then(res => [dse.categoryCombo, newCategoryCombo]);
+                return newCategoryCombo.save()
+                    .then(res => ({oldCc: dse.categoryCombo, newCc: newCategoryCombo}));
             } else {
-                return Promise.resolve([dse.categoryCombo, dse.categoryCombo]);
+                return Promise.resolve({oldCc: dse.categoryCombo, newCc: null});
             }
         }, {concurrency: 1});
 
-        return savedCategoryCombos$.then(savedCategoryCombos => {
+        return items$.then(items => {
             return getCategoryCombos(this.d2).then(finalCategoryCombos => {
                 const finalCocsById = _.keyBy(finalCategoryCombos.toArray(), "id");
-                const cocsById = _(sourceDataset.dataSetElements)
+                const cocsById = _(dataset.dataSetElements)
                     .map(dse => [dse.categoryCombo.id, dse.categoryCombo.categoryOptionCombos])
                     .fromPairs()
                     .value();
@@ -314,8 +319,9 @@ export default class DataSetStore {
                             _(collectionToArray(coc.categoryOptions)).map("id").orderBy().join("."))
                         .value();
                 };
-                const relation = _(savedCategoryCombos)
-                    .flatMap(([oldCc, newCc]) =>
+                const relation = _(items)
+                    .filter(({oldCc, newCc}) => newCc)
+                    .flatMap(({oldCc, newCc}) =>
                         _.zip(
                             sortByCategoryOptions(cocsById[oldCc.id]).map(coc => coc.id),
                             sortByCategoryOptions(finalCocsById[newCc.id].categoryOptionCombos),
@@ -327,17 +333,24 @@ export default class DataSetStore {
                 const sectionsWithPersistedCocs = this.associations.sections.map(section => {
                     const persistedGreyedFields = section.greyedFields.map(field =>
                         merge(field, {categoryOptionCombo: {
-                            id: relation[field.categoryOptionCombo.id].id,
+                            id: (relation[field.categoryOptionCombo.id] || field.categoryOptionCombo).id,
                         }})
                     );
                     return merge(section.clone(), {greyedFields: persistedGreyedFields})
                 });
 
-                const dataset = merge(sourceDataset.clone(), {sections: sectionsWithPersistedCocs});
-                _(dataset.dataSetElements).zip(savedCategoryCombos).each(([dse, [oldCc, newCc]]) => {
-                    dse.categoryCombo = {id: newCc.id};
+                // Used in sharing saving
+                const newCategoryCombos = items.map(({oldCc, newCc}) => newCc).filter(cc => cc);
+
+                const dataSetElementsUpdates = _(dataset.dataSetElements).zip(items).map(([dse, {oldCc, newCc}]) =>
+                    merge(dse, {categoryCombo: {id: (newCc || oldCc).id}})
+                );
+
+                return merge(dataset.clone(), {
+                    sections: sectionsWithPersistedCocs,
+                    newCategoryCombos,
+                    dataSetElements: dataSetElementsUpdates,
                 });
-                return dataset;
             });
         })
     }
@@ -347,9 +360,6 @@ export default class DataSetStore {
         const sections = _(dataset.sections)
             .sortBy(section => section.name)
             .map(section => merge(section.clone(), {dataSet: {id: datasetId}}))
-            .map(section =>
-                merge(section, {greyedFields: section.greyedFields.map(field =>
-                    merge(field, {categoryOptionCombo: {id: field.categoryOptionCombo.id}}))}))
             .value();
 
         return sections.reduce(
@@ -358,7 +368,7 @@ export default class DataSetStore {
         );
     }
 
-    setCode(dataset) {
+    _setCode(dataset) {
         const {project} = this.associations;
         const projectCode = project ? project.code : null;
 
@@ -374,11 +384,11 @@ export default class DataSetStore {
     }
 
     save() {
-        return getCategoryCombos(this.d2).then(categoryCombos => {
-            return this._processDisaggregation(this.dataset, categoryCombos)
-		.then(dataset => this.setCode(dataset))
-                .then(dataset => this._saveDataset(dataset))
-                .then(dataset => this._createSections(dataset));
-        });
+        return Promise.resolve(this.dataset)
+            .then(dataset => this._processDisaggregation(dataset))
+            .then(dataset => this._setCode(dataset))
+            .then(dataset => this._saveDataset(dataset))
+            .then(dataset => this._saveSharing(dataset))
+            .then(dataset => this._createSections(dataset));
     }
 }
