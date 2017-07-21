@@ -347,9 +347,6 @@ export default class DataSetStore {
         const sections = _(dataset.sections)
             .sortBy(section => section.name)
             .map(section => merge(section.clone(), {dataSet: {id: datasetId}}))
-            .map(section =>
-                merge(section, {greyedFields: section.greyedFields.map(field =>
-                    merge(field, {categoryOptionCombo: {id: field.categoryOptionCombo.id}}))}))
             .value();
 
         return sections.reduce(
@@ -374,11 +371,12 @@ export default class DataSetStore {
     }
 
     save() {
-        return getCategoryCombos(this.d2).then(categoryCombos => {
-            return this._processDisaggregation(this.dataset, categoryCombos)
-		.then(dataset => this.setCode(dataset))
+        return getCategoryCombos(this.d2).then(categoryCombos =>
+            Promise.resolve(this.dataset)
+                .then(dataset => this._processDisaggregation(dataset, categoryCombos))
+                .then(dataset => this.setCode(dataset))
                 .then(dataset => this._saveDataset(dataset))
-                .then(dataset => this._createSections(dataset));
-        });
+                .then(dataset => this._createSections(dataset))
+        );
     }
 }
