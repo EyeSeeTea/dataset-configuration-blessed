@@ -2,7 +2,7 @@ import React, { PropTypes } from 'react';
 import Translate from 'd2-ui/lib/i18n/Translate.mixin';
 import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
 import DataSetElementCategoryComboSelectionDialog from '../../forms/DataSetElementCategoryComboSelectionDialog.component';
-import {getCategoryCombos} from '../../utils/Dhis2Helpers';
+import {getCategoryCombos, getCustomCategoryCombo} from '../../utils/Dhis2Helpers';
 
 const Disaggregation = React.createClass({
     mixins: [Translate],
@@ -29,7 +29,10 @@ const Disaggregation = React.createClass({
     _onCategoryComboSelected(dataSetElementId, categoryCombo) {
         const {dataSetElements} = this.props.store.dataset;
         const dataSetElementToUpdate = _(dataSetElements).find(dse => dse.id == dataSetElementId);
-        dataSetElementToUpdate.categoryCombo = categoryCombo;
+        const {dataElement} = dataSetElementToUpdate;
+        const customCategoryCombo =
+            getCustomCategoryCombo(this.context.d2, dataElement, this.state.categoryCombos, categoryCombo);
+        dataSetElementToUpdate.categoryCombo = customCategoryCombo;
         this.forceUpdate();
     },
 

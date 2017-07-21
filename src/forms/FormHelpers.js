@@ -1,3 +1,4 @@
+import React from 'react';
 import TextField from 'd2-ui/lib/form-fields/TextField.js';
 import Dropdown from './Dropdown.component';
 import RichDropdown from './RichDropdown.component';
@@ -98,6 +99,17 @@ function getDateField({name, label, onChange, value = undefined, isRequired = fa
     };
 }
 
+function SimpleCheckBox({onClick, checked, ...otherProps}) {
+    return (
+        <span onClick={onClick} {...otherProps}>
+            <input type="checkbox" readOnly={true}
+                   checked={checked} className="simple-checkbox">
+            </input>
+            <span></span>
+        </span>
+    );
+}
+
 export default {
     getLabel, 
     getTextField, 
@@ -106,4 +118,5 @@ export default {
     getBooleanField, 
     getMultiSelect,
     getDateField,
+    SimpleCheckBox,
 }
