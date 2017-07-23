@@ -154,6 +154,13 @@ const Sections = React.createClass({
         }
     },
 
+    componentWillUnmount() {
+        // Save state on back button (forward button saves state in componentWillReceiveProps)
+        if (!this.props.validateOnRender) {
+            this._updateModelSections();
+        }
+    },
+
     getInitialState() {
         return {
             isLoading: true,
@@ -167,31 +174,40 @@ const Sections = React.createClass({
 
     componentDidMount() {
         const {d2} = this.context;
-        const {coreCompetencies, stateSections: sections} = this.props.store.associations;
         const {config} = this.props;
+        const {coreCompetencies, stateSections} = this.props.store.associations;
 
-        const sections$ = sections ? Promise.resolve(sections) :
-            Section.getSectionsFromCoreCompetencies(d2, config, coreCompetencies);
-        sections$.then(sections => {
+        Section.getSectionsFromCoreCompetencies(d2, config, coreCompetencies).then(sectionsArray => {
+            const loadedSections = _.keyBy(sectionsArray, "name");
             this.setState({
                 isLoading: false,
-                sections: _.keyBy(sections, "name"),
-                currentSectionName: _.isEmpty(sections) ? null : sections[0].name,
+                sections: _.merge(loadedSections, _.pick(stateSections, _.keys(loadedSections))),
+                currentSectionName: _.isEmpty(sectionsArray) ? null : sectionsArray[0].name,
             });
         });
     },
 
     _updateModelSections() {
         const {d2} = this.context;
-        const stateSections = _.values(this.state.sections);
+        const stateSections = this.state.sections;
         const {sections, dataSetElements, indicators, errors} =
-            Section.getDataSetInfo(d2, this.props.config, stateSections);
+            Section.getDataSetInfo(d2, this.props.config, _.values(stateSections));
         this.setState({errors: errors});
 
-        this.props.onFieldsChange("associations.stateSections", stateSections);
-        this.props.onFieldsChange("associations.sections", sections);
-        this.props.onFieldsChange("dataset.dataSetElements", dataSetElements);
-        this.props.onFieldsChange("dataset.indicators", indicators);
+        // Don't override previous values of dataSetElements (disaggregation)
+        const newDataSetElements =
+            _.keyBy(dataSetElements, dse => dse.dataElement.id);
+        const prevDataSetElements =
+            _.keyBy(this.props.store.dataset.dataSetElements || [], dse => dse.dataElement.id);
+        const mergedDataSetElements = _(newDataSetElements)
+            .merge(prevDataSetElements)
+            .at(_.keys(newDataSetElements))
+            .value();
+
+        this.props.onFieldsChange("associations.stateSections", stateSections, false);
+        this.props.onFieldsChange("associations.sections", sections, false);
+        this.props.onFieldsChange("dataset.dataSetElements", mergedDataSetElements, false);
+        this.props.onFieldsChange("dataset.indicators", indicators, false);
         return _(errors).isEmpty();
     },
 

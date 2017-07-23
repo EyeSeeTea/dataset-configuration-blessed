@@ -5,7 +5,7 @@ import update from 'immutability-helper';
 import MultipleDataTableRow from './MultipleDataTableRow.component';
 import DataTableHeader from 'd2-ui/lib/data-table/DataTableHeader.component';
 import MultipleDataTableContextMenu from './MultipleDataTableContextMenu.component';
-import lodashMixins from '../utils/lodash-mixins';
+import {deepMerge} from '../utils/lodash-mixins';
 
 const MultipleDataTable = React.createClass({
     propTypes: {
@@ -120,7 +120,7 @@ const MultipleDataTable = React.createClass({
             table: {},
             header: {},
         }
-        const styles = lodashMixins.deepMerge(defaultStyles, this.props.styles);
+        const styles = deepMerge(defaultStyles, this.props.styles);
 
         return (
            <div className="data-table" style={styles.table}>
