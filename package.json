@@ -1,6 +1,6 @@
 {
   "name": "d2-dataset-configuration",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "Dataset Configuration User Interface",
   "main": "src/index.html",
   "scripts": {
@@ -26,6 +26,7 @@
   },
   "license": "GPL-3.0",
   "dependencies": {
+    "bluebird": "^3.5.0",
     "jquery": "^2.2.3",
     "json-loader": "^0.5.4",
     "react-router": "^2.8.1",

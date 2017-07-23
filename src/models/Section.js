@@ -45,7 +45,7 @@ export const getSectionsFromCoreCompetencies = (d2, config, coreCompetencies) =>
 /* Return an object with the info of the sections and selected dataElements:
 
     {
-        sections: [e2.models.Section]
+        sections: [d2.models.Section]
         dataSetElements: [dataElement]
         indicators: [Indicator]
     }
@@ -58,8 +58,12 @@ export const getDataSetInfo = (d2, config, sections) => {
         .map(dataElement => ({
             id: generateUid(),
             dataSet: {},
-            dataElement: {id: dataElement.id},
             categoryCombo: dataElement.categoryCombo,
+            dataElement: {
+                id: dataElement.id,
+                displayName: dataElement.name,
+                categoryCombo: dataElement.categoryCombo,
+            },
         }))
         .value();
     const indicators = selectedDataElements
@@ -90,10 +94,12 @@ const getD2Sections = (d2, section) => {
     const getD2Section = (dataElements, d2SectionName) => {
         return d2.models.sections.create({
             name: d2SectionName,
+            displayName: d2SectionName,
             showRowTotals: section.showRowTotals,
             showColumnTotals: section.showColumnTotals,
             dataElements: dataElements.map(de => ({id: de.id})),
             indicators: _(dataElements).flatMap("indicators").map(ind => ({id: ind.id})).value(),
+            greyedFields: [],
         });
     };
 
@@ -148,6 +154,7 @@ const getSection = (sectionName, dataElements, indicators, filtersToIndicators, 
         return {
             id: de.id,
             name: de.name,
+            displayName: de.name,
             indicators: indicators,
             theme: theme ? theme.name : null,
             group: group ? group.value : null,
@@ -217,7 +224,7 @@ const filterDataElements = (dataElements, requiredDegIds) => {
 const getDataElementGroupRelations = (d2) => {
     return d2
         .models.dataElementGroupSets
-        .list({fields: "id,name,dataElementGroups[id,name]"})
+        .list({fields: "id,name,displayName,dataElementGroups[id,name,displayName]"})
         .then(collection =>
             collection.toArray().map(degSet =>
                 _(degSet.dataElementGroups.toArray())
@@ -246,8 +253,9 @@ const getDataElements = (d2, dataElementFilters) => {
         "id",
         "name",
         "code",
-        "categoryCombo[id,name]",
-        "dataElementGroups[id,name]",
+        "categoryCombo[id,name,displayName,categoryOptionCombos[id,displayName,categoryOptions[id,displayName]]," +
+            "categories[id,name,displayName,categoryOptions[id,displayName]]]",
+        "dataElementGroups[id,name,displayName]",
         "attributeValues[value,attribute]",
     ];
     return getFilteredItems(d2.models.dataElements, dataElementFilters, {fields: fields.join(",")});
@@ -255,7 +263,7 @@ const getDataElements = (d2, dataElementFilters) => {
 
 const getIndicatorsByGroupName = (d2, coreCompetencies) => {
     const filters = coreCompetencies.map(cc => ["name", cc.name]);
-    const listOptions = {fields: "id,name,indicators[id,numerator,denominator,code]"};
+    const listOptions = {fields: "id,name,displayName,indicators[id,numerator,denominator,code]"};
 
     return getFilteredItems(d2.models.indicatorGroups, filters, listOptions)
         .then(indicatorGroups =>
