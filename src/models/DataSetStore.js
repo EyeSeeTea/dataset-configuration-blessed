@@ -8,17 +8,12 @@ import {getCategoryCombos,
         collectionToArray,
         getAsyncUniqueValidator,
         sendMessage,
-        setSharingByUserGroup,
+        setSharings,
         getUserGroups,
+        mapPromise,
        } from '../utils/Dhis2Helpers';
 import * as Section from './Section';
-
-// Sequential mapPromise
-const mapPromise = (items, mapper) => {
-  const reducer = (promise, item) =>
-    promise.then(mappedItems => mapper(item).then(res => mappedItems.concat([res])));
-  return items.reduce(reducer, Promise.resolve([]));
-};
+import autoBind from 'auto-bind';
 
 // From maintenance-app/src/EditModel/objectActions.js
 const extractErrorMessagesFromResponse = compose(
@@ -43,6 +38,7 @@ const getCountryCode = (orgUnit) => {
 
 export default class DataSetStore {
     constructor(d2, getTranslation) {
+        autoBind(this);
         this.d2 = d2;
         this.getTranslation = getTranslation;
         this.config = {
@@ -61,15 +57,6 @@ export default class DataSetStore {
         this.associations = associations;
         this.dataset = dataset;
         window.store = this;
-
-        this._processDisaggregation = this._processDisaggregation.bind(this);
-        this._setCode = this._setCode.bind(this);
-        this._saveDataset = this._saveDataset.bind(this);
-        this._saveSharing = this._saveSharing.bind(this);
-        this._createSections = this._createSections.bind(this);
-        this._sendNotificationMessages = this._sendNotificationMessages.bind(this);
-        this._addOrgUnitsToProject = this._addOrgUnitsToProject.bind(this);
-        this._getDatasetLink = this._getDatasetLink.bind(this);
     }
 
     getInitialModel() {
@@ -194,15 +181,8 @@ export default class DataSetStore {
             .at(_.keys(newDataSetElements))
             .value();
 
-        _.assign(this.associations, {
-            stateSections: stateSections,
-            sections: sections,
-        });
-
-        _.assign(this.dataset, {
-            dataSetElements: mergedDataSetElements,
-            indicators: indicators,
-        });
+        _.assign(this.associations, {stateSections, sections});
+        _.assign(this.dataset, {dataSetElements: mergedDataSetElements, indicators});
         return errors;
     }
 
@@ -237,7 +217,7 @@ export default class DataSetStore {
             } else {
                 return Promise.resolve({oldCc: dse.categoryCombo, newCc: null});
             }
-        }, {concurrency: 1});
+        });
 
         return items$.then(items => {
             return getCategoryCombos(this.d2).then(finalCategoryCombos => {
@@ -277,7 +257,8 @@ export default class DataSetStore {
                 const dataSetElementsWithPersistedCc = _(dataset.dataSetElements)
                     .zip(items)
                     .map(([dse, {oldCc, newCc}]) =>
-                        update(dse, {categoryCombo: {id: (newCc || oldCc).id}}));
+                        update(dse, {categoryCombo: {id: (newCc || oldCc).id}}))
+                    .value();
                 dataset.dataSetElements = dataSetElementsWithPersistedCc;
 
                 return _.merge(saving, {
@@ -357,61 +338,57 @@ export default class DataSetStore {
         }
     }
 
-    _saveSharing(saving) {
-        const setNewCategoryCombosSharing = (saving) => {
-            const {dataset, newCategoryCombos, warnings} = saving;
-            const countryCode = getCountryCode(this.associations.country);
-            const userGroupAccessByName = _.compact([
-                countryCode ? [countryCode + "_Users", "r-------"] : null,
-            ]);
-            return mapPromise(newCategoryCombos, categoryCombo =>
-                setSharingByUserGroup(this.d2, categoryCombo, userGroupAccessByName)
-            ).then(() => saving);
-        };
+    _setCategoryCombosSharing(saving) {
+        const {dataset, warnings} = saving;
+        const countryCode = getCountryCode(this.associations.country);
+        const userGroupAccessByName = _.compact([
+            countryCode ? [countryCode + "_Users", "r-------"] : null,
+        ]);
+        const categoryCombos = dataset.dataSetElements
+            .map(dse => this.d2.models.categoryCombo.create({id: dse.categoryCombo.id}));
+        return setSharings(this.d2, categoryCombos, userGroupAccessByName)
+            .then(() => saving);
+    }
 
-        const addDataSetToUserRole = (saving) => {
-            const countryCode = getCountryCode(this.associations.country);
-            const {dataset, warnings} = saving;
-            if (!countryCode)
-                return;
+    _addDataSetToUserRole(saving) {
+        const countryCode = getCountryCode(this.associations.country);
+        const {dataset, warnings} = saving;
+        if (!countryCode)
+            return;
 
-            return mapPromise(this.associations.coreCompetencies, coreCompetency => {
-                // userRoleName example: AF__dataset_campmanagement, AF__dataset_icla
-                const key = coreCompetency.name.toLocaleLowerCase().replace(/\s+/g, '');
-                const userRoleName = `${countryCode}__dataset_` + key;
-                
-                return this.d2.models.userRoles
-                    .list({filter: "name:eq:" + userRoleName})
-                    .then(collection => collection.toArray()[0])
-                    .then(userRole => {
-                        if (userRole) {
-                            userRole.dataSets.set(dataset.id, dataset);
-                            userRole.dirty = true;
-                            return userRole.save().then(() => null);
-                        } else {
-                            const msg = "User role not found: " + userRoleName
-                            return Promise.resolve(msg);
-                        }
-                    })
-            }, {concurrency: 1})
-                .then(msgs => _.merge(saving, {warnings: warnings.concat(_.compact(msgs))}));
-        };
+        const addUserRole = (coreCompetency) => {
+            // userRoleName example: AF__dataset_campmanagement, AF__dataset_icla
+            const key = coreCompetency.name.toLocaleLowerCase().replace(/\s+/g, '');
+            const userRoleName = `${countryCode}__dataset_` + key;
+            
+            return this.d2.models.userRoles
+                .list({filter: "name:eq:" + userRoleName})
+                .then(collection => collection.toArray()[0])
+                .then(userRole => {
+                    if (userRole) {
+                        userRole.dataSets.set(dataset.id, dataset);
+                        userRole.dirty = true;
+                        return userRole.save().then(() => null);
+                    } else {
+                        const msg = "User role not found: " + userRoleName
+                        return Promise.resolve(msg);
+                    }
+                })
+        }
 
-        const shareWithGroups = (saving) => {
-            const {dataset} = saving;
-            const countryCode = getCountryCode(this.associations.country);
-            const userGroupAccessByName = _.compact([
-                countryCode ? [countryCode + "_Users", "r-------"] : null,
-                countryCode ? [countryCode + "_Administrators", "rw------"] : null,
-                ["GL_GlobalAdministrator", "rw------"],
-            ]);
-            return setSharingByUserGroup(this.d2, dataset, userGroupAccessByName).then(() => saving);
-        };
+        return mapPromise(this.associations.coreCompetencies, addUserRole)
+            .then(msgs => _.merge(saving, {warnings: warnings.concat(_.compact(msgs))}));
+    }
 
-        return Promise.resolve(saving)
-            .then(setNewCategoryCombosSharing)
-            .then(addDataSetToUserRole)
-            .then(shareWithGroups);
+    _shareWithGroups(saving) {
+        const {dataset} = saving;
+        const countryCode = getCountryCode(this.associations.country);
+        const userGroupAccessByName = _.compact([
+            countryCode ? [countryCode + "_Users", "r-------"] : null,
+            countryCode ? [countryCode + "_Administrators", "rw------"] : null,
+            ["GL_GlobalAdministrator", "rw------"],
+        ]);
+        return setSharings(this.d2, [dataset], userGroupAccessByName).then(() => saving);
     }
 
     _createSections(saving) {
@@ -466,12 +443,19 @@ export default class DataSetStore {
             country ? getCountryCode(country) + "_M&EDatasetCompletion" : null,
         ]);
 
-        return getUserGroups(d2, userGroupNames).then(col => col.toArray()).then(userGroups => {
-            return Promise.all(_.compact([
-                sendMessage(d2, createMsg.subject, createMsg.body, userGroups),
-                warningMsg && sendMessage(d2, warningMsg.subject, warningMsg.body, userGroups),
-            ]));
-        }).then(() => saving);
+        return getUserGroups(d2, userGroupNames).then(col => col.toArray())
+            .then(userGroups => {
+                return Promise.all(_.compact([
+                    sendMessage(d2, createMsg.subject, createMsg.body, userGroups),
+                    warningMsg && sendMessage(d2, warningMsg.subject, warningMsg.body, userGroups),
+                ]));
+            })
+            .then(() => saving)
+            .catch(err => {
+                // Errors on sending notification messages are not critical, log and continue
+                console.error("Could not send message", err);
+                return saving;
+            });
     }
 
     save() {
@@ -479,7 +463,9 @@ export default class DataSetStore {
             .then(this._processDisaggregation)
             .then(this._setCode)
             .then(this._saveDataset)
-            .then(this._saveSharing)
+            .then(this._setCategoryCombosSharing)
+            .then(this._addDataSetToUserRole)
+            .then(this._shareWithGroups)
             .then(this._createSections)
             .then(this._getDatasetLink)
             .then(this._addOrgUnitsToProject)

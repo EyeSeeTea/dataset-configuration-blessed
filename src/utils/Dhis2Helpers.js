@@ -2,6 +2,12 @@ import _ from 'lodash';
 import {cartesianProduct} from './lodash-mixins';
 import { generateUid } from 'd2/lib/uid';
 
+function mapPromise(items, mapper) {
+  const reducer = (promise, item) =>
+    promise.then(mappedItems => mapper(item).then(res => mappedItems.concat([res])));
+  return items.reduce(reducer, Promise.resolve([]));
+}
+
 function redirectToLogin(baseUrl) {
     const loginUrl = `${baseUrl}/dhis-web-commons/security/login.action`;
     window.location.assign(loginUrl);
@@ -89,14 +95,15 @@ function getUserGroups(d2, names) {
     });
 }
 
-function setSharingByUserGroup(d2, object, userGroupAccessByName) {
-    if (_.isEmpty(userGroupAccessByName))
-        return Promise.resolve(true);
+function setSharings(d2, objects, userGroupAccessByName) {
     const api = d2.Api.getApi();
-    const [userGroupNames, userGroupAccesses] = _.zip(...userGroupAccessByName);
+    let userGroupAccesses$;
 
-    return getUserGroups(d2, userGroupNames)
-        .then(userGroupsCollection =>
+    if (_.isEmpty(userGroupAccessByName)) {
+        userGroupAccesses$ = Promise.resolve([]);
+    } else {
+        const [userGroupNames, userGroupAccesses] = _.zip(...userGroupAccessByName);
+        userGroupAccesses$ = getUserGroups(d2, userGroupNames).then(userGroupsCollection =>
             _(userGroupsCollection.toArray())
                 .keyBy(userGroup => userGroup.name)
                 .at(userGroupNames)
@@ -105,18 +112,24 @@ function setSharingByUserGroup(d2, object, userGroupAccessByName) {
                     userGroup ? {id: userGroup.id, access} : null)
                 .compact()
                 .value()
-        ).then(userGroupAccesses => {
-            const payload = {
+        );
+    }
+
+    return userGroupAccesses$.then(userGroupAccesses =>
+        mapPromise(objects, object =>
+            api.post(`sharing?type=${object.modelDefinition.name}&id=${object.id}&mergeMode=MERGE`, {
                 meta: {
                     allowPublicAccess: true,
                     allowExternalAccess: false,
                 },
                 object: {
                     userGroupAccesses: userGroupAccesses,
-                }
-            }
-            return api.post(`sharing?type=${object.modelDefinition.name}&id=${object.id}`, payload);
-        });
+                    publicAccess: "r-------",
+                    externalAccess: false,
+                },
+            })
+        )
+    );
 }
 
 function sendMessage(d2, subject, text, recipients) {
@@ -146,7 +159,8 @@ export {
     collectionToArray,
     getCustomCategoryCombo,
     getAsyncUniqueValidator,
-    setSharingByUserGroup,
+    setSharings,
     sendMessage,
     getUserGroups,
+    mapPromise,
 };
