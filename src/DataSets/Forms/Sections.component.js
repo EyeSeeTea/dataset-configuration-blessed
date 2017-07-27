@@ -188,26 +188,8 @@ const Sections = React.createClass({
     },
 
     _updateModelSections() {
-        const {d2} = this.context;
-        const stateSections = this.state.sections;
-        const {sections, dataSetElements, indicators, errors} =
-            Section.getDataSetInfo(d2, this.props.config, _.values(stateSections));
+        const errors = this.props.store.updateModelSections(this.state.sections);
         this.setState({errors: errors});
-
-        // Don't override previous values of dataSetElements (disaggregation)
-        const newDataSetElements =
-            _.keyBy(dataSetElements, dse => dse.dataElement.id);
-        const prevDataSetElements =
-            _.keyBy(this.props.store.dataset.dataSetElements || [], dse => dse.dataElement.id);
-        const mergedDataSetElements = _(newDataSetElements)
-            .merge(prevDataSetElements)
-            .at(_.keys(newDataSetElements))
-            .value();
-
-        this.props.onFieldsChange("associations.stateSections", stateSections, false);
-        this.props.onFieldsChange("associations.sections", sections, false);
-        this.props.onFieldsChange("dataset.dataSetElements", mergedDataSetElements, false);
-        this.props.onFieldsChange("dataset.indicators", indicators, false);
         return _(errors).isEmpty();
     },
 

@@ -1,6 +1,12 @@
 import { generateUid } from 'd2/lib/uid';
 import _ from './lodash-mixins';
 
+function mapPromise(items, mapper) {
+  const reducer = (promise, item) =>
+    promise.then(mappedItems => mapper(item).then(res => mappedItems.concat([res])));
+  return items.reduce(reducer, Promise.resolve([]));
+}
+
 function redirectToLogin(baseUrl) {
     const loginUrl = `${baseUrl}/dhis-web-commons/security/login.action`;
     window.location.assign(loginUrl);
@@ -89,4 +95,79 @@ function getAsyncUniqueValidator(model, field, uid = null) {
     };
 };
 
-export {redirectToLogin, getCategoryCombos, collectionToArray, getCustomCategoryCombo, getAsyncUniqueValidator};
+function getUserGroups(d2, names) {
+    return d2.models.userGroups.list({
+        filter: "name:in:[" + names.join(",") + "]",
+        paging: false,
+    });
+}
+
+function setSharings(d2, objects, userGroupAccessByName) {
+    const api = d2.Api.getApi();
+    let userGroupAccesses$;
+
+    if (_.isEmpty(userGroupAccessByName)) {
+        userGroupAccesses$ = Promise.resolve([]);
+    } else {
+        const [userGroupNames, userGroupAccesses] = _.zip(...userGroupAccessByName);
+        userGroupAccesses$ = getUserGroups(d2, userGroupNames).then(userGroupsCollection =>
+            _(userGroupsCollection.toArray())
+                .keyBy(userGroup => userGroup.name)
+                .at(userGroupNames)
+                .zip(userGroupAccesses)
+                .map(([userGroup, access]) =>
+                    userGroup ? {id: userGroup.id, access} : null)
+                .compact()
+                .value()
+        );
+    }
+
+    return userGroupAccesses$.then(userGroupAccesses =>
+        mapPromise(objects, object =>
+            api.post(`sharing?type=${object.modelDefinition.name}&id=${object.id}&mergeMode=MERGE`, {
+                meta: {
+                    allowPublicAccess: true,
+                    allowExternalAccess: false,
+                },
+                object: {
+                    userGroupAccesses: userGroupAccesses,
+                    publicAccess: "r-------",
+                    externalAccess: false,
+                },
+            })
+        )
+    );
+}
+
+function sendMessage(d2, subject, text, recipients) {
+    const api = d2.Api.getApi();
+    const recipientsByModel = _(recipients)
+        .groupBy(recipient => recipient.modelDefinition.name)
+        .mapValues(models => models.map(model => ({id: model.id})))
+        .value();
+    const message = {
+        subject: subject,
+        text: text,
+        users: recipientsByModel.user,
+        userGroups: recipientsByModel.userGroup,
+        organisationUnits: recipientsByModel.organisationUnit,
+    };
+
+    if (_.isEmpty(recipients)) {
+        return Promise.resolve();
+    } else {
+        return api.post("/messageConversations", message);
+    }
+}
+
+export {
+    redirectToLogin,
+    getCategoryCombos,
+    collectionToArray,
+    getCustomCategoryCombo,
+    getAsyncUniqueValidator,
+    setSharings,
+    sendMessage,
+    getUserGroups,
+    mapPromise,
+};
