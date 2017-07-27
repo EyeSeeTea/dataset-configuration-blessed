@@ -3,7 +3,7 @@ import DropDown from '../forms/form-fields/drop-down';
 import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
 import {getCategoryCombos, collectionToArray} from '../utils/Dhis2Helpers';
 import FormHelpers from './FormHelpers';
-import {cartesianProduct, groupConsecutive} from '../utils/lodash-mixins';
+import _ from '../utils/lodash-mixins';
 
 const {SimpleCheckBox} = FormHelpers;
 
@@ -121,41 +121,53 @@ class GreyFieldsTable extends React.Component {
         }
     }
 
-    _renderHeaderCheckBox(dataSetElements, categoryOptionCombo) {
+    _renderHeaderCheckBox(label, dataSetElements, categoryOptionCombos) {
         const fieldIds = _(dataSetElements)
-            .map(dse => [dse.dataElement.id, categoryOptionCombo.id].join("."))
+            .cartesianProduct(categoryOptionCombos)
+            .flatMap(([dse, coc]) => [dse.dataElement.id, coc.id].join("."))
             .value();
         const allFieldsInColumnAreSelected = _(this.state.greyedFields).at(fieldIds).every(v => !v);
         const toggleAll = () => {
             const updatedGreyedFields = _(fieldIds)
-                .map(fieldId => [fieldId, allFieldsInColumnAreSelected]).fromPairs().value();
+                .map(fieldId => [fieldId, allFieldsInColumnAreSelected])
+                .fromPairs().value();
             this.setState({
                 greyedFields: _.merge(this.state.greyedFields, updatedGreyedFields),
             });
         };
 
         return (
-            <SimpleCheckBox
-                style={{marginRight: 5}}
-                onClick={toggleAll}
-                checked={allFieldsInColumnAreSelected}
-            />
+            <div onClick={toggleAll}>
+                {(dataSetElements.length > 1 || categoryOptionCombos.length > 1) &&
+                    <SimpleCheckBox
+                        style={{marginRight: 5}}
+                        checked={allFieldsInColumnAreSelected}
+                    />
+                }
+                {label === 'default' ? '' : label}
+            </div>
         );
     }
 
     renderTableHeader(dataSetElements, categoryComboId) {
         const categoryCombo = this.state.categoryCombosById[categoryComboId];
-        const categoryOptionsArray = cartesianProduct(
-            ...categoryCombo.categories.toArray().map(c => c.categoryOptions.toArray())
-        );
-        const rows = _.zip(...categoryOptionsArray);
-        const cocsForLastRow = categoryOptionsArray
-            .map(cos => cos.map(co => co.id).sort().join("."))
-            .map(id => this.state.cocByCategoryOptionsKey[id]);
+        const categories = categoryCombo.categories.toArray();
+        const categoryOptions = categories.map(c => c.categoryOptions.toArray());
+        const categoryOptionsProducts = _.cartesianProduct(...categoryOptions);
+
+        const rows = _.range(categories.length).map(idx => {
+          return _(categoryOptionsProducts)
+            .groupConsecutiveBy(product => product[idx])
+            .map(consecutiveProducts => {
+                const cocs = consecutiveProducts
+                    .map(cos => cos.map(co => co.id).sort().join("."))
+                    .map(key => this.state.cocByCategoryOptionsKey[key]);
+                return {label: consecutiveProducts[0][idx].displayName, cocs: cocs}
+            })
+            .value();
+        });
 
         return rows.map((row, rowNum) => {
-            const grouped = groupConsecutive(row)
-                .map(group => ({label: group[0].displayName, count: group.length}));
             const isLastHeader = rowNum === rows.length - 1;
 
             return (
@@ -164,14 +176,12 @@ class GreyFieldsTable extends React.Component {
                         {isLastHeader && this.getTranslation('data_element')}
                     </th>
 
-                    {grouped.map(({label, count}, colNum) =>
+                    {row.map(({label, cocs}, colNum) =>
                         <th key={[rowNum, colNum]}
-                            colSpan={count}
+                            colSpan={cocs.length}
                             style={styles.th}
                         >
-                            {isLastHeader && dataSetElements.length > 1 &&
-                                this._renderHeaderCheckBox(dataSetElements, cocsForLastRow[colNum])}
-                            {label === 'default' ? '' : label}
+                            {this._renderHeaderCheckBox(label, dataSetElements, cocs)}
                         </th>
                     )}
                 </tr>
@@ -214,7 +224,7 @@ class GreyFieldsTable extends React.Component {
     renderDataElements(dataSetElements) {
         return dataSetElements
             .map((dse, deNum) => {
-                const categoryOptionsArray = cartesianProduct(
+                const categoryOptionsProducts = _.cartesianProduct(
                     ...collectionToArray(dse.categoryCombo.categories)
                         .map(cat => collectionToArray(cat.categoryOptions))
                 );
@@ -222,7 +232,7 @@ class GreyFieldsTable extends React.Component {
                 return (
                     <tr key={deNum} style={{ background: deNum % 2 === 0 ? 'none' : '#f0f0f0' }}>
                         <td style={styles.tdDataElement}>{dataElement.displayName}</td>
-                        {categoryOptionsArray.map(cos => this.renderCheckbox(dataElement,
+                        {categoryOptionsProducts.map(cos => this.renderCheckbox(dataElement,
                             this.state.cocByCategoryOptionsKey[cos.map(co => co.id).sort().join(".")]))}
                     </tr>
                 );

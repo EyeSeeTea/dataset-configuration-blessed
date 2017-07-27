@@ -41,6 +41,7 @@ export default class DataSetStore {
         const {associations, dataset} = this.getInitialState();
         this.associations = associations;
         this.dataset = dataset;
+        window.store = this;
     }
 
     getInitialModel() {
@@ -295,13 +296,17 @@ export default class DataSetStore {
     }
 
     _processDisaggregation(dataset) {
-        const items$ = Promise.map(dataset.dataSetElements, dse => {
-            if (dse.categoryCombo.id.startsWith("new-")) {
-                const newCategoryCombo = merge(dse.categoryCombo.clone(), {id: null});
+        const categoryCombos = _(dataset.dataSetElements)
+            .map(dse => dse.categoryCombo)
+            .uniqBy(categoryCombo => categoryCombo.id)
+            .value();
+        const items$ = Promise.map(categoryCombos, categoryCombo => {
+            if (categoryCombo.id.startsWith("new-")) {
+                const newCategoryCombo = merge(categoryCombo.clone(), {id: null});
                 return newCategoryCombo.save()
-                    .then(res => ({oldCc: dse.categoryCombo, newCc: newCategoryCombo}));
+                    .then(res => ({oldCc: categoryCombo, newCc: newCategoryCombo}));
             } else {
-                return Promise.resolve({oldCc: dse.categoryCombo, newCc: null});
+                return Promise.resolve({oldCc: categoryCombo, newCc: null});
             }
         }, {concurrency: 1});
 
@@ -341,15 +346,18 @@ export default class DataSetStore {
 
                 // Used in sharing saving
                 const newCategoryCombos = items.map(({oldCc, newCc}) => newCc).filter(cc => cc);
+                const categoryCombosRelation = _(items)
+                    .map(({oldCc, newCc}) => [oldCc.id, newCc || oldCc])
+                    .fromPairs().value();
 
-                const dataSetElementsUpdates = _(dataset.dataSetElements).zip(items).map(([dse, {oldCc, newCc}]) =>
-                    merge(dse, {categoryCombo: {id: (newCc || oldCc).id}})
-                );
+                const dataSetElementsUpdated = _(dataset.dataSetElements).map(dse =>
+                    merge(dse, {categoryCombo: {id: categoryCombosRelation[dse.categoryCombo.id].id}})
+                ).value();
 
                 return merge(dataset.clone(), {
                     sections: sectionsWithPersistedCocs,
                     newCategoryCombos,
-                    dataSetElements: dataSetElementsUpdates,
+                    dataSetElements: dataSetElementsUpdated,
                 });
             });
         })
