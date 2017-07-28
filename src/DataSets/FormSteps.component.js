@@ -21,7 +21,7 @@ const DataSetFormSteps = React.createClass({
     getInitialState() {
         return {
             store: new DataSetStore(this.context.d2, this.getTranslation),
-            active: 0,
+            active: 4-1,
             doneUntil: 0,
             validating: false,
             saving: false,
