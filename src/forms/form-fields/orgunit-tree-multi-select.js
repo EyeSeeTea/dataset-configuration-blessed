@@ -39,7 +39,7 @@ export default class OrganisationUnitTreeMultiSelect extends React.Component {
             d2.currentUser.getOrganisationUnits({
                 memberCollection: overlyComplicatedTemporaryFixForWeirdlyNamedFields(this.props.modelDefinition.plural),
                 memberObject: this.props.model.id,
-                fields: 'id,path,displayName,children::isNotEmpty',
+                fields: 'id,path,displayName,code,level,children::isNotEmpty',
             }),
             d2.models.organisationUnitLevels.list({
                 paging: false,
@@ -81,7 +81,7 @@ export default class OrganisationUnitTreeMultiSelect extends React.Component {
                     .filter().on('displayName').ilike(searchValue)
                     // withinUserHierarchy makes the query only apply to the subtrees of the organisation units that are
                     // assigned to the current user
-                    .list({ fields: 'id,displayName,path,children::isNotEmpty', withinUserHierarchy: true })
+                    .list({ fields: 'id,displayName,path,code,level,children::isNotEmpty', withinUserHierarchy: true })
                     .then(modelCollection => modelCollection.toArray());
 
                 return Observable.fromPromise(organisationUnitRequest);

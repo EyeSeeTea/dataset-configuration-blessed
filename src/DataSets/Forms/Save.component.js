@@ -81,8 +81,8 @@ const Save = React.createClass({
                             value={associations.coreCompetencies.map(cc => cc.name).join(", ")} />
                         <ListItem field="linked_project"
                             value={associations.project && associations.project.name} />
-                        <ListItem field="country"
-                            value={associations.country && associations.country.displayName} />
+                        <ListItem field="countries"
+                            value={(associations.countries || []).map(c => c.displayName).join(", ")} />
                     </ul>
                 </div>
             );
