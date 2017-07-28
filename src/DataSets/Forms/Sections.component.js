@@ -64,11 +64,11 @@ const SectionsSearchBox = (props) => {
 
     const wrapperStyle = {
         display: 'inline-block',
-        width: '25%',
+        width: '50%',
         position: 'relative',
-        top: '-16px',
-        marginLeft: '10px',
-        marginRight: '10px',
+        top: '-10px',
+        marginLeft: 0,
+        marginRight: 0,
     };
 
     return (
@@ -416,19 +416,26 @@ const Sections = React.createClass({
 
                     <SectionConfig section={currentSection} onChange={this._onChange} />
 
-                    <div style={{marginTop: -15}}>
-                        <SectionsSearchBox name={currentSectionName} onChange={this._setFilterName} />
-                        {this._renderSelectFilter(dataElementsAll, 'group', {width: '30%'})}
-                        {this._renderSelectFilter(dataElementsAll, 'origin', {width: '30%'})}
-                        <FilterSelectField
-                            label={this.getTranslation('selected')}
-                            value={this.state.filters.selected}
-                            onChange={value => this._onFilter("selected", value)}
-                            items={[
-                                {value: true, text: this.getTranslation('yes')},
-                                {value: false, text: this.getTranslation('no')},
-                            ]}
-                        />
+                    <div>
+                        <div>
+                            <SectionsSearchBox name={currentSectionName} onChange={this._setFilterName} />
+                        </div>
+
+                        <div style={{marginTop: -30, marginBottom: 10}}>
+                            {this._renderSelectFilter(dataElementsAll, 'group', {width: '30%'})}
+
+                            {this._renderSelectFilter(dataElementsAll, 'origin', {width: '30%'})}
+
+                            <FilterSelectField
+                                label={this.getTranslation('selected')}
+                                value={this.state.filters.selected}
+                                onChange={value => this._onFilter("selected", value)}
+                                items={[
+                                    {value: true, text: this.getTranslation('yes')},
+                                    {value: false, text: this.getTranslation('no')},
+                                ]}
+                            />
+                        </div>
                     </div>
 
                     {rows.length == 0 ? <div>{this.getTranslation("no_elements_found")}</div> :
