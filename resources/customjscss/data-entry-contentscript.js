@@ -103,19 +103,24 @@ var getGroupedTabs = function() {
 };
 
 var groupSubsections = function() {
+    // renderAsTabs = true
     _.each(getGroupedTabs(), processGroupedTab);
+
+    // renderAsTabs = false
+    $(".formSection .cent h3").toArray().map($).forEach(titleTag => {
+        titleTag.text(titleTag.text().replace("@", " → "));
+    });
 };
 
 var init = function() {
     var contentDiv = $("#contentDiv");
     var isDataEntryPage = window.dhis2 && window.dhis2.de &&
         window.dhis2.de.updateIndicators && contentDiv.length > 0;
-    console.log("CustomJS debug: ", contentDiv.length, !!isDataEntryPage);
 
     if (isDataEntryPage) {
         console.log("CustomJS: isDataEntryPage");
-        
         $(document).on( "dhis2.de.event.formLoaded", groupSubsections);
+
         loadJs("../dhis-web-commons/bootstrap/js/bootstrap.min.js");
         loadCss("../dhis-web-commons/bootstrap/css/bootstrap.min.css");
     }
@@ -123,7 +128,7 @@ var init = function() {
 
 var safeInit = function() {
     try {
-        console.log("CustomJS: init");
+        console.log("CustomJS init");
         return init();
     } catch(err) {
         console.error("CustomJS error: ", err);
