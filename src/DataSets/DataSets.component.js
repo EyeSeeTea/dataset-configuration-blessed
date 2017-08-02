@@ -1,6 +1,7 @@
 import React from 'react';
 import log from 'loglevel';
 
+import Translate from 'd2-ui/lib/i18n/Translate.mixin';
 import ObserverRegistry from '../utils/ObserverRegistry.mixin';
 import MainContent from 'd2-ui/lib/layout/main-content/MainContent.component';
 import SinglePanelLayout from 'd2-ui/lib/layout/SinglePanel.component';
@@ -19,6 +20,11 @@ import listActions from './list.actions';
 import { contextActions, contextMenuIcons, isContextActionAllowed } from './context.actions';
 import detailsStore from './details.store';
 import 'd2-ui/scss/DataTable.scss';
+
+import Settings from '../models/Settings';
+import SettingsDialog from '../Settings/Settings.component';
+import IconButton from 'material-ui/IconButton';
+import SettingsIcon from 'material-ui/svg-icons/action/settings';
 
 export function calculatePageValue(pager) {
     const pageSize = 50; // TODO: Make the page size dynamic
@@ -39,7 +45,7 @@ const DataSets = React.createClass({
         d2: React.PropTypes.object.isRequired,
     },    
 
-    mixins: [ObserverRegistry],
+    mixins: [ObserverRegistry, Translate],
 
     childContextTypes: {
         d2: React.PropTypes.object,
@@ -52,11 +58,15 @@ const DataSets = React.createClass({
     },
 
     getInitialState() {
+        const settings = new Settings(this.context.d2);
+
         return {
             isLoading: true,
             pager: { total: 0 },
             dataRows: [],
-            d2: this.context.d2
+            d2: this.context.d2,
+            currentUserHasAdminRole: settings.currentUserHasAdminRole(),
+            settingsOpen: false,
         }
     },
 
@@ -100,6 +110,14 @@ const DataSets = React.createClass({
             });
 
         this.registerDisposable(searchListByNameDisposable);
+    },
+
+    openSettings() {
+        this.setState({settingsOpen: true});
+    },
+
+    closeSettings() {
+        this.setState({settingsOpen: false});
     },
 
     render() {
@@ -149,12 +167,23 @@ const DataSets = React.createClass({
             {name: 'lastUpdated'},
         ];
 
-        return (            
+        const renderSettingsButton = () => (
+            <div style={{float: 'left'}}>
+                <IconButton onTouchTap={this.openSettings} tooltip={this.getTranslation('settings')}>
+                  <SettingsIcon />
+                </IconButton>
+            </div>
+        );
+
+        return (
             <div>
+                <SettingsDialog open={this.state.settingsOpen} onRequestClose={this.closeSettings} />
+
                 <div>
                     <div style={{ float: 'left', width: '75%' }}>
                         <SearchBox searchObserverHandler={this.searchListByName}/>
                     </div>
+                    {this.state.currentUserHasAdminRole && renderSettingsButton()}
                     <div>
                         <Pagination {...paginationProps} />
                     </div>

@@ -23,24 +23,14 @@ const merge = (obj1, obj2) => {
 };
 
 export default class DataSetStore {
-    constructor(d2, getTranslation) {
+    constructor(d2, config) {
         this.d2 = d2;
-        this.getTranslation = getTranslation;
-        this.config = {
-            categoryProjectsId: "MRwzyV0kXv9",
-            categoryComboId: "GmXXE8fiCK5",
-            dataElementGroupSetCoreCompetencyId: "Pyj6SCrmnZy",
-            dataElementGroupOutputId: "rldkyVpu4EM",
-            dataElementGroupOutcomeId: "WlNsNnj2sil",
-            dataElementGroupGlobalIndicatorMandatoryId: "CQlBGbf2jSs",
-            dataElementGroupSetOriginId: "mxv75P8OgZF",
-            dataElementGroupSetThemeId: "chyJVMF3G7k",
-            attributeGroupId: "YxwyKOlG4lP",
-            organisationUnitLevelForCountries: 3,
-        };
+        this.config = config;
+        this.getTranslation = d2.i18n.getTranslation;
         const {associations, dataset} = this.getInitialState();
         this.associations = associations;
         this.dataset = dataset;
+        window.store = this;
     }
 
     getInitialModel() {

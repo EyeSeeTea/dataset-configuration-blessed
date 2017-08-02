@@ -82,4 +82,12 @@ function getAsyncUniqueValidator(model, field, uid = null) {
     };
 };
 
-export {redirectToLogin, getCategoryCombos, collectionToArray, getCustomCategoryCombo, getAsyncUniqueValidator};
+function getExistingUserRoleByName(d2, name) {
+    return d2.models.userRoles
+        .filter().on("name").equals(name)
+        .list({fields: "*"})
+        .then(collection => collection.toArray()[0]);
+}
+
+export {redirectToLogin, getCategoryCombos, collectionToArray, getCustomCategoryCombo,
+        getAsyncUniqueValidator, getExistingUserRoleByName};

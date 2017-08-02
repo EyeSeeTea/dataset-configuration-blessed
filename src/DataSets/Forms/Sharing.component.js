@@ -23,13 +23,17 @@ const Sharing = React.createClass({
     },
 
     _getCountries() {
-        return this.context.d2.models.organisationUnits.list({
-                fields: 'id,displayName,code',
-                filter: "level:eq:" + this.props.config.organisationUnitLevelForCountries,
-                order: 'displayName:asc',
-                paging: false,
-            })
-            .then(collection => collection.toArray());
+        const countryLevelId = this.props.config.organisationUnitLevelForCountriesId;
+
+        return this.context.d2.models.organisationUnitLevels.get(countryLevelId).then(ouLevel => {
+            return this.context.d2.models.organisationUnits.list({
+                    fields: 'id,displayName,code',
+                    filter: "level:eq:" + ouLevel.level,
+                    order: 'displayName:asc',
+                    paging: false,
+                })
+                .then(collection => collection.toArray());
+        });
     },
 
     _getCurrentUserCountryCode() {
