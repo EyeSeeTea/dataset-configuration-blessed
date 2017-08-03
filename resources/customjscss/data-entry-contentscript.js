@@ -10,10 +10,13 @@
         - Sections are grouped into a single tab.
         - Themes without a section are grouped as collapsible elements.
         - Groups within a theme are grouped.
+        - Columns with all fields greyed out are removed
+        - Table swith more than [maxColumnsByTable] elements are split.
 */
 
 (function() {
 
+// Underscore.js
 var _ = window._.noConflict();
 
 _.mixin({
@@ -71,6 +74,8 @@ var loadJs = function(url, cb) {
 var emptyField = "__undefined";
 
 var separator = "@";
+
+var maxColumnsByTable = 15;
 
 var getTag = function(el, name) {
     var idx = {section: 0, theme: 1, group: 2}[name];
@@ -148,42 +153,83 @@ var groupSubsections = function() {
     _.each(getGroupedTabs(), processGroupedTab);
 };
 
-var hideGreyedColumns = function() {
-    $(".sectionTable").not(".floatThead-table").get().map($).forEach(table => {
-        var tdIinputs = table.find("tbody tr:nth-child(1) td input").get();
-        var disabledColumnIndexes = _.chain(tdIinputs)
-            .map((input, idx) => input.disabled ? idx : null)
-            .reject(x => x === null)
-            .value();
-        // Get cartesian product of headers (categories) and remove disabled categoryOptionCombos
-        var categoryOptionsList = _(table.find("thead tr").get())
-            .map(tr => _.chain($(tr).find("th")).map(th => $(th).text().trim()).uniq().value())
-        var allProducts =_.cartesianProduct(categoryOptionsList);
-        var products = _.chain(_.range(allProducts.length))
-            .difference(disabledColumnIndexes).map(idx => allProducts[idx]).value();
-        var categoryRows = _(_.range(categoryOptionsList.length)).map(categoryIndex => {
-            var groups = _(products).groupConsecutiveBy(xs => xs.slice(0, categoryIndex+1));
-            return _.map(groups, group => {
+var buildTable = function(table, data, nCategories) {
+    var nCategories = data[0].categories.length;
+    var categoryRows = _.range(nCategories).map(categoryIndex => {
+        return _.chain(data)
+            .map(columnData => columnData.categories)
+            .groupConsecutiveBy(xs => xs.slice(0, categoryIndex+1))
+            .map(group => {
                 var label = group[0][categoryIndex];
                 return $("<th />", {colspan: group.length, scope: "col"})
                     .append($("<span />", {align: "center"}).text(label))
-            });
-        });
+            })
+            .value();
+    });
 
-        // Replace headers
-        categoryRows.forEach((row, rowIndex) => {
-            var tr = table.find("thead tr:nth-child(" + (rowIndex + 1) + ")");
-            tr.find("th").remove()
-            tr.append(row);
-        });
+    var newTable = table.clone();
 
-        // Hide disabled value columns (in-place operation, take indexes in reverse order)
-        _.chain(disabledColumnIndexes).reverse().each(disabledColumnIndex => {
-            // Offset nth-child by 2: 1 (css counts start at 1) + 1 (skip dataElement name column)
-            var selector = "tbody tr td:nth-child(" + (disabledColumnIndex + 2) + ")";
-            table.find(selector).hide();
-        });
+    // Show only enabled headers
+    _.chain(newTable.find("thead tr").get().map($)).zip(categoryRows).each(pair => {
+        var tr = pair[0], row = pair[1];
+        tr.find("th").remove()
+        tr.append(row);
+    });
+
+    // Show only enabled data entries
+    var rowValues = _.transpose(data.map(columnData => columnData.values));
+
+    _.chain(newTable.find("tbody tr").get().map($)).zip(rowValues).each(pair => {
+        var tr = pair[0], values = pair[1];
+        tr.find("td").slice(1).remove();
+        tr.append(values);
+    });
+
+    return newTable;
+};
+
+var hideGreyedColumns = function() {
+    $(".sectionTable").not(".floatThead-table").get().map($).forEach(table => {
+        // Get fully disabled columns
+        var nColumns = table.find("tbody tr:nth-child(1) td input").size();
+        var tdInputs = table.find("tbody tr td input").get();
+        var rows = _.chain(tdInputs).inGroupsOf(nColumns).value();
+        var columns = _.transpose(rows);
+        var disabledColumnIndexes = _.chain(columns)
+            .map((inputs, idx) => _.all(inputs, input => input.disabled) ? idx : null)
+            .reject(x => x === null)
+            .value();
+
+        // Get cartesian product of headers (categories) and remove disabled categoryOptionCombos
+        var categoryOptionsList = _(table.find("thead tr").get())
+            .map(tr => _.chain($(tr).find("th")).map(th => $(th).text().trim()).uniq().value())
+        var nCategories = categoryOptionsList.length;
+        var transposedValues = _.transpose(_.inGroupsOf(table.find("tbody tr td:not(:first-child)").get(), nColumns));
+        var allData = _.chain(categoryOptionsList)
+            .cartesianProduct()
+            .zip(transposedValues)
+            .map(pair => ({categories: pair[0], values: pair[1]}))
+            .value();
+        var data = _.chain(_.range(allData.length))
+            .difference(disabledColumnIndexes).map(idx => allData[idx]).value();
+
+        var newTables = breakTablesData(data).map(tableData => buildTable(table, tableData));
+        table.replaceWith($("<div>").append(newTables));
     })
+};
+
+var breakTablesData = function(data, index) {
+    index = index || 0;
+    var nCategories = data[0].categories.length;
+    if (index >= nCategories - 1 || data.length <= maxColumnsByTable) {
+        return [data];
+    } else {
+        return _.chain(data)
+            .groupConsecutiveBy(columnData => _.take(columnData.categories, index + 1))
+            .map(newData => breakTablesData(newData, index + 1))
+            .flatten(1)
+            .value();
+    }
 };
 
 var applyChangesToForm = function() {
