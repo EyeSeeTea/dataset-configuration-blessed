@@ -150,26 +150,22 @@ var groupSubsections = function() {
 
 var hideGreyedColumns = function() {
     $(".sectionTable").not(".floatThead-table").get().map($).forEach(table => {
-        var nColumns = table.find("tbody tr:nth-child(1) td input").size();
-        var tdInputs = table.find("tbody tr td input").get();
-        var rows = _.chain(tdInputs).inGroupsOf(nColumns).value();
-        var columns = _.transpose(rows);
-        var disabledColumnIndexes = _.chain(columns)
-            .map((inputs, idx) => _.all(inputs, input => input.disabled) ? idx : null)
+        var tdIinputs = table.find("tbody tr:nth-child(1) td input").get();
+        var disabledColumnIndexes = _.chain(tdIinputs)
+            .map((input, idx) => input.disabled ? idx : null)
             .reject(x => x === null)
             .value();
-
-        var categoryOptionsList = _(table.find("thead tr"))
-            .map(tr => _.uniq(_.map($(tr).find("th"), th => $(th).text().trim())))
+        // Get cartesian product of headers (categories) and remove disabled categoryOptionCombos
+        var categoryOptionsList = _(table.find("thead tr").get())
+            .map(tr => _.chain($(tr).find("th")).map(th => $(th).text().trim()).uniq().value())
         var allProducts =_.cartesianProduct(categoryOptionsList);
         var products = _.chain(_.range(allProducts.length))
             .difference(disabledColumnIndexes).map(idx => allProducts[idx]).value();
         var categoryRows = _(_.range(categoryOptionsList.length)).map(categoryIndex => {
-            var groups = _(products).groupConsecutiveBy(xs => xs[categoryIndex]);
+            var groups = _(products).groupConsecutiveBy(xs => xs.slice(0, categoryIndex+1));
             return _.map(groups, group => {
                 var label = group[0][categoryIndex];
-                var colspan = group.length;
-                return $("<th />").attr({colspan: colspan, scope: "col"})
+                return $("<th />", {colspan: group.length, scope: "col"})
                     .append($("<span />", {align: "center"}).text(label))
             });
         });
@@ -181,9 +177,9 @@ var hideGreyedColumns = function() {
             tr.append(row);
         });
 
-        // Hide disabled columns for values (it's an inplace operation, take indexes in reverse order)
+        // Hide disabled value columns (in-place operation, take indexes in reverse order)
         _.chain(disabledColumnIndexes).reverse().each(disabledColumnIndex => {
-            // Offset nth-child by 1 (css counts start at 1) and 1 (skip dataElement name) = 2
+            // Offset nth-child by 2: 1 (css counts start at 1) + 1 (skip dataElement name column)
             var selector = "tbody tr td:nth-child(" + (disabledColumnIndex + 2) + ")";
             table.find(selector).hide();
         });
