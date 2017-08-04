@@ -232,9 +232,15 @@ var breakTablesData = function(data, index) {
     }
 };
 
+var fixActionsBox = function() {
+    // Button <run validation> does not fit in the box, add some more width.
+    $("#completenessDiv").css("width", "+=5px");
+};
+
 var applyChangesToForm = function() {
     groupSubsections();
     hideGreyedColumns();
+    fixActionsBox();
 };
 
 var init = function() {
