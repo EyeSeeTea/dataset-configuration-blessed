@@ -13,7 +13,6 @@ import {getCategoryCombos,
         mapPromise,
        } from '../utils/Dhis2Helpers';
 import * as Section from './Section';
-import autoBind from 'auto-bind';
 
 // From maintenance-app/src/EditModel/objectActions.js
 const extractErrorMessagesFromResponse = compose(
@@ -38,7 +37,6 @@ const getCountryCode = (orgUnit) => {
 
 export default class DataSetStore {
     constructor(d2, getTranslation) {
-        autoBind(this);
         this.d2 = d2;
         this.getTranslation = getTranslation;
         this.config = {
@@ -460,15 +458,15 @@ export default class DataSetStore {
 
     save() {
         return Promise.resolve(this._getInitialSaving())
-            .then(this._processDisaggregation)
-            .then(this._setCode)
-            .then(this._saveDataset)
-            .then(this._setCategoryCombosSharing)
-            .then(this._addDataSetToUserRole)
-            .then(this._shareWithGroups)
-            .then(this._createSections)
-            .then(this._getDatasetLink)
-            .then(this._addOrgUnitsToProject)
-            .then(this._sendNotificationMessages);
+            .then(this._processDisaggregation.bind(this))
+            .then(this._setCode.bind(this))
+            .then(this._saveDataset.bind(this))
+            .then(this._setCategoryCombosSharing.bind(this))
+            .then(this._addDataSetToUserRole.bind(this))
+            .then(this._shareWithGroups.bind(this))
+            .then(this._createSections.bind(this))
+            .then(this._getDatasetLink.bind(this))
+            .then(this._addOrgUnitsToProject.bind(this))
+            .then(this._sendNotificationMessages.bind(this));
     }
 }
