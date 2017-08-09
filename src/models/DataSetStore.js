@@ -1,10 +1,24 @@
 import fp from 'lodash/fp';
+import _ from 'lodash';
 import { generateUid } from 'd2/lib/uid';
 import moment from 'moment';
-import Promise from 'bluebird';
 import { getOwnedPropertyJSON } from 'd2/lib/model/helpers/json';
 import { map, pick, get, filter, flatten, compose, identity, head } from 'lodash/fp';
-import {getCategoryCombos, collectionToArray, getAsyncUniqueValidator} from '../utils/Dhis2Helpers';
+import {getCategoryCombos,
+        collectionToArray,
+        getAsyncUniqueValidator,
+        sendMessage,
+        setSharingByUserGroup,
+        getUserGroups,
+       } from '../utils/Dhis2Helpers';
+import * as Section from './Section';
+
+// Sequential mapPromise
+const mapPromise = (items, mapper) => {
+  const reducer = (promise, item) =>
+    promise.then(mappedItems => mapper(item).then(res => mappedItems.concat([res])));
+  return items.reduce(reducer, Promise.resolve([]));
+};
 
 // From maintenance-app/src/EditModel/objectActions.js
 const extractErrorMessagesFromResponse = compose(
@@ -17,9 +31,14 @@ const extractErrorMessagesFromResponse = compose(
     get('typeReports')
 );
 
-const merge = (obj1, obj2) => {
-    _(obj2).each((value, key) => { obj1[key] = value; });
-    return obj1;
+const update = (obj1, obj2) => {
+    const obj1c = obj1;
+    _(obj2).each((value, key) => { obj1c[key] = value; });
+    return obj1c;
+};
+
+const getCountryCode = (orgUnit) => {
+    return orgUnit && orgUnit.code ? orgUnit.code.split("_")[0] : null;
 };
 
 export default class DataSetStore {
@@ -41,6 +60,16 @@ export default class DataSetStore {
         const {associations, dataset} = this.getInitialState();
         this.associations = associations;
         this.dataset = dataset;
+        window.store = this;
+
+        this._processDisaggregation = this._processDisaggregation.bind(this);
+        this._setCode = this._setCode.bind(this);
+        this._saveDataset = this._saveDataset.bind(this);
+        this._saveSharing = this._saveSharing.bind(this);
+        this._createSections = this._createSections.bind(this);
+        this._sendNotificationMessages = this._sendNotificationMessages.bind(this);
+        this._addOrgUnitsToProject = this._addOrgUnitsToProject.bind(this);
+        this._getDatasetLink = this._getDatasetLink.bind(this);
     }
 
     getInitialModel() {
@@ -68,7 +97,7 @@ export default class DataSetStore {
     getInitialState() {
         const baseDataset = this.getInitialModel();
         const baseAssociations = {
-            project: null,
+            project: undefined,
             coreCompetencies: [],
             dataInputStartDate: _(baseDataset.dataInputPeriods).map("openingDate").compact().min(),
             dataInputEndDate: _(baseDataset.dataInputPeriods).map("closingDate").compact().max(),
@@ -104,18 +133,19 @@ export default class DataSetStore {
         const {project} = associations;
 
         if (project) {
-            const clonedDataset = dataset.clone();
-            const clonedAssociations = _.clone(associations);
+            const newDataset = dataset.clone();
+            const newAssociations = _.clone(associations);
             const getOrgUnitIds = (ds) => ds.organisationUnits.toArray().map(ou => ou.id);
-            clonedDataset.name = project.name ? project.name : "";
-            clonedAssociations.dataInputStartDate =
+
+            newDataset.name = project.name ? project.name : "";
+            newAssociations.dataInputStartDate =
                 project.startDate ? new Date(project.startDate) : undefined;
-            clonedAssociations.dataInputEndDate =
+            newAssociations.dataInputEndDate =
                 project.endDate ? new Date(project.endDate) : undefined;
-            clonedDataset.dataInputPeriods = this.getDataInputPeriods(
-                clonedAssociations.dataInputStartDate, clonedAssociations.dataInputEndDate);
-            clonedDataset.organisationUnits = project.organisationUnits;
-            return {dataset: clonedDataset, associations: clonedAssociations};
+            newDataset.dataInputPeriods = this.getDataInputPeriods(
+                newAssociations.dataInputStartDate, newAssociations.dataInputEndDate);
+            newDataset.organisationUnits = project.organisationUnits || [];
+            return {dataset: newDataset, associations: newAssociations};
         } else {
             return {dataset, associations};
         }
@@ -137,8 +167,9 @@ export default class DataSetStore {
                 break;
             case "associations.dataInputStartDate":
             case "associations.dataInputEndDate":
+                const {dataInputStartDate, dataInputEndDate} = associations;
                 this.dataset.dataInputPeriods =
-                    this.getDataInputPeriods(associations.dataInputStartDate, associations.dataInputEndDate)
+                    this.getDataInputPeriods(dataInputStartDate, dataInputEndDate);
                 break;
         }
     }
@@ -149,155 +180,58 @@ export default class DataSetStore {
         this.updateFromAssociations(fieldPath, oldValue);
     }
 
+    updateModelSections(stateSections) {
+        const {sections, dataSetElements, indicators, errors} =
+            Section.getDataSetInfo(this.d2, this.config, _.values(stateSections));
+
+        // Don't override previous values of dataSetElements (disaggregation)
+        const newDataSetElements =
+            _.keyBy(dataSetElements, dse => dse.dataElement.id);
+        const prevDataSetElements =
+            _.keyBy(this.dataset.dataSetElements || [], dse => dse.dataElement.id);
+        const mergedDataSetElements = _(newDataSetElements)
+            .merge(prevDataSetElements)
+            .at(_.keys(newDataSetElements))
+            .value();
+
+        _.assign(this.associations, {
+            stateSections: stateSections,
+            sections: sections,
+        });
+
+        _.assign(this.dataset, {
+            dataSetElements: mergedDataSetElements,
+            indicators: indicators,
+        });
+        return errors;
+    }
+
     setGreyedFields(greyedFieldsForSections) {
         if (this.associations.sections.length !== greyedFieldsForSections.length) {
             throw new Error("setGreyedFields: invalid input array length")
         }
-        _(this.associations.sections).zip(greyedFieldsForSections).each(([section, greyedFields]) => {
-            section.greyedFields = greyedFields;
-        });
+        _(this.associations.sections)
+            .zip(greyedFieldsForSections)
+            .each(([section, greyedFields]) => update(section, {greyedFields}));
     }
 
-    _saveDataset(dataset) {
-        return new Promise(async (complete, error) => {
-            // maintenance-app uses a custom function to save the dataset as it needs to do
-            // some processing  not allowed by dataset.save(). The code in this method is copied
-            // from maintenance-app/src/EditModel/objectActions.js
-            const d2 = this.d2;
-            const api = d2.Api.getApi();
-            const dataSetPayload = getOwnedPropertyJSON(dataset);
+    /* Save */
 
-            if (!dataSetPayload.id) {
-                const dataSetId = await api.get('system/uid', { limit: 1 }).then(({ codes }) => codes[0]);
-                dataSetPayload.id = dataSetId;
-            }
-
-            const dataSetElements = Array
-                .from(dataset.dataSetElements ? dataset.dataSetElements.values() : [])
-                .map(({ dataSet, dataElement, ...other }) => {
-                    return {
-                        dataSet: { ...dataSet, id: dataSet.id || dataSetPayload.id },
-                        ...other,
-                        dataElement: {
-                            id: dataElement.id,
-                        }
-                    }
-                });
-
-            dataSetPayload.dataSetElements = dataSetElements;
-
-            const metadataPayload = {
-                dataSets: [dataSetPayload],
-            };
-
-            try {
-                const response = await api.post('metadata', metadataPayload);
-
-                if (response.status === 'OK') {
-                    dataset.id = dataSetPayload.id;
-                    complete(dataset);
-                } else {
-                    const errorMessages = extractErrorMessagesFromResponse(response);
-
-                    error(head(errorMessages) || 'Unknown error!');
-                }
-            } catch (err) {
-                error(err);
-            }
-        });
+    _getInitialSaving() {
+        return {
+            dataset: this.dataset,
+            warnings: [],
+            sectionsWithPersistedCocs: null,
+            newCategoryCombos: null,
+            href: null,
+       };
     }
 
-    _setSharing(object, userGroupAccessByName) {
-        const [userGroupNames, userGroupAccesses] = _.zip(...userGroupAccessByName);
-        const d2 = this.d2;
-        const api = d2.Api.getApi();
-
-        return d2.models.userGroups.list({
-                filter: "name:in:[" + userGroupNames.join(",") + "]",
-                paging: false,
-            })
-            .then(userGroupsCollection =>
-                _(userGroupsCollection.toArray())
-                    .keyBy(userGroup => userGroup.name)
-                    .at(userGroupNames)
-                    .zip(userGroupAccesses)
-                    .map(([userGroup, access]) =>
-                        userGroup ? {id: userGroup.id, access} : null)
-                    .compact()
-                    .value()
-            ).then(userGroupAccesses => {
-                const payload = {
-                    meta: {
-                        allowPublicAccess: true,
-                        allowExternalAccess: false,
-                    },
-                    object: {
-                        userGroupAccesses: userGroupAccesses,
-                    }
-                }
-                return api.post(`sharing?type=${object.modelDefinition.name}&id=${object.id}`, payload);
-            });
-    }
-
-    _saveSharing(dataset) {
-        const setNewCategoryCombosSharing = () => {
-            if (!this.associations.country)
-                return Promise.resolve();
-            const countryCode = this.associations.country.code.split("_")[0];
-            const userGroupAccessByName = [
-                [countryCode + "_Users", "r-------"],
-            ];
-            return Promise.map(dataset.newCategoryCombos, categoryCombo => {
-                return this._setSharing(categoryCombo, userGroupAccessByName);
-            });
-        };
-
-        const addDataSetToUserRole = () => {
-            return Promise.map(this.associations.coreCompetencies, coreCompetency => {
-                // userRoleName example: AF__dataset_campmanagement
-                const key = coreCompetency.name.toLocaleLowerCase().replace(/\s+/g, '');
-                const userRoleName = "AF__dataset_" + key;
-                
-                return this.d2.models.userRoles
-                    .list({filter: "name:eq:" + userRoleName})
-                    .then(collection => collection.toArray()[0])
-                    .then(userRole => {
-                        if (userRole) {
-                            userRole.dataSets.set(dataset.id, dataset);
-                            userRole.dirty = true;
-                            return userRole.save();
-                        } else {
-                            console.log("User role not found: " + userRoleName)
-                            return Promise.resolve();
-                        }
-                    })
-            }, {concurrency: 1});
-        };
-
-        const shareWithGroups = () => {
-            if (!this.associations.country)
-                return Promise.resolve();
-            // [COUNTRY_PREFIX]_users -> view, [COUNTRY_PREFIX]_admin -> edit, gl_admin -> edit
-            const countryCode = this.associations.country.code.split("_")[0];
-            const userGroupAccessByName = [
-                [countryCode + "_Users", "r-------"],
-                [countryCode + "_Administrators", "rw------"],
-                ["GL_AllAdmins", "rw------"],
-            ];
-            return this._setSharing(dataset, userGroupAccessByName);
-        };
-
-        return Promise.resolve()
-            .then(setNewCategoryCombosSharing)
-            .then(addDataSetToUserRole)
-            .then(shareWithGroups)
-            .then(() => dataset);
-    }
-
-    _processDisaggregation(dataset) {
-        const items$ = Promise.map(dataset.dataSetElements, dse => {
+    _processDisaggregation(saving) {
+        const {dataset} = saving;
+        const items$ = mapPromise(dataset.dataSetElements, dse => {
             if (dse.categoryCombo.id.startsWith("new-")) {
-                const newCategoryCombo = merge(dse.categoryCombo.clone(), {id: null});
+                const newCategoryCombo = update(dse.categoryCombo.clone(), {id: null});
                 return newCategoryCombo.save()
                     .then(res => ({oldCc: dse.categoryCombo, newCc: newCategoryCombo}));
             } else {
@@ -332,43 +266,81 @@ export default class DataSetStore {
 
                 const sectionsWithPersistedCocs = this.associations.sections.map(section => {
                     const persistedGreyedFields = section.greyedFields.map(field =>
-                        merge(field, {categoryOptionCombo: {
+                        _.merge(field, {categoryOptionCombo: {
                             id: (relation[field.categoryOptionCombo.id] || field.categoryOptionCombo).id,
                         }})
                     );
-                    return merge(section.clone(), {greyedFields: persistedGreyedFields})
+                    return update(section, {greyedFields: persistedGreyedFields});
                 });
 
-                // Used in sharing saving
                 const newCategoryCombos = items.map(({oldCc, newCc}) => newCc).filter(cc => cc);
+                const dataSetElementsWithPersistedCc = _(dataset.dataSetElements)
+                    .zip(items)
+                    .map(([dse, {oldCc, newCc}]) =>
+                        update(dse, {categoryCombo: {id: (newCc || oldCc).id}}));
+                dataset.dataSetElements = dataSetElementsWithPersistedCc;
 
-                const dataSetElementsUpdates = _(dataset.dataSetElements).zip(items).map(([dse, {oldCc, newCc}]) =>
-                    merge(dse, {categoryCombo: {id: (newCc || oldCc).id}})
-                );
-
-                return merge(dataset.clone(), {
-                    sections: sectionsWithPersistedCocs,
+                return _.merge(saving, {
+                    sectionsWithPersistedCocs,
                     newCategoryCombos,
-                    dataSetElements: dataSetElementsUpdates,
                 });
             });
         })
     }
 
-    _createSections(dataset) {
-        const datasetId = dataset.id;
-        const sections = _(dataset.sections)
-            .sortBy(section => section.name)
-            .map(section => merge(section.clone(), {dataSet: {id: datasetId}}))
-            .value();
+    _saveDataset(saving) {
+        const {dataset} = saving;
+        const d2 = this.d2;
+        const api = d2.Api.getApi();
 
-        return sections.reduce(
-            (promise, section) => promise.then(() => section.save()),
-            Promise.resolve()
-        );
+        return new Promise(async (complete, error) => {
+            // maintenance-app uses a custom function to save the dataset as it needs to do
+            // some processing  not allowed by dataset.save(). The code in this method is copied
+            // from maintenance-app/src/EditModel/objectActions.js
+            const dataSetPayload = getOwnedPropertyJSON(dataset);
+
+            if (!dataSetPayload.id) {
+                const dataSetId = await api.get('system/uid', { limit: 1 }).then(({ codes }) => codes[0]);
+                dataSetPayload.id = dataSetId;
+            }
+
+            const dataSetElements = Array
+                .from(dataset.dataSetElements ? dataset.dataSetElements.values() : [])
+                .map(({ dataSet, dataElement, ...other }) => {
+                    return {
+                        dataSet: { ...dataSet, id: dataSet.id || dataSetPayload.id },
+                        ...other,
+                        dataElement: {
+                            id: dataElement.id,
+                        }
+                    }
+                });
+
+            dataSetPayload.dataSetElements = dataSetElements;
+
+            const metadataPayload = {
+                dataSets: [dataSetPayload],
+            };
+
+            try {
+                const response = await api.post('metadata', metadataPayload);
+
+                if (response.status === 'OK') {
+                    dataset.id = dataSetPayload.id;
+                    complete(saving);
+                } else {
+                    const errorMessages = extractErrorMessagesFromResponse(response);
+
+                    error(head(errorMessages) || 'Unknown error!');
+                }
+            } catch (err) {
+                error(err);
+            }
+        });
     }
 
-    _setCode(dataset) {
+    _setCode(saving) {
+        const {dataset, warnings} = saving;
         const {project} = this.associations;
         const projectCode = project ? project.code : null;
 
@@ -376,19 +348,141 @@ export default class DataSetStore {
             const datasetCode = projectCode + " " + "Data Set";
             const codeValidator = getAsyncUniqueValidator(this.d2.models.dataSet, "code");
             return codeValidator(datasetCode)
-                .then(() => merge(dataset.clone(), {code: datasetCode}))
-                .catch(err => dataset);
+                .then(() =>
+                    _.merge(saving, {dataset: update(dataset, {code: datasetCode})}))
+                .catch(err =>
+                    _.merge(saving, {warnings: warnings.concat(["Dataset code already used: " + datasetCode])}));
         } else {
-            return Promise.resolve(dataset);
+            return Promise.resolve(saving);
         }
     }
 
+    _saveSharing(saving) {
+        const setNewCategoryCombosSharing = (saving) => {
+            const {dataset, newCategoryCombos, warnings} = saving;
+            const countryCode = getCountryCode(this.associations.country);
+            const userGroupAccessByName = _.compact([
+                countryCode ? [countryCode + "_Users", "r-------"] : null,
+            ]);
+            return mapPromise(newCategoryCombos, categoryCombo =>
+                setSharingByUserGroup(this.d2, categoryCombo, userGroupAccessByName)
+            ).then(() => saving);
+        };
+
+        const addDataSetToUserRole = (saving) => {
+            const countryCode = getCountryCode(this.associations.country);
+            const {dataset, warnings} = saving;
+            if (!countryCode)
+                return;
+
+            return mapPromise(this.associations.coreCompetencies, coreCompetency => {
+                // userRoleName example: AF__dataset_campmanagement, AF__dataset_icla
+                const key = coreCompetency.name.toLocaleLowerCase().replace(/\s+/g, '');
+                const userRoleName = `${countryCode}__dataset_` + key;
+                
+                return this.d2.models.userRoles
+                    .list({filter: "name:eq:" + userRoleName})
+                    .then(collection => collection.toArray()[0])
+                    .then(userRole => {
+                        if (userRole) {
+                            userRole.dataSets.set(dataset.id, dataset);
+                            userRole.dirty = true;
+                            return userRole.save().then(() => null);
+                        } else {
+                            const msg = "User role not found: " + userRoleName
+                            return Promise.resolve(msg);
+                        }
+                    })
+            }, {concurrency: 1})
+                .then(msgs => _.merge(saving, {warnings: warnings.concat(_.compact(msgs))}));
+        };
+
+        const shareWithGroups = (saving) => {
+            const {dataset} = saving;
+            const countryCode = getCountryCode(this.associations.country);
+            const userGroupAccessByName = _.compact([
+                countryCode ? [countryCode + "_Users", "r-------"] : null,
+                countryCode ? [countryCode + "_Administrators", "rw------"] : null,
+                ["GL_GlobalAdministrator", "rw------"],
+            ]);
+            return setSharingByUserGroup(this.d2, dataset, userGroupAccessByName).then(() => saving);
+        };
+
+        return Promise.resolve(saving)
+            .then(setNewCategoryCombosSharing)
+            .then(addDataSetToUserRole)
+            .then(shareWithGroups);
+    }
+
+    _createSections(saving) {
+        const {dataset, sectionsWithPersistedCocs} = saving;
+        const datasetId = dataset.id;
+        const sections = _(sectionsWithPersistedCocs)
+            .sortBy(section => section.name)
+            .map(section => update(section, {dataSet: {id: datasetId}}))
+            .value();
+
+        return mapPromise(sections, section => section.save()).then(() => saving);
+    }
+
+    _getDatasetLink(saving) {
+        return this.d2.models.dataSets.get(saving.dataset.id)
+            .then(datasetDB => _.merge(saving, {href: datasetDB.href}));
+    }
+
+    _addOrgUnitsToProject(saving) {
+        const {dataset} = saving;
+        const {project} = this.associations;
+
+        if (project) {
+            return this.d2.models.categoryOption.get(project.id).then(project => {
+                _(dataset.organisationUnits.toArray())
+                    .each(datasetOu => project.organisationUnits.set(datasetOu.id, datasetOu));
+                project.dirty = true;
+                return project.save().then(() => saving);
+            });
+        } else {
+            return Promise.resolve(saving);
+        }
+    }
+
+    _sendNotificationMessages(saving) {
+        const {dataset, href} = saving;
+        const userName = this.d2.currentUser.name;
+        const d2 = this.d2;
+        const {country} = this.associations;
+        const createMsg = {
+            subject: `Dataset created: ${dataset.name}`,
+            body: `New dataset created: ${dataset.name} by ${userName}:\n\n${href}`,
+        };
+        const warningsList = saving.warnings.map(s => "- " + s).join("\n");
+        const warningMsg = _.isEmpty(saving.warnings) ? null : {
+            subject: `Dataset created with warnings: ${dataset.name}`,
+            body: `New dataset created (${dataset.name} by ${userName}) has some warnings:` +
+                `\n\n${warningsList}\n\n${href}`,
+        };
+        const userGroupNames = _.compact([
+            "GL_M&E",
+            country ? getCountryCode(country) + "_M&EDatasetCompletion" : null,
+        ]);
+
+        return getUserGroups(d2, userGroupNames).then(col => col.toArray()).then(userGroups => {
+            return Promise.all(_.compact([
+                sendMessage(d2, createMsg.subject, createMsg.body, userGroups),
+                warningMsg && sendMessage(d2, warningMsg.subject, warningMsg.body, userGroups),
+            ]));
+        }).then(() => saving);
+    }
+
     save() {
-        return Promise.resolve(this.dataset)
-            .then(dataset => this._processDisaggregation(dataset))
-            .then(dataset => this._setCode(dataset))
-            .then(dataset => this._saveDataset(dataset))
-            .then(dataset => this._saveSharing(dataset))
-            .then(dataset => this._createSections(dataset));
+        return Promise.resolve(this._getInitialSaving())
+            .then(this._processDisaggregation)
+            .then(this._setCode)
+            .then(this._saveDataset)
+            .then(this._saveSharing)
+            .then(this._createSections)
+            .then(this._getDatasetLink)
+            .then(this._addOrgUnitsToProject)
+            .then(this._sendNotificationMessages);
     }
 }

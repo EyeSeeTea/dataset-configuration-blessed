@@ -1,6 +1,6 @@
-import { generateUid } from 'd2/lib/uid';
 import _ from 'lodash';
 import {cartesianProduct} from './lodash-mixins';
+import { generateUid } from 'd2/lib/uid';
 
 function redirectToLogin(baseUrl) {
     const loginUrl = `${baseUrl}/dhis-web-commons/security/login.action`;
@@ -82,4 +82,71 @@ function getAsyncUniqueValidator(model, field, uid = null) {
     };
 };
 
-export {redirectToLogin, getCategoryCombos, collectionToArray, getCustomCategoryCombo, getAsyncUniqueValidator};
+function getUserGroups(d2, names) {
+    return d2.models.userGroups.list({
+        filter: "name:in:[" + names.join(",") + "]",
+        paging: false,
+    });
+}
+
+function setSharingByUserGroup(d2, object, userGroupAccessByName) {
+    if (_.isEmpty(userGroupAccessByName))
+        return Promise.resolve(true);
+    const api = d2.Api.getApi();
+    const [userGroupNames, userGroupAccesses] = _.zip(...userGroupAccessByName);
+
+    return getUserGroups(d2, userGroupNames)
+        .then(userGroupsCollection =>
+            _(userGroupsCollection.toArray())
+                .keyBy(userGroup => userGroup.name)
+                .at(userGroupNames)
+                .zip(userGroupAccesses)
+                .map(([userGroup, access]) =>
+                    userGroup ? {id: userGroup.id, access} : null)
+                .compact()
+                .value()
+        ).then(userGroupAccesses => {
+            const payload = {
+                meta: {
+                    allowPublicAccess: true,
+                    allowExternalAccess: false,
+                },
+                object: {
+                    userGroupAccesses: userGroupAccesses,
+                }
+            }
+            return api.post(`sharing?type=${object.modelDefinition.name}&id=${object.id}`, payload);
+        });
+}
+
+function sendMessage(d2, subject, text, recipients) {
+    const api = d2.Api.getApi();
+    const recipientsByModel = _(recipients)
+        .groupBy(recipient => recipient.modelDefinition.name)
+        .mapValues(models => models.map(model => ({id: model.id})))
+        .value();
+    const message = {
+        subject: subject,
+        text: text,
+        users: recipientsByModel.user,
+        userGroups: recipientsByModel.userGroup,
+        organisationUnits: recipientsByModel.organisationUnit,
+    };
+
+    if (_.isEmpty(recipients)) {
+        return Promise.resolve();
+    } else {
+        return api.post("/messageConversations", message);
+    }
+}
+
+export {
+    redirectToLogin,
+    getCategoryCombos,
+    collectionToArray,
+    getCustomCategoryCombo,
+    getAsyncUniqueValidator,
+    setSharingByUserGroup,
+    sendMessage,
+    getUserGroups,
+};

@@ -2,6 +2,9 @@ import React, { PropTypes } from 'react';
 import Translate from 'd2-ui/lib/i18n/Translate.mixin';
 import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
 import RichDropdown from '../../forms/RichDropdown.component';
+import Validators from 'd2-ui/lib/forms/Validators';
+import FormBuilder from 'd2-ui/lib/forms/FormBuilder.component';
+import FormHelpers from '../../forms/FormHelpers';
 
 const getCode = (orgUnit) => orgUnit ? orgUnit.code.split("_")[0] : null;
 
@@ -14,12 +17,6 @@ const Sharing = React.createClass({
 
     propTypes: {
         validateOnRender: React.PropTypes.bool,
-    },
-
-    componentWillReceiveProps(props) {
-        if (props.validateOnRender) {
-            props.formStatus(true);
-        }
     },
 
     _getCountries() {
@@ -62,8 +59,12 @@ const Sharing = React.createClass({
                 loaded: true,
                 currentUserCountryCode,
                 countriesByCode: _.keyBy(countries, getCode),
-            }, () => { this.countrySelected(currentUserCountryCode); });
+            }, () => { currentUserCountryCode && this.countrySelected(currentUserCountryCode); });
         });
+    },
+
+    _onUpdateFormStatus(status) {
+        this.props.formStatus(status.valid);
     },
 
     render() {
@@ -76,19 +77,28 @@ const Sharing = React.createClass({
                 .map((country, code) => ({value: code, text: country.displayName}))
                 .value();
 
+            const fields = [
+                FormHelpers.getRichSelectField({
+                    name: 'country',
+                    isRequired: true,
+                    label: this.getTranslation('country'),
+                    value: getCode(selectedCountry) || currentUserCountryCode,
+                    options: countryOptions,
+                    description: this.getTranslation("sharing_help"),
+                    validators: [{
+                        validator: Validators.isRequired,
+                        message: this.getTranslation(Validators.isRequired.message),
+                    }],
+                }),
+            ];
+
             return (
-                <div>
-                    <p>{this.getTranslation("sharing_help")}:</p>
-                    
-                    <RichDropdown
-                        value={getCode(selectedCountry) || currentUserCountryCode}
-                        options={countryOptions}
-                        isRequired={true}
-                        labelText={this.getTranslation("country")}
-                        controls={[]}
-                        onChange={(ev) => this.countrySelected(ev.target.value)}
-                    />
-                </div>
+                <FormBuilder
+                    fields={fields}
+                    onUpdateField={(key, value) => this.countrySelected(value)}
+                    onUpdateFormStatus={this._onUpdateFormStatus}
+                    validateOnRender={this.props.validateOnRender}
+                />
             );
         }
     },
