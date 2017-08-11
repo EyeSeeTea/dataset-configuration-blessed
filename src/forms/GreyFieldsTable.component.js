@@ -39,6 +39,13 @@ const styles = {
     },
 };
 
+// Return the key to use in structure cocByCategoryKey
+const getKey = (categoryCombo, categoryOptions) => {
+    // categoryOptionCombo.categoryOptions holds non-repeated IDs, in any order
+    const sortedUniqueIds = _(categoryOptions).map("id").orderBy().uniq().value();
+    return [categoryCombo.id, ...sortedUniqueIds].join(".");
+};
+
 class GreyFieldsTable extends React.Component {
     constructor(props, context) {
         super(props, context);
@@ -78,18 +85,17 @@ class GreyFieldsTable extends React.Component {
             const optionCount = _(categoryCombos)
                 .map(cc => [cc.id, cc.categories.toArray().map(c => c.categoryOptions.size)])
                 .fromPairs().value();
-
-            const cocByCategoryOptionsKey = _(categoryCombosById)
+            const cocByCategoryKey = _(categoryCombosById)
                 .values()
-                .flatMap(cc => cc.categoryOptionCombos.toArray())
-                .map(coc => [coc.categoryOptions.toArray().map(co => co.id).sort().join("."), coc])
+                .flatMap(cc => cc.categoryOptionCombos.toArray().map(coc =>
+                    [getKey(cc, coc.categoryOptions.toArray()), coc]))
                 .fromPairs()
                 .value();
 
             this.setState({
                 loaded: true,
                 categoryCombosById,
-                cocByCategoryOptionsKey,
+                cocByCategoryKey,
                 optionCount,
                 greyedFields,
             });
@@ -160,8 +166,8 @@ class GreyFieldsTable extends React.Component {
             .groupConsecutiveBy(product => product[idx])
             .map(consecutiveProducts => {
                 const cocs = consecutiveProducts
-                    .map(cos => cos.map(co => co.id).sort().join("."))
-                    .map(key => this.state.cocByCategoryOptionsKey[key]);
+                    .map(cos => getKey({id: categoryComboId}, cos))
+                    .map(key => this.state.cocByCategoryKey[key]);
                 return {label: consecutiveProducts[0][idx].displayName, cocs: cocs}
             })
             .value();
@@ -189,9 +195,13 @@ class GreyFieldsTable extends React.Component {
         });
     }
 
-    renderCheckbox(dataElement, categoryOptionCombo) {
+    renderCheckbox(dataSetElement, categoryOptions) {
+        const {dataElement} = dataSetElement;
+        const key = getKey(dataSetElement.categoryCombo, categoryOptions);
+        const categoryOptionCombo = this.state.cocByCategoryKey[key];
         if (!dataElement || !categoryOptionCombo)
             return;
+
         const fieldId = [dataElement.id, categoryOptionCombo.id].join(".");
         const isGreyed = !!this.state.greyedFields[fieldId];
         const toggleBoggle = () => {
@@ -228,12 +238,10 @@ class GreyFieldsTable extends React.Component {
                     ...collectionToArray(dse.categoryCombo.categories)
                         .map(cat => collectionToArray(cat.categoryOptions))
                 );
-                const {dataElement} = dse;
                 return (
                     <tr key={deNum} style={{ background: deNum % 2 === 0 ? 'none' : '#f0f0f0' }}>
-                        <td style={styles.tdDataElement}>{dataElement.displayName}</td>
-                        {categoryOptionsProducts.map(cos => this.renderCheckbox(dataElement,
-                            this.state.cocByCategoryOptionsKey[cos.map(co => co.id).sort().join(".")]))}
+                        <td style={styles.tdDataElement}>{dse.dataElement.displayName}</td>
+                        {categoryOptionsProducts.map(cos => this.renderCheckbox(dse, cos))}
                     </tr>
                 );
             });
