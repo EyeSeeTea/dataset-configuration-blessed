@@ -66,9 +66,7 @@ const SectionsSearchBox = (props) => {
         display: 'inline-block',
         width: '50%',
         position: 'relative',
-        top: '-10px',
-        marginLeft: 0,
-        marginRight: 0,
+        margin: '5px 0px'
     };
 
     return (
