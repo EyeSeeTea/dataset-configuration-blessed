@@ -1,6 +1,5 @@
-import _ from 'lodash';
-import {cartesianProduct} from './lodash-mixins';
 import { generateUid } from 'd2/lib/uid';
+import _ from './lodash-mixins';
 
 function mapPromise(items, mapper) {
   const reducer = (promise, item) =>
@@ -29,7 +28,11 @@ function collectionToArray(collectionOrArray) {
     return collectionOrArray.toArray ? collectionOrArray.toArray() : collectionOrArray;
 }
 
+// Keep track of the created categoryCombos so objects are reused
+let customCategoryCombos = {};
+
 function getCustomCategoryCombo(d2, dataElement, categoryCombos, categoryCombo) {
+    const newCategoryComboId = "new-" + dataElement.categoryCombo.id + "." + categoryCombo.id;
     const selectedCategories = collectionToArray(categoryCombo.categories);
     const combinedCategories = _(dataElement.categoryCombo.categories)
         .concat(selectedCategories).uniqBy("id").value();
@@ -42,12 +45,14 @@ function getCustomCategoryCombo(d2, dataElement, categoryCombos, categoryCombo) 
 
     if (existingCategoryCombo) {
         return _.merge(existingCategoryCombo, {source: categoryCombo});
+    } else if (customCategoryCombos[newCategoryComboId]) {
+        return customCategoryCombos[newCategoryComboId];
     } else {
         const allCategoriesById = _(categoryCombos)
             .flatMap(cc => cc.categories.toArray()).uniqBy("id").keyBy("id").value();
         const categories = _.at(allCategoriesById, combinedCategories.map(cat => cat.id));
         const categoryOptions = categories.map(c => c.categoryOptions.toArray());
-        const categoryOptionCombos = cartesianProduct(...categoryOptions).map(cos =>
+        const categoryOptionCombos = _.cartesianProduct(...categoryOptions).map(cos =>
             ({
                 id: generateUid(),
                 displayName: name,
@@ -57,14 +62,16 @@ function getCustomCategoryCombo(d2, dataElement, categoryCombos, categoryCombo) 
 
         const name = [dataElement.categoryCombo, categoryCombo].map(cc => cc.displayName).join("/");
         const customCategoryCombo = d2.models.categoryCombo.create({
-            id: "new-" + generateUid(),
+            id: newCategoryComboId,
             dataDimensionType: "DISAGGREGATION",
             name: name,
             displayName: name,
             categories: categories,
             categoryOptionCombos: categoryOptionCombos,
         });
-        return _.merge(customCategoryCombo, {source: categoryCombo});
+        customCategoryCombo.source = categoryCombo;
+        customCategoryCombos[customCategoryCombo.id] = customCategoryCombo;
+        return customCategoryCombo;
     }
 }
 

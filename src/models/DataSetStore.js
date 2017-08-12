@@ -207,13 +207,17 @@ export default class DataSetStore {
 
     _processDisaggregation(saving) {
         const {dataset} = saving;
-        const items$ = mapPromise(dataset.dataSetElements, dse => {
-            if (dse.categoryCombo.id.startsWith("new-")) {
-                const newCategoryCombo = update(dse.categoryCombo.clone(), {id: null});
+        const categoryCombos = _(dataset.dataSetElements)
+            .map(dse => dse.categoryCombo)
+            .uniqBy(categoryCombo => categoryCombo.id)
+            .value();
+        const items$ = mapPromise(categoryCombos, categoryCombo => {
+            if (categoryCombo.id.startsWith("new-")) {
+                const newCategoryCombo = update(categoryCombo.clone(), {id: null});
                 return newCategoryCombo.save()
-                    .then(res => ({oldCc: dse.categoryCombo, newCc: newCategoryCombo}));
+                    .then(res => ({oldCc: categoryCombo, newCc: newCategoryCombo}));
             } else {
-                return Promise.resolve({oldCc: dse.categoryCombo, newCc: null});
+                return Promise.resolve({oldCc: categoryCombo, newCc: null});
             }
         });
 
@@ -252,11 +256,14 @@ export default class DataSetStore {
                 });
 
                 const newCategoryCombos = items.map(({oldCc, newCc}) => newCc).filter(cc => cc);
-                const dataSetElementsWithPersistedCc = _(dataset.dataSetElements)
-                    .zip(items)
-                    .map(([dse, {oldCc, newCc}]) =>
-                        update(dse, {categoryCombo: {id: (newCc || oldCc).id}}))
-                    .value();
+                const categoryCombosRelation = _(items)
+                    .map(({oldCc, newCc}) => [oldCc.id, newCc || oldCc])
+                    .fromPairs().value();
+
+                const dataSetElementsWithPersistedCc = _(dataset.dataSetElements).map(dse =>
+                    update(dse, {categoryCombo: {id: categoryCombosRelation[dse.categoryCombo.id].id}})
+                ).value();
+                
                 dataset.dataSetElements = dataSetElementsWithPersistedCc;
 
                 return _.merge(saving, {

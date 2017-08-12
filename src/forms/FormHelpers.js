@@ -51,7 +51,7 @@ function getRichSelectField({name, label, options, filterOptions,
         component: ({description, ...otherProps}) => {
             return (
                 <div>
-                    <p>{description}:</p>
+                    {description ? (<p>{description}:</p>) : null}
                     <RichDropdown {...otherProps} />
                 </div>
             );
