@@ -17,25 +17,33 @@ function cartesianProduct(...rest) {
     )([[]])(rest);
 }
 
-function groupConsecutive(xs) {
-  return _(xs).reduce((acc, x) => {
+function groupConsecutiveBy(xs, mapper = _.identity) {
+  const reducer = (acc, x) => {
     if (_.isEmpty(acc)) {
       return acc.concat([[x]]);
     } else {
       const last = _.last(acc);
-      if (_.last(last) === x) {
+      if (_.isEqual(mapper(_.last(last)), mapper(x))) {
         last.push(x);
         return acc;
       } else {
         return acc.concat([[x]]);
       }
     }
-  },
-  [])
+  };
+
+  return _(xs).reduce(reducer, []);
 }
 
-export {
+function transpose(xss) {
+  return _.zip(...xss);
+}
+
+_.mixin({
     deepMerge,
     cartesianProduct,
-    groupConsecutive,
-};
+    groupConsecutiveBy,
+    transpose,
+});
+
+export default _;

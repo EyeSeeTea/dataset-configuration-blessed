@@ -42,18 +42,30 @@ function getSelectField({name, label, options, value = undefined, isRequired = f
     };
 }
 
-function getRichSelectField({name, label, options, filterOptions, 
-                             value = undefined, isRequired = false, controls = []}) {
+function getRichSelectField({name, label, options, filterOptions,
+                             value = undefined, isRequired = false,
+                             controls = [], description = undefined,
+                             validators = [], asyncValidators = []}) {
     return {
         name: name,
-        component: RichDropdown,
+        component: ({description, ...otherProps}) => {
+            return (
+                <div>
+                    {description ? (<p>{description}:</p>) : null}
+                    <RichDropdown {...otherProps} />
+                </div>
+            );
+        },
         value: value,
+        validators: validators,
+        asyncValidators: asyncValidators,
         props: {
             options: options,
             filterOptions: filterOptions,
             isRequired: isRequired,
             labelText: getLabel(label, isRequired),
             style: {width: "30%"},
+            description: description,
             controls: controls,
         },
     };
