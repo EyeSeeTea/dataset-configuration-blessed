@@ -26,7 +26,7 @@ import routes from './router';
 import appTheme from './App/app.theme';
 import './App/App.scss';
 import {redirectToLogin} from './utils/Dhis2Helpers';
-
+import Settings from './models/Settings';
 
 // Render the a LoadingMask to show the user the app is in loading
 // The consecutive render after we did our setup will replace this loading mask
@@ -71,9 +71,14 @@ function configI18n(userSettings) {
  * @param d2 Instance of the d2 library that is returned by the `init` function.
  */
 function startApp(d2) {
+    window.d2 = d2;
     render(routes, document.getElementById('app'));
 }
 
+function initSettings(d2) {
+    const settings = new Settings(d2);
+    return settings.init().then(() => d2);
+}
 
 // Load the application manifest to be able to determine the location of the Api
 // After we have the location of the api, we can set it onto the d2.config object
@@ -92,5 +97,6 @@ getManifest('./manifest.webapp')
     .then(safeGetUserSettings)
     .then(configI18n)
     .then(init)
+    .then(initSettings)
     .then(startApp)
     .catch(log.error.bind(log));

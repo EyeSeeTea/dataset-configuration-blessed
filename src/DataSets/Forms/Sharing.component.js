@@ -38,14 +38,38 @@ const Sharing = React.createClass({
     },
 
     _getCountries() {
-        return this.context.d2.models.organisationUnits
-            .list({
-                fields: 'id,displayName,code',
-                filter: "level:eq:" + this.props.config.organisationUnitLevelForCountries,
+        const countryLevelId = this.props.config.organisationUnitLevelForCountriesId;
+
+        return this.context.d2.models.organisationUnitLevels.get(countryLevelId).then(ouLevel => {
+            return this.context.d2.models.organisationUnits.list({
+                    fields: 'id,displayName,code',
+                    filter: "level:eq:" + ouLevel.level,
+                    order: 'displayName:asc',
+                    paging: false,
+                })
+                .then(collection => collection.toArray());
+        });
+    },
+
+    _getCurrentUserCountryCode() {
+        // d2.currentUser contains no userGroups, get the info
+        return this.context.d2.models.users.list({
+                fields: 'id,userGroups[id,displayName]',
+                filter: "id:eq:" + this.context.d2.currentUser.id,
                 order: 'displayName:asc',
                 paging: false,
             })
-            .then(collection => collection.toArray())
+            .then(usersCollection =>
+                _(usersCollection.toArray())
+                    .flatMap(user => user.userGroups.toArray())
+                    .find(userGroup => userGroup.displayName.match(/_users$/i))
+            )
+            .then(userGroup => userGroup ? userGroup.displayName.split("_")[0] : null);
+    },
+
+    countrySelected(value) {
+        const selectedCountry = this.state.countriesByCode[value];
+        this.props.onFieldsChange("associations.country", selectedCountry);
     },
 
     componentDidMount() {

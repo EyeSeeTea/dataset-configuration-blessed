@@ -95,6 +95,13 @@ function getAsyncUniqueValidator(model, field, uid = null) {
     };
 };
 
+function getExistingUserRoleByName(d2, name) {
+    return d2.models.userRoles
+        .filter().on("name").equals(name)
+        .list({fields: "*"})
+        .then(collection => collection.toArray()[0]);
+}
+
 function getUserGroups(d2, names) {
     return d2.models.userGroups.list({
         filter: "name:in:[" + names.join(",") + "]",
@@ -164,6 +171,7 @@ export {
     redirectToLogin,
     getCategoryCombos,
     collectionToArray,
+    getExistingUserRoleByName,
     getCustomCategoryCombo,
     getAsyncUniqueValidator,
     setSharings,

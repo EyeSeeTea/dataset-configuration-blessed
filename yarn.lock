@@ -209,10 +209,6 @@ author-regex@^0.2.1:
   version "0.2.1"
   resolved "https://registry.yarnpkg.com/author-regex/-/author-regex-0.2.1.tgz#8bdefaac6065a931799bec07eeef51b940e08f3c"
 
-auto-bind@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/auto-bind/-/auto-bind-1.1.0.tgz#93b864dc7ee01a326281775d5c75ca0a751e5961"
-
 autoprefixer@^6.3.1:
   version "6.7.7"
   resolved "https://registry.yarnpkg.com/autoprefixer/-/autoprefixer-6.7.7.tgz#1dbd1c835658e35ce3f9984099db00585c782014"
@@ -1522,9 +1518,9 @@ d2-manifest@^1.0.0:
     minimist "^1.1.0"
     readline-sync "^1.4.1"
 
-"d2-ui@github:EyeSeeTea/d2-ui#feature/dataset-configuration-add-extra-fields-to-orgunits-requests":
+"d2-ui@github:EyeSeeTea/d2-ui#dataset-configuration":
   version "26.1.7"
-  resolved "https://codeload.github.com/EyeSeeTea/d2-ui/tar.gz/8be17c48ed22666df813f5165918c44f48aa0a17"
+  resolved "https://codeload.github.com/EyeSeeTea/d2-ui/tar.gz/cfb9f581da3efd4c03c921edc51eb2f9596d65c8"
 
 d2-utilizr@^0.2.9:
   version "0.2.13"
@@ -1538,9 +1534,9 @@ d2-utilizr@^0.2.9:
     lodash.isset "^4.3.0"
     lodash.isstring "^4.0.1"
 
-d2@26.2.1:
-  version "26.2.1"
-  resolved "https://registry.yarnpkg.com/d2/-/d2-26.2.1.tgz#455305149db64807a7baec4c2afe0f6ae2a32d07"
+d2@26.2.2:
+  version "26.2.2"
+  resolved "https://registry.yarnpkg.com/d2/-/d2-26.2.2.tgz#c1ba68b25c89e7f00b2483de354c7458a7ed5a28"
   dependencies:
     whatwg-fetch "^2.0.1"
 
