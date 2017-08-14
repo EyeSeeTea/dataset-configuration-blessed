@@ -41,16 +41,32 @@ const ValidationFeedback = ({errors}) => {
     }
 };
 
+const FilterSelectField = ({label, value, onChange, items, styles = {}, emptyLabel = ""}) => {
+    const defaultItem = {value: null, text: emptyLabel};
+    const allItems = [defaultItem].concat(items);
+
+    return (
+        <SelectField
+            style={{marginRight: 5, ...styles}}
+            floatingLabelText={label}
+            value={value}
+            onChange={(event, index, value) => onChange(value)}
+        >
+            {allItems.map((item, idx) =>
+                <MenuItem key={idx} value={item.value} primaryText={item.text} />)
+            }
+        </SelectField>
+    );
+};
+
 const SectionsSearchBox = (props) => {
     const {name, debounce, onChange} = props;
 
     const wrapperStyle = {
         display: 'inline-block',
-        width: '25%',
+        width: '50%',
         position: 'relative',
-        top: '-16px',
-        marginLeft: '10px',
-        marginRight: '10px',
+        margin: '5px 0px'
     };
 
     return (
@@ -188,26 +204,8 @@ const Sections = React.createClass({
     },
 
     _updateModelSections() {
-        const {d2} = this.context;
-        const stateSections = this.state.sections;
-        const {sections, dataSetElements, indicators, errors} =
-            Section.getDataSetInfo(d2, this.props.config, _.values(stateSections));
+        const errors = this.props.store.updateModelSections(this.state.sections);
         this.setState({errors: errors});
-
-        // Don't override previous values of dataSetElements (disaggregation)
-        const newDataSetElements =
-            _.keyBy(dataSetElements, dse => dse.dataElement.id);
-        const prevDataSetElements =
-            _.keyBy(this.props.store.dataset.dataSetElements || [], dse => dse.dataElement.id);
-        const mergedDataSetElements = _(newDataSetElements)
-            .merge(prevDataSetElements)
-            .at(_.keys(newDataSetElements))
-            .value();
-
-        this.props.onFieldsChange("associations.stateSections", stateSections, false);
-        this.props.onFieldsChange("associations.sections", sections, false);
-        this.props.onFieldsChange("dataset.dataSetElements", mergedDataSetElements, false);
-        this.props.onFieldsChange("dataset.indicators", indicators, false);
         return _(errors).isEmpty();
     },
 
@@ -218,8 +216,8 @@ const Sections = React.createClass({
     _getFilteredDataElements(dataElements) {
         const {filters, filterName, sorting} = this.state;
         const getFiltered = (dataElements) =>
-            _.reduce(filters, (dataElements_, value, key) =>
-                dataElements_.filter(de => !key || !value || de[key] == value),
+            _.reduce(filters, (dataElements_, val, key) =>
+                dataElements_.filter(de => !key || val === null || val === undefined || de[key] == val),
                 dataElements);
         const getFilteredByName = (dataElements) =>
             !filterName ? dataElements :
@@ -240,21 +238,16 @@ const Sections = React.createClass({
 
     _renderSelectFilter(dataElementsAll, column, styles) {
         const label = this.getTranslation(column);
-        const entries = _(dataElementsAll).values().map(column).uniq().compact()
+        const items = _(dataElementsAll).values().map(column).uniq().compact()
             .map(value => ({value: value, text: value})).value();
-        const defaultEntry = {value: null, text: ""};
-        const allEntries = [defaultEntry].concat(entries);
 
         return (
-            <SelectField
-                style={{marginRight: 5, ...styles}}
-                floatingLabelText={label}
+            <FilterSelectField
+                label={label}
                 value={this.state.filters[column]}
-                onChange={(event, index, value) => this._onFilter(column, value)}
-            >
-                {allEntries.map((e, idx) =>
-                    <MenuItem key={idx} value={e.value} primaryText={e.text} />)}
-            </SelectField>
+                onChange={value => this._onFilter(column, value)}
+                items={items}
+            />
         );
     },
 
@@ -403,10 +396,26 @@ const Sections = React.createClass({
 
                     <SectionConfig section={currentSection} onChange={this._onChange} />
 
-                    <div style={{marginTop: -15}}>
-                        <SectionsSearchBox name={currentSectionName} onChange={this._setFilterName} />
-                        {this._renderSelectFilter(dataElementsAll, 'group', {width: '30%'})}
-                        {this._renderSelectFilter(dataElementsAll, 'origin', {width: '30%'})}
+                    <div>
+                        <div>
+                            <SectionsSearchBox name={currentSectionName} onChange={this._setFilterName} />
+                        </div>
+
+                        <div style={{marginTop: -30, marginBottom: 10}}>
+                            {this._renderSelectFilter(dataElementsAll, 'group', {width: '30%'})}
+
+                            {this._renderSelectFilter(dataElementsAll, 'origin', {width: '30%'})}
+
+                            <FilterSelectField
+                                label={this.getTranslation('selected')}
+                                value={this.state.filters.selected}
+                                onChange={value => this._onFilter("selected", value)}
+                                items={[
+                                    {value: true, text: this.getTranslation('yes')},
+                                    {value: false, text: this.getTranslation('no')},
+                                ]}
+                            />
+                        </div>
                     </div>
 
                     {rows.length == 0 ? <div>{this.getTranslation("no_elements_found")}</div> :

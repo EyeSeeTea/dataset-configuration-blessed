@@ -1,6 +1,5 @@
 import React from 'react';
 import Translate from 'd2-ui/lib/i18n/Translate.mixin';
-import FormBuilder from 'd2-ui/lib/forms/FormBuilder.component';
 import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
 import Card from 'material-ui/Card/Card';
 import CardText from 'material-ui/Card/CardText';
@@ -53,26 +52,37 @@ const Save = React.createClass({
     },
 
     render() {
-        const {dataset} = this.props.store;
+        const {dataset, associations} = this.props.store;
         const {saveState, errors} = this.state;
+        const ListItem = ({field, value}) => {
+            return (
+                <li className="list-group-item">
+                    <label style={{fontWeight: 'bold', marginRight: 5}}>
+                        {this.getTranslation(field)}:
+                    </label>
+                    <span>{value || '-'}</span>
+                </li>
+            );
+        };
 
         if (saveState === this.saveStates.SHOW || saveState === this.saveStates.SAVING) {
             return (
-                <div>
+                <div style={{fontSize: '1.2em', marginTop: 10}}>
                     {saveState === "SAVING" ? <LinearProgress /> : null}
 
                     <div>{this.getTranslation("wizard_presave_message")}</div>
 
                     <ul className="list-group">
-                        <li className="list-group-item">
-                            <label>{this.getTranslation("name")}:</label>
-                            {dataset.name}
-                        </li>
-
-                        <li className="list-group-item">
-                            <label>{this.getTranslation("code")}:</label>
-                            {dataset.code}
-                        </li>
+                        <ListItem field="name"
+                            value={dataset.name} />
+                        <ListItem field="description"
+                            value={dataset.description} />
+                        <ListItem field="core_competencies"
+                            value={associations.coreCompetencies.map(cc => cc.name).join(", ")} />
+                        <ListItem field="linked_project"
+                            value={associations.project && associations.project.name} />
+                        <ListItem field="countries"
+                            value={(associations.countries || []).map(c => c.displayName).join(", ")} />
                     </ul>
                 </div>
             );
