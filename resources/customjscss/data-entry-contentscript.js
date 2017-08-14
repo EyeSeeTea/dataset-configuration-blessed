@@ -11,7 +11,7 @@
         - Themes without a section are grouped as collapsible elements.
         - Groups within a theme are grouped.
         - Columns with all fields greyed out are removed
-        - Table swith more than [maxColumnsByTable] elements are split.
+        - Tables with width greater than the view port will be split across categories.
 */
 
 (function() {
@@ -71,11 +71,11 @@ var loadJs = function(url, cb) {
     $.getScript(url, cb);
 };
 
+var contentSelector = "#contentDiv";
+
 var emptyField = "__undefined";
 
 var separator = "@";
-
-var maxColumnsByTable = 15;
 
 var getTag = function(el, name) {
     var idx = {section: 0, theme: 1, group: 2}[name];
@@ -153,7 +153,7 @@ var groupSubsections = function() {
     _.each(getGroupedTabs(), processGroupedTab);
 };
 
-var buildTable = function(table, data, nCategories) {
+var buildTable = function(table, data) {
     var nCategories = data[0].categories.length;
     var categoryRows = _.range(nCategories).map(categoryIndex => {
         return _.chain(data)
@@ -192,6 +192,8 @@ var hideGreyedColumns = function() {
     $(".sectionTable").not(".floatThead-table").get().map($).forEach(table => {
         // Get fully disabled columns
         var nColumns = table.find("tbody tr:nth-child(1) td input").size();
+        if (nColumns == 0)
+            return;
         var tdInputs = table.find("tbody tr td input").get();
         var rows = _.chain(tdInputs).inGroupsOf(nColumns).value();
         var columns = _.transpose(rows);
@@ -213,20 +215,29 @@ var hideGreyedColumns = function() {
         var data = _.chain(_.range(allData.length))
             .difference(disabledColumnIndexes).map(idx => allData[idx]).value();
 
-        var newTables = breakTablesData(data).map(tableData => buildTable(table, tableData));
+        var newTables = splitTables(table, data, 0);
         table.replaceWith($("<div>").append(newTables));
     })
 };
 
-var breakTablesData = function(data, index) {
-    index = index || 0;
+var splitTables = function(origTable, data, index) {
     var nCategories = data[0].categories.length;
-    if (index >= nCategories - 1 || data.length <= maxColumnsByTable) {
-        return [data];
+    var table = buildTable(origTable, data);
+    var tableFitsInViewport = function(table) {
+        // Add the table temporally to the DOM to get real sizes
+        table.appendTo("#mainPage");
+        var maxWidth = $(window).width() - $("#mainPage").offset().left;
+        var fits = table.width() <= maxWidth;
+        table.remove();
+        return fits;
+    };
+
+    if (index >= nCategories - 1 || tableFitsInViewport(table)) {
+        return [table];
     } else {
         return _.chain(data)
             .groupConsecutiveBy(columnData => _.take(columnData.categories, index + 1))
-            .map(newData => breakTablesData(newData, index + 1))
+            .map(splitData => splitTables(origTable, splitData, index + 1))
             .flatten(1)
             .value();
     }
@@ -244,14 +255,12 @@ var applyChangesToForm = function() {
 };
 
 var init = function() {
-    var contentDiv = $("#contentDiv");
+    var contentDiv = $(contentSelector);
     var isDataEntryPage = window.dhis2 && window.dhis2.de &&
         window.dhis2.de.updateIndicators && contentDiv.length > 0;
-    console.log("CustomJS debug: ", contentDiv.length, !!isDataEntryPage);
+    console.log("CustomJS:", isDataEntryPage);
 
     if (isDataEntryPage) {
-        console.log("CustomJS: isDataEntryPage");
-        
         $(document).on( "dhis2.de.event.formLoaded", applyChangesToForm);
         loadJs("../dhis-web-commons/bootstrap/js/bootstrap.min.js");
         loadCss("../dhis-web-commons/bootstrap/css/bootstrap.min.css");
