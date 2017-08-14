@@ -168,7 +168,7 @@ const DataSets = React.createClass({
         ];
 
         const renderSettingsButton = () => (
-            <div style={{float: 'left'}}>
+            <div style={{float: 'right'}}>
                 <IconButton onTouchTap={this.openSettings} tooltip={this.getTranslation('settings')}>
                   <SettingsIcon />
                 </IconButton>
