@@ -23,6 +23,7 @@ import * as Section from '../../models/Section';
 import Card from 'material-ui/Card/Card';
 import CardHeader from 'material-ui/Card/CardHeader';
 import CardText from 'material-ui/Card/CardText';
+import camelCaseToUnderscores from 'd2-utilizr/lib/camelCaseToUnderscores';
 
 const ValidationFeedback = ({errors}) => {
     if (errors && !_(errors).isEmpty()) {
@@ -64,7 +65,7 @@ const SectionsSearchBox = (props) => {
 
     const wrapperStyle = {
         display: 'inline-block',
-        width: '50%',
+        width: '20%',
         position: 'relative',
         margin: '5px 0px'
     };
@@ -81,6 +82,8 @@ const SectionsSearchBox = (props) => {
 };
 
 const SectionsSidebar = (props) => {
+    if (props.visible == false)
+        return null;
     const {open, sections, currentSection, width, onSectionChange, onCollapsibleToggle} = props;
     const sidebarSections = sections.map(section => ({key: section, label: section}));
 
@@ -113,9 +116,11 @@ const SectionConfig = React.createClass({
     },
 
     render() {
-        const {section, onChange} = this.props;
+        const {sections, onChange} = this.props;
         const {open, anchorEl} = this.state;
-        if (!section)
+        const sectionForCurrentValues = _.first(sections);
+        const sectionNames = sections.map(section => section.name);
+        if (!sectionForCurrentValues)
             return;
 
         return (
@@ -138,23 +143,61 @@ const SectionConfig = React.createClass({
                     <Checkbox
                         style={{marginTop: 10, marginBottom: 15}}
                         label={this.getTranslation("show_row_totals")}
-                        checked={section.showRowTotals}
+                        checked={sectionForCurrentValues.showRowTotals}
                         onCheck={(ev, value) =>
-                            onChange(section.name, "showRowTotals", value)}
+                            onChange(sectionNames, "showRowTotals", value)}
                     />
 
                     <Checkbox
                         style={{marginTop: 10, marginBottom: 15}}
                         label={this.getTranslation("show_column_totals")}
-                        checked={section.showColumnTotals}
+                        checked={sectionForCurrentValues.showColumnTotals}
                         onCheck={(ev, value) =>
-                            onChange(section.name, "showColumnTotals", value)}
+                            onChange(sectionNames, "showColumnTotals", value)}
                     />
                 </Popover>
             </div>
         );
     },
 });
+
+const ThemeTabs = ({title, dataElements, allLabel, onSelected, visible = true}) => {
+    if (!visible)
+        return null;
+
+    const renderTabs = (dataElements) => {
+        const themesFromDataElements = _(dataElements)
+            .map("theme").uniq().compact()
+            .map(s => ({key: s, label: s})).sortBy("label").value();
+        const themes = [{key: '', label: allLabel}, ...themesFromDataElements];
+
+        if (_(themesFromDataElements).isEmpty()) {
+            return null;
+        } else {
+            return (
+                <Tabs style={{width: '100%', marginBottom: '15px'}} tabType="scrollable-buttons">
+                    {themes.map(theme =>
+                        <Tab
+                            key={theme.key}
+                            style={{fontWeight: 'inherit', fontSize: '12px'}}
+                            buttonStyle={{fontWeight: 'inherit', fontSize: '12px'}}
+                            label={theme.label}
+                            onActive={() => onSelected(theme.key)}
+                            isMultiLine={true}
+                        />
+                    )}
+                </Tabs>
+            );
+        }
+    };
+
+    return (
+        <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+            {title && <Chip style={{marginRight: 10}}>{title}</Chip>}
+            {renderTabs(dataElements)}
+        </div>
+    );
+};
 
 const Sections = React.createClass({
     mixins: [Translate, ObserverRegistry],
@@ -195,9 +238,13 @@ const Sections = React.createClass({
 
         Section.getSectionsFromCoreCompetencies(d2, config, coreCompetencies).then(sectionsArray => {
             const loadedSections = _.keyBy(sectionsArray, "name");
+            const sectionNames = sectionsArray.map(section => section.name);
+            const sections = _.merge(loadedSections, _.pick(stateSections, _.keys(loadedSections)));
+
             this.setState({
                 isLoading: false,
-                sections: _.merge(loadedSections, _.pick(stateSections, _.keys(loadedSections))),
+                sections: sections,
+                sectionNames: sectionNames,
                 currentSectionName: _.isEmpty(sectionsArray) ? null : sectionsArray[0].name,
             });
         });
@@ -237,7 +284,7 @@ const Sections = React.createClass({
     },
 
     _renderSelectFilter(dataElementsAll, column, styles) {
-        const label = this.getTranslation(column);
+        const label = this.getTranslation(camelCaseToUnderscores(column));
         const items = _(dataElementsAll).values().map(column).uniq().compact()
             .map(value => ({value: value, text: value})).value();
 
@@ -254,7 +301,10 @@ const Sections = React.createClass({
     _selectRows(visibleDataElements, selectedHeaderChecked) {
         const newState = visibleDataElements.reduce(
             (state, dataElement) => {
-                const path = ["sections", this.state.currentSectionName, "dataElements", dataElement.id, "selected"];
+                const path = [
+                    "sections", dataElement.coreCompetency, "dataElements",
+                    dataElement.id, "selected",
+                ];
                 return fp.set(path, selectedHeaderChecked, state);
             },
             this.state);
@@ -262,8 +312,7 @@ const Sections = React.createClass({
     },
 
     _onSelectedToggled(dataElement) {
-        const {currentSectionName} = this.state;
-        const path = ["sections", currentSectionName, "dataElements", dataElement.id, "selected"];
+        const path = ["sections", dataElement.coreCompetency, "dataElements", dataElement.id, "selected"];
         const oldValue = fp.get(path, this.state);
         this.setState(fp.set(path, !oldValue, this.state));
     },
@@ -272,46 +321,26 @@ const Sections = React.createClass({
         this.setState({currentSectionName: sectionName, filters: {}, filterName: null});
     },
 
-    _onChange(currentSectionName, key, value) {
-        const path = ["sections", currentSectionName, key];
-        this.setState(fp.set(path, value, this.state));
+    _onChangeSectionsConfig(sectionNames, key, value) {
+        const newState =_.reduce(sectionNames,
+            (state, sectionName) => fp.set(["sections", sectionName, key], value, state),
+            this.state
+        );
+        this.setState(newState);
     },
 
-    _renderTabs(dataElements) {
-        const subsectionsFromDE = _(dataElements)
-            .map("theme")
-            .uniq()
-            .compact()
-            .map(s => ({key: s, label: s}))
-            .sortBy("label")
-            .value();
-        const subsections = [
-            {key: '', label: this.getTranslation('all')}, 
-            ...subsectionsFromDE
-        ];
+    _sectionsVisible() {
+        return this.props.store.dataset.renderAsTabs;
+    },
 
-        if (subsectionsFromDE.length == 0) {
-            return null;
-        } else {
-            return (
-                <Tabs
-                    style={{width: '100%', marginBottom: '0px'}}
-                    key={this.state.currentSectionName}
-                    tabType="scrollable-buttons"
-                >
-                    {subsections.map(subsection =>
-                        <Tab
-                            key={subsection.key}
-                            style={{fontWeight: 'inherit', fontSize: '12px'}}
-                            buttonStyle={{fontWeight: 'inherit', fontSize: '12px'}}
-                            label={subsection.label}
-                            onActive={() => this._onFilter("theme", subsection.key)}
-                            isMultiLine={true}
-                        />
-                    )}
-                </Tabs>
-            );
-        }
+    _getVisibleSections() {
+        const {currentSectionName, sections, sectionNames} = this.state;
+        const currentSection = sections[currentSectionName];
+        return this._sectionsVisible() ? [currentSection] : _.at(sections, sectionNames);
+    },
+
+    _getDataElements() {
+        return _.flatMap(this._getVisibleSections(), section => _.values(section.dataElements));
     },
 
     _renderForm() {
@@ -321,7 +350,7 @@ const Sections = React.createClass({
             return (<div>{this.getTranslation("no_elements_found")}</div>);
         }
         
-        const dataElementsAll = _.values(currentSection.dataElements);
+        const dataElementsAll = this._getDataElements();
         const dataElements = this._getFilteredDataElements(dataElementsAll);
         const selectedHeaderChecked =
             !_.isEmpty(dataElements) && dataElements.every(dr => dr.selected);
@@ -358,7 +387,11 @@ const Sections = React.createClass({
                 sortable: true,
                 style: {width: '33%'},
             },
-            filters.theme ? null : {
+            this._sectionsVisible() ? null : {
+                name: 'coreCompetency',
+                sortable: true,
+            },
+            filters.theme && this._sectionsVisible() ? null : {
                 name: 'theme',
                 sortable: true,
             },
@@ -376,9 +409,12 @@ const Sections = React.createClass({
             },
         ]);
 
+        const visibleSections = this._getVisibleSections();
+
         return (
             <div style={{display: 'flex'}}>
                 <SectionsSidebar
+                    visible={this._sectionsVisible()}
                     open={sidebarOpen}
                     sections={_(sections).values().map("name").value()}
                     currentSection={currentSection ? currentSection.name : null}
@@ -388,23 +424,30 @@ const Sections = React.createClass({
                 />
 
                 <div style={{width: '100%'}}>
-                    <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-                        {sidebarOpen ? null :
-                            <Chip style={{marginRight: 10}}>{currentSection.name}</Chip>}
-                        {this._renderTabs(dataElementsAll)}
-                    </div>
+                    <ThemeTabs
+                        title={sidebarOpen ? null : currentSection.name}
+                        visible={this._sectionsVisible()}
+                        onSelected={themeKey => this._onFilter("theme", themeKey)}
+                        dataElements={dataElementsAll}
+                        allLabel={this.getTranslation('all')}
+                    />
 
-                    <SectionConfig section={currentSection} onChange={this._onChange} />
+                    <SectionConfig sections={visibleSections} onChange={this._onChangeSectionsConfig} />
 
-                    <div>
+                    <div style={{marginTop: -15}}>
                         <div>
                             <SectionsSearchBox name={currentSectionName} onChange={this._setFilterName} />
                         </div>
+                        <div style={{marginTop: -30}}>
+                            {!this._sectionsVisible() &&
+                                this._renderSelectFilter(dataElementsAll, 'coreCompetency', {width: '20%'})}
 
-                        <div style={{marginTop: -30, marginBottom: 10}}>
-                            {this._renderSelectFilter(dataElementsAll, 'group', {width: '30%'})}
+                            {!this._sectionsVisible() &&
+                                this._renderSelectFilter(dataElementsAll, 'theme', {width: '20%'})}
 
-                            {this._renderSelectFilter(dataElementsAll, 'origin', {width: '30%'})}
+                            {this._renderSelectFilter(dataElementsAll, 'group', {width: '20%'})}
+
+                            {this._renderSelectFilter(dataElementsAll, 'origin', {width: '20%'})}
 
                             <FilterSelectField
                                 label={this.getTranslation('selected')}
