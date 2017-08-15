@@ -120,13 +120,6 @@ const InitialConfig = React.createClass({
                 selected: _.map(associations.coreCompetencies, "id"),
                 errors: this.state.errors.coreCompetencies,
             }),
-
-            FormHelpers.getBooleanField({
-                name: "dataset.renderAsTabs",
-                label: this.getTranslation("group_data_elements_in_section"),
-                value: !dataset.renderAsTabs,
-                onChange: (path, value) => this._onUpdateField(path, !value),
-            }),
         ];
 
         return (
