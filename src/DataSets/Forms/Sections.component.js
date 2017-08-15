@@ -23,6 +23,7 @@ import * as Section from '../../models/Section';
 import Card from 'material-ui/Card/Card';
 import CardHeader from 'material-ui/Card/CardHeader';
 import CardText from 'material-ui/Card/CardText';
+import Divider from 'material-ui/Divider/Divider';
 import camelCaseToUnderscores from 'd2-utilizr/lib/camelCaseToUnderscores';
 
 const ValidationFeedback = ({errors}) => {
@@ -116,7 +117,7 @@ const SectionConfig = React.createClass({
     },
 
     render() {
-        const {sections, onChange} = this.props;
+        const {sections, onChange, onGroupSectionsChange, dataset} = this.props;
         const {open, anchorEl} = this.state;
         const sectionForCurrentValues = _.first(sections);
         const sectionNames = sections.map(section => section.name);
@@ -138,8 +139,17 @@ const SectionConfig = React.createClass({
                     anchorOrigin={{horizontal: 'left', vertical: 'bottom'}}
                     targetOrigin={{horizontal: 'left', vertical: 'top'}}
                     onRequestClose={() => this.setState({open: false})}
-                    style={{width: 300, padding: 15, overflowY: 'hidden'}}
+                    style={{width: 350, padding: 15, overflowY: 'hidden'}}
                 >
+                    <Checkbox
+                        style={{marginTop: 10, marginBottom: 15}}
+                        label={this.getTranslation("group_data_elements_in_section")}
+                        checked={!dataset.renderAsTabs}
+                        onCheck={(ev, value) => onGroupSectionsChange(value)}
+                    />
+
+                    <Divider />
+
                     <Checkbox
                         style={{marginTop: 10, marginBottom: 15}}
                         label={this.getTranslation("show_row_totals")}
@@ -329,6 +339,10 @@ const Sections = React.createClass({
         this.setState(newState);
     },
 
+    _onGroupSectionsChange(value) {
+        this.props.onFieldsChange("dataset.renderAsTabs", !value);
+    },
+
     _sectionsVisible() {
         return this.props.store.dataset.renderAsTabs;
     },
@@ -345,6 +359,7 @@ const Sections = React.createClass({
 
     _renderForm() {
         const {sidebarOpen, currentSectionName, sections, filters} = this.state;
+        const {dataset} = this.props.store;
         const currentSection = this.state.sections[currentSectionName];
         if (!currentSection) {
             return (<div>{this.getTranslation("no_elements_found")}</div>);
@@ -432,7 +447,12 @@ const Sections = React.createClass({
                         allLabel={this.getTranslation('all')}
                     />
 
-                    <SectionConfig sections={visibleSections} onChange={this._onChangeSectionsConfig} />
+                    <SectionConfig
+                        sections={visibleSections}
+                        dataset={dataset}
+                        onChange={this._onChangeSectionsConfig}
+                        onGroupSectionsChange={this._onGroupSectionsChange}
+                    />
 
                     <div style={{marginTop: -15}}>
                         <div>
