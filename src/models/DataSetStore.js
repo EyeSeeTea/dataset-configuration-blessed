@@ -35,11 +35,14 @@ export default class DataSetStore {
     constructor(d2, config) {
         this.d2 = d2;
         this.config = config;
-        this.getTranslation = d2.i18n.getTranslation;
         const {associations, dataset} = this.getInitialState();
         this.associations = associations;
         this.dataset = dataset;
         window.store = this;
+    }
+
+    getTranslation(...args) {
+        return this.d2.i18n.getTranslation(...args);
     }
 
     getInitialModel() {

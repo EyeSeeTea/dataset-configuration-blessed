@@ -74,10 +74,7 @@ const Sharing = React.createClass({
 
     componentDidMount() {
         const setInitialCountries = () => {
-            const {countries} = this.props.store.associations;
-            if (_(countries).isEmpty()) {
-                this.props.onFieldsChange("associations.countries", this._getInitialCountries());
-            }
+            this.props.onFieldsChange("associations.countries", this._getInitialCountries());
         };
 
         this._getCountries().then(countries => {
