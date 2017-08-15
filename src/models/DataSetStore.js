@@ -117,10 +117,20 @@ export default class DataSetStore {
                 project.endDate ? new Date(project.endDate) : undefined;
             newDataset.dataInputPeriods = this.getDataInputPeriods(
                 newAssociations.dataInputStartDate, newAssociations.dataInputEndDate);
-            newDataset.organisationUnits = project.organisationUnits || [];
+            newDataset.organisationUnits = project.organisationUnits;
             return {dataset: newDataset, associations: newAssociations};
         } else {
-            return {dataset, associations};
+            const newDataset = dataset.clone();
+            const newAssociations = _.clone(associations);
+
+            newDataset.name = "";
+            newAssociations.dataInputStartDate = undefined;
+            newAssociations.dataInputEndDate = undefined;
+            newAssociations.countries = [];
+            newDataset.dataInputPeriods = this.getDataInputPeriods(
+                newAssociations.dataInputStartDate, newAssociations.dataInputEndDate);
+            newDataset.organisationUnits.clear();
+            return {dataset: newDataset, associations: newAssociations};
         }
     }
 
