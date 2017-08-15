@@ -62,6 +62,7 @@ contextActions.define_associations
 const contextMenuIcons = {
     sharing: 'share',
     assignToOrgUnits: 'business',
+    clone: 'content_copy',
 };
 
 const isContextActionAllowed = function(model, action) {
