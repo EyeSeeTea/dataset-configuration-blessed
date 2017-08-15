@@ -2,6 +2,9 @@ import React, { PropTypes } from 'react';
 import Translate from 'd2-ui/lib/i18n/Translate.mixin';
 import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
 import RichDropdown from '../../forms/RichDropdown.component';
+import Validators from 'd2-ui/lib/forms/Validators';
+import FormBuilder from 'd2-ui/lib/forms/FormBuilder.component';
+import FormHelpers from '../../forms/FormHelpers';
 
 const getCode = (orgUnit) => orgUnit ? orgUnit.code.split("_")[0] : null;
 
@@ -9,7 +12,11 @@ const Sharing = React.createClass({
     mixins: [Translate],
 
     getInitialState() {
-        return {loaded: false};
+        return {
+            loaded: false,
+            countriesByCode: null,
+            errors: {},
+        };
     },
 
     propTypes: {
@@ -18,18 +25,30 @@ const Sharing = React.createClass({
 
     componentWillReceiveProps(props) {
         if (props.validateOnRender) {
-            props.formStatus(true);
+            const {countries} = this.props.store.associations;
+            if (_.isEmpty(countries)) {
+                props.formStatus(false);
+                const error = this.getTranslation("select_at_least_one_country");
+                this.setState({errors: {countries: [error]}});
+            } else {
+                props.formStatus(true);
+                this.setState({errors: {}});
+            }
         }
     },
 
     _getCountries() {
-        return this.context.d2.models.organisationUnits.list({
-                fields: 'id,displayName,code',
-                filter: "level:eq:" + this.props.config.organisationUnitLevelForCountries,
-                order: 'displayName:asc',
-                paging: false,
-            })
-            .then(collection => collection.toArray());
+        const countryLevelId = this.props.config.organisationUnitLevelForCountriesId;
+
+        return this.context.d2.models.organisationUnitLevels.get(countryLevelId).then(ouLevel => {
+            return this.context.d2.models.organisationUnits.list({
+                    fields: 'id,displayName,code',
+                    filter: "level:eq:" + ouLevel.level,
+                    order: 'displayName:asc',
+                    paging: false,
+                })
+                .then(collection => collection.toArray());
+        });
     },
 
     _getCurrentUserCountryCode() {
@@ -54,41 +73,67 @@ const Sharing = React.createClass({
     },
 
     componentDidMount() {
-        Promise.all([
-            this._getCountries(),
-            this._getCurrentUserCountryCode(),
-        ]).then(([countries, currentUserCountryCode]) => {
+        const setInitialCountries = () => {
+            const {countries} = this.props.store.associations;
+            if (_(countries).isEmpty()) {
+                this.props.onFieldsChange("associations.countries", this._getInitialCountries());
+            }
+        };
+
+        this._getCountries().then(countries => {
             this.setState({
                 loaded: true,
-                currentUserCountryCode,
                 countriesByCode: _.keyBy(countries, getCode),
-            }, () => { this.countrySelected(currentUserCountryCode); });
+            }, setInitialCountries);
         });
+    },
+
+    _onCountriesUpdate(codes) {
+        const countries = _.at(this.state.countriesByCode, codes);
+        this.props.onFieldsChange("associations.countries", countries);
+    },
+
+    _getInitialCountries() {
+        const {dataset} = this.props.store;
+        const {project} = this.props.store.associations;
+        const projectCountryCode =
+            project && project.code ? project.code.slice(0, 2).toUpperCase() : null;
+        const {countriesByCode} = this.state;
+
+        if (projectCountryCode && countriesByCode[projectCountryCode]) {
+            return [countriesByCode[projectCountryCode]];
+        } else {
+            const countryLevel = this.props.config.organisationUnitLevelForCountries;
+            return dataset.organisationUnits.toArray().filter(ou => ou.level === countryLevel);
+        }
     },
 
     render() {
         if (!this.state.loaded) {
             return (<LinearProgress />);
         } else {
-            const {countriesByCode, currentUserCountryCode} = this.state;
-            const selectedCountry = this.props.store.associations.country;
+            const {countriesByCode} = this.state;
+            const selectedCountries = this.props.store.associations.countries.map(getCode);
             const countryOptions = _(countriesByCode)
                 .map((country, code) => ({value: code, text: country.displayName}))
                 .value();
 
+            const fields = [
+                FormHelpers.getMultiSelect({
+                    name: 'associations.countries',
+                    options: countryOptions,
+                    onChange: this._onCountriesUpdate,
+                    label: this.getTranslation('sharing_countries_description'),
+                    selected: selectedCountries,
+                    errors: this.state.errors.countries,
+                }),
+            ];
+
             return (
-                <div>
-                    <p>{this.getTranslation("sharing_help")}:</p>
-                    
-                    <RichDropdown
-                        value={getCode(selectedCountry) || currentUserCountryCode}
-                        options={countryOptions}
-                        isRequired={true}
-                        labelText={this.getTranslation("country")}
-                        controls={[]}
-                        onChange={(ev) => this.countrySelected(ev.target.value)}
-                    />
-                </div>
+                <FormBuilder
+                    fields={fields}
+                    onUpdateField={() => {}}
+                />
             );
         }
     },

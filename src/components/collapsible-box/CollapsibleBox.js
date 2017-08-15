@@ -5,7 +5,7 @@ import ArrowUp from 'material-ui/svg-icons/hardware/keyboard-arrow-up.js';
 import ArrowDown from 'material-ui/svg-icons/hardware/keyboard-arrow-down.js';
 import ArrowRight from 'material-ui/svg-icons/hardware/keyboard-arrow-right.js';
 import ArrowLeft from 'material-ui/svg-icons/hardware/keyboard-arrow-left.js';
-import {deepMerge} from '../../utils/lodash-mixins';
+import _ from '../../utils/lodash-mixins';
 import './CollapsibleBox.scss';
 
 const CollapsibleBox = React.createClass({
@@ -51,7 +51,7 @@ const CollapsibleBox = React.createClass({
             iconButton: {width: '100%'},
             content: {},
         };
-        const styles = deepMerge(defaultStyles, this.props.styles);
+        const styles = _.deepMerge(defaultStyles, this.props.styles);
         const {open} = this.state;
         const wrapperClass = classNames(['collapsible-box', open ? 'open' : 'close']);
         const wrapperStyle = open ? styles.wrapper.open : styles.wrapper.close;

@@ -150,7 +150,13 @@ var getGroupedTabs = function() {
 };
 
 var groupSubsections = function() {
+    // renderAsTabs = true
     _.each(getGroupedTabs(), processGroupedTab);
+
+    // renderAsTabs = false
+    $(".formSection .cent h3").toArray().map($).forEach(titleTag => {
+        titleTag.text(titleTag.text().replace("@", " → "));
+    });
 };
 
 var buildTable = function(table, data) {
@@ -258,7 +264,6 @@ var init = function() {
     var contentDiv = $(contentSelector);
     var isDataEntryPage = window.dhis2 && window.dhis2.de &&
         window.dhis2.de.updateIndicators && contentDiv.length > 0;
-    console.log("CustomJS:", isDataEntryPage);
 
     if (isDataEntryPage) {
         $(document).on( "dhis2.de.event.formLoaded", applyChangesToForm);
@@ -269,7 +274,7 @@ var init = function() {
 
 var safeInit = function() {
     try {
-        console.log("CustomJS: init");
+        console.log("CustomJS init");
         return init();
     } catch(err) {
         console.error("CustomJS error: ", err);
