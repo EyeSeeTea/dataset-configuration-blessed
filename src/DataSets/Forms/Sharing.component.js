@@ -74,10 +74,7 @@ const Sharing = React.createClass({
 
     componentDidMount() {
         const setInitialCountries = () => {
-            const {countries} = this.props.store.associations;
-            if (_(countries).isEmpty()) {
-                this.props.onFieldsChange("associations.countries", this._getInitialCountries());
-            }
+            this.props.onFieldsChange("associations.countries", this._getInitialCountries());
         };
 
         this._getCountries().then(countries => {
@@ -103,7 +100,7 @@ const Sharing = React.createClass({
         if (projectCountryCode && countriesByCode[projectCountryCode]) {
             return [countriesByCode[projectCountryCode]];
         } else {
-            const countryLevel = this.props.config.organisationUnitLevelForCountries;
+            const countryLevel = this.props.config.organisationUnitLevelForCountriesId;
             return dataset.organisationUnits.toArray().filter(ou => ou.level === countryLevel);
         }
     },
