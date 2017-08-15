@@ -100,7 +100,7 @@ const Sharing = React.createClass({
         if (projectCountryCode && countriesByCode[projectCountryCode]) {
             return [countriesByCode[projectCountryCode]];
         } else {
-            const countryLevel = this.props.config.organisationUnitLevelForCountries;
+            const countryLevel = this.props.config.organisationUnitLevelForCountriesId;
             return dataset.organisationUnits.toArray().filter(ou => ou.level === countryLevel);
         }
     },
