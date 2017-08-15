@@ -27,17 +27,26 @@ const OrganisationUnit = React.createClass({
         props.formStatus(true);
     },
 
+    _renderSharingWarning() {
+        const {project, countries} = this.props.store.associations;
+        if (!project && !_.isEmpty(countries)) {
+            return (<p>{this.getTranslation('sharing_warning')}</p>);
+        }
+    },
+
     render() {
         const modelDefinition = {plural: "dataSets"};
-        const project = this.props.store.associations.project;
         const model = this.props.store.dataset;
 
         return (
-            <OrganisationUnitTreeMultiSelect
-                modelDefinition={modelDefinition}
-                model={model}
-                value={model.organisationUnits}
-            />
+            <div>
+                {this._renderSharingWarning()}
+                <OrganisationUnitTreeMultiSelect
+                    modelDefinition={modelDefinition}
+                    model={model}
+                    value={model.organisationUnits}
+                />
+            </div>
         );
     },
 });

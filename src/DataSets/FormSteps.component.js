@@ -13,6 +13,7 @@ import GreyFields from './Forms/GreyFields.component';
 import Save from './Forms/Save.component';
 
 import DataSetStore from '../models/DataSetStore';
+import Settings from '../models/Settings';
 
 const DataSetFormSteps = React.createClass({
     mixins: [Translate],
@@ -20,12 +21,23 @@ const DataSetFormSteps = React.createClass({
 
     getInitialState() {
         return {
-            store: new DataSetStore(this.context.d2, this.getTranslation),
+            store: null,
             active: 0,
             doneUntil: 0,
             validating: false,
             saving: false,
         };
+    },
+
+    componentDidMount() {
+        const settings = new Settings(this.context.d2);
+        settings.get()
+            .then(config => {
+                this.setState({
+                    store: new DataSetStore(this.context.d2, config),
+                });
+            })
+            .catch(err => alert('Error: settings not found'));
     },
 
     _onFieldsChange(stepId, fieldPath, newValue, update = true) {
@@ -68,12 +80,16 @@ const DataSetFormSteps = React.createClass({
     },
 
     render() {
+        if (!this.state.store)
+            return null;
+
         const props = {
             config: this.state.store.config,
             store: this.state.store,
             validateOnRender: !!this.state.stepAfterValidation,
             formStatus: this._formStatus,
         };
+
         const buttons = [
             {
                 id: 'cancel',
@@ -142,12 +158,12 @@ const DataSetFormSteps = React.createClass({
                 props: _.merge(props,
                     {saving: this.state.saving, afterSave: this._afterSave}),
             },
-        ];
+        ].filter(step => !step.disabled);
 
         return (
-            <Wizard 
-                steps={steps} 
-                onFieldsChange={this._onFieldsChange} 
+            <Wizard
+                steps={steps}
+                onFieldsChange={this._onFieldsChange}
                 onStepChange={this._onStepChange}
                 active={this.state.active}
                 doneUntil={this.state.doneUntil}
