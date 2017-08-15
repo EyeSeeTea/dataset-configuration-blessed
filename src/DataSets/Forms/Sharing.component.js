@@ -12,17 +12,35 @@ const Sharing = React.createClass({
     mixins: [Translate],
 
     getInitialState() {
-        return {loaded: false};
+        return {
+            loaded: false,
+            countriesByCode: null,
+            errors: {},
+        };
     },
 
     propTypes: {
         validateOnRender: React.PropTypes.bool,
     },
 
-    _getCountries() {
+    componentWillReceiveProps(props) {
+        if (props.validateOnRender) {
+            const {countries} = this.props.store.associations;
+            if (_.isEmpty(countries)) {
+                props.formStatus(false);
+                const error = this.getTranslation("select_at_least_one_country");
+                this.setState({errors: {countries: [error]}});
+            } else {
+                props.formStatus(true);
+                this.setState({errors: {}});
+            }
+        }
+    },
+
+    _getCountries(ouLevel) {
         return this.context.d2.models.organisationUnits.list({
-                fields: 'id,displayName,code',
-                filter: "level:eq:" + this.props.config.organisationUnitLevelForCountries,
+                fields: 'id,displayName,code,level',
+                filter: "level:eq:" + ouLevel.level,
                 order: 'displayName:asc',
                 paging: false,
             })
@@ -51,53 +69,68 @@ const Sharing = React.createClass({
     },
 
     componentDidMount() {
-        Promise.all([
-            this._getCountries(),
-            this._getCurrentUserCountryCode(),
-        ]).then(([countries, currentUserCountryCode]) => {
-            this.setState({
-                loaded: true,
-                currentUserCountryCode,
-                countriesByCode: _.keyBy(countries, getCode),
-            }, () => { currentUserCountryCode && this.countrySelected(currentUserCountryCode); });
+        const countryLevelId = this.props.config.organisationUnitLevelForCountriesId;
+        const ouLevels = this.context.d2.models.organisationUnitLevels;
+        const setInitialCountries = () => {
+            this.props.onFieldsChange("associations.countries", this._getInitialCountries());
+        };
+        
+        ouLevels.get(countryLevelId, {fields: "id,level"}).then(ouLevel => {
+            this._getCountries(ouLevel).then(countries => {
+                this.setState({
+                    countryLevel: ouLevel.level,
+                    loaded: true,
+                    countriesByCode: _.keyBy(countries, getCode),
+                }, setInitialCountries);
+            });
         });
     },
 
-    _onUpdateFormStatus(status) {
-        this.props.formStatus(status.valid);
+    _onCountriesUpdate(codes) {
+        const countries = _.at(this.state.countriesByCode, codes);
+        this.props.onFieldsChange("associations.countries", countries);
+    },
+
+    _getInitialCountries() {
+        const {dataset} = this.props.store;
+        const {project} = this.props.store.associations;
+        const projectCountryCode =
+            project && project.code ? project.code.slice(0, 2).toUpperCase() : null;
+        const {countriesByCode} = this.state;
+
+        if (projectCountryCode && countriesByCode[projectCountryCode]) {
+            return [countriesByCode[projectCountryCode]];
+        } else {
+            const {countryLevel} = this.state;
+            return dataset.organisationUnits.toArray().filter(ou => ou.level === countryLevel);
+        }
     },
 
     render() {
         if (!this.state.loaded) {
             return (<LinearProgress />);
         } else {
-            const {countriesByCode, currentUserCountryCode} = this.state;
-            const selectedCountry = this.props.store.associations.country;
+            const {countriesByCode} = this.state;
+            const selectedCountries = this.props.store.associations.countries.map(getCode);
             const countryOptions = _(countriesByCode)
                 .map((country, code) => ({value: code, text: country.displayName}))
                 .value();
 
             const fields = [
-                FormHelpers.getRichSelectField({
-                    name: 'country',
-                    isRequired: true,
-                    label: this.getTranslation('country'),
-                    value: getCode(selectedCountry) || currentUserCountryCode,
+                FormHelpers.getMultiSelect({
+                    name: 'associations.countries',
                     options: countryOptions,
-                    description: this.getTranslation("sharing_help"),
-                    validators: [{
-                        validator: Validators.isRequired,
-                        message: this.getTranslation(Validators.isRequired.message),
-                    }],
+                    onChange: this._onCountriesUpdate,
+                    label: this.getTranslation('sharing_countries_description'),
+                    selected: selectedCountries,
+                    errors: this.state.errors.countries,
                 }),
             ];
 
             return (
                 <FormBuilder
                     fields={fields}
-                    onUpdateField={(key, value) => this.countrySelected(value)}
-                    onUpdateFormStatus={this._onUpdateFormStatus}
-                    validateOnRender={this.props.validateOnRender}
+                    onUpdateField={() => {}}
                 />
             );
         }

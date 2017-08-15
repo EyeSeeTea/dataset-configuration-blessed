@@ -95,7 +95,7 @@ const InitialConfig = React.createClass({
     },
 
     _renderForm() {
-        const {associations} = this.props.store;
+        const {dataset, associations} = this.props.store;
         const fields = [
             FormHelpers.getRichSelectField({
                 name: 'associations.project',
@@ -111,6 +111,7 @@ const InitialConfig = React.createClass({
                     },
                 ],
             }),
+
             FormHelpers.getMultiSelect({
                 name: 'associations.coreCompetencies',
                 options: this._getOptionsFromIndexedObjects(this.state.coreCompetencies),
@@ -122,9 +123,9 @@ const InitialConfig = React.createClass({
         ];
 
         return (
-            <FormBuilder 
-                fields={fields} 
-                onUpdateField={this._onUpdateField} 
+            <FormBuilder
+                fields={fields}
+                onUpdateField={this._onUpdateField}
             />
         );
     },
@@ -138,6 +139,8 @@ const InitialConfig = React.createClass({
         if (fieldPath == "associations.project") {
             const project = this.state.projects[newValue];
             this.props.onFieldsChange(fieldPath, project);
+        } else {
+            this.props.onFieldsChange(fieldPath, newValue);
         }
     },
 });
