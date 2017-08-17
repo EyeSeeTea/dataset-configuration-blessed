@@ -225,7 +225,7 @@ const Sections = React.createClass({
 
     componentWillUnmount() {
         // Save state on back button (forward button saves state in componentWillReceiveProps)
-        if (!this.props.validateOnRender) {
+        if (!this.props.isLoading && !this.props.validateOnRender) {
             this._updateModelSections();
         }
     },

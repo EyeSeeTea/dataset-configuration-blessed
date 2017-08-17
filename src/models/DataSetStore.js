@@ -39,22 +39,40 @@ class Factory {
 
     get() {
         const dataset = this.getInitialModel();
+        return this.getStore(dataset);
+    }
+
+    getFromDB(id) {
+        return this.getDataset(id).then(dataset => {
+            return this.getStore(dataset);
+        });
+    }
+
+    cloneFromDB(id) {
+        return this.getDataset(id).then(dataset => {
+            dataset.id = undefined;
+            dataset.code = undefined;
+            dataset.dataInputPeriods.forEach(dip => { dip.id = generateUid(); });
+            dataset.dataSetElements.forEach(dse => {
+                dse.id = generateUid();
+                dse.dataSet = {id: undefined};
+            });
+            dataset.sections.toArray().forEach(section => { section.id = undefined; });
+            return this.getStore(dataset);
+        });
+    }
+
+    getStore(dataset) {
         return this.getAssociations(dataset)
             .then(associations => new DataSetStore(this.d2, this.config, dataset, associations));
     }
 
-    getFromDB(id) {
+    getDataset(id) {
         const fields = [
             '*,dataSetElements[*,categoryCombo[*,categories[*]],dataElement[*,categoryCombo[*]]]',
             'sections[*,href],organisationUnits[*]',
         ].join(",");
-        return this.d2.models.dataSets.get(id, {fields}).then(dataset =>
-            this.getAssociations(dataset)
-                .then(associations => new DataSetStore(this.d2, this.config, dataset, associations)));
-    }
-
-    getTranslation(...args) {
-        return this.d2.i18n.getTranslation(...args);
+        return this.d2.models.dataSets.get(id, {fields});
     }
 
     getInitialModel() {
@@ -129,13 +147,26 @@ export default class DataSetStore {
         this.config = config;
         this.dataset = dataset;
         this.associations = associations;
-        this.getTranslation = d2.i18n.getTranslation;
         window.store = this;
     }
 
-    static get(d2, config, datasetId = null) {
+    getTranslation(...args) {
+        return this.d2.i18n.getTranslation(...args);
+    }
+
+    static add(d2, config) {
         const factory = new Factory(d2, config);
-        return datasetId ? factory.getFromDB(datasetId) : factory.get();
+        return factory.get();
+    }
+
+    static edit(d2, config, datasetId) {
+        const factory = new Factory(d2, config);
+        return factory.getFromDB(datasetId);
+    }
+
+    static clone(d2, config, datasetId) {
+        const factory = new Factory(d2, config);
+        return factory.cloneFromDB(datasetId);
     }
 
     getDataInputPeriods(startDate, endDate) {
@@ -228,7 +259,7 @@ export default class DataSetStore {
         const prevSections =_(d2Sections).keyBy("name").value();
         sections.forEach(section => {
             const prevSection = prevSections[section.name] || {};
-            _.assign(section, _.pick(prevSection, ["id", "href", "greyedFields"]));
+            update(section, _.pick(prevSection, ["id", "href", "greyedFields"]));
         });
 
         // Don't override dataSetElements (disaggregation)
@@ -240,8 +271,8 @@ export default class DataSetStore {
             .at(_.keys(newDataSetElements))
             .value();
 
-        _.assign(this.associations, {sections});
-        _.assign(this.dataset, {dataSetElements: mergedDataSetElements, indicators});
+        update(this.associations, {sections});
+        update(this.dataset, {dataSetElements: mergedDataSetElements, indicators});
         return errors;
     }
 
@@ -314,7 +345,7 @@ export default class DataSetStore {
 
                 const sectionsWithPersistedCocs = this.associations.sections.map(section => {
                     const persistedGreyedFields = section.greyedFields.map(field =>
-                        _.merge(field, {categoryOptionCombo: {
+                        update(_.clone(field), {categoryOptionCombo: {
                             id: (relation[field.categoryOptionCombo.id] || field.categoryOptionCombo).id,
                         }})
                     );
@@ -326,15 +357,16 @@ export default class DataSetStore {
                     .map(({oldCc, newCc}) => [oldCc.id, newCc || oldCc])
                     .fromPairs().value();
 
-                const dataSetElementsWithPersistedCc = _(dataset.dataSetElements).map(dse =>
-                    update(dse, {categoryCombo: {id: categoryCombosRelation[dse.categoryCombo.id].id}})
-                ).value();
+                const dataSetElementsWithPersistedCc = dataset.dataSetElements.map(dse =>
+                    update(_.clone(dse), {categoryCombo: {id: categoryCombosRelation[dse.categoryCombo.id].id}})
+                );
+                const newDataset = update(dataset.clone(),
+                    {dataSetElements: dataSetElementsWithPersistedCc});
                 
-                dataset.dataSetElements = dataSetElementsWithPersistedCc;
-
-                return _.merge(saving, {
+                return update(saving, {
                     sectionsWithPersistedCocs,
                     newCategoryCombos,
+                    dataset: newDataset,
                 });
             });
         })
@@ -401,9 +433,9 @@ export default class DataSetStore {
             const codeValidator = getAsyncUniqueValidator(this.d2.models.dataSet, "code");
             return codeValidator(datasetCode)
                 .then(() =>
-                    _.merge(saving, {dataset: update(dataset, {code: datasetCode})}))
+                    update(saving, {dataset: update(dataset.clone(), {code: datasetCode})}))
                 .catch(err =>
-                    _.merge(saving, {warnings: warnings.concat(["Dataset code already used: " + datasetCode])}));
+                    update(saving, {warnings: warnings.concat(["Dataset code already used: " + datasetCode])}));
         } else {
             return Promise.resolve(saving);
         }
@@ -450,7 +482,7 @@ export default class DataSetStore {
             }
 
             return mapPromise(this.associations.coreCompetencies, addUserRole);
-        }).then(msgs => _.merge(saving, {warnings: warnings.concat(_.compact(_.flatten(msgs)))}));
+        }).then(msgs => update(saving, {warnings: warnings.concat(_.compact(_.flatten(msgs)))}));
     }
 
     _shareWithGroups(saving) {
@@ -482,7 +514,7 @@ export default class DataSetStore {
 
     _getDatasetLink(saving) {
         return this.d2.models.dataSets.get(saving.dataset.id)
-            .then(datasetDB => _.merge(saving, {href: datasetDB.href}));
+            .then(datasetDB => update(saving, {href: datasetDB.href}));
     }
 
     _addOrgUnitsToProject(saving) {
@@ -543,8 +575,8 @@ export default class DataSetStore {
 
     save() {
         return Promise.resolve(this._getInitialSaving())
-            .then(this._processDisaggregation.bind(this))
             .then(this._setCode.bind(this))
+            .then(this._processDisaggregation.bind(this))
             .then(this._saveDataset.bind(this))
             .then(this._setCategoryCombosSharing.bind(this))
             .then(this._addDataSetToUserRole.bind(this))

@@ -36,6 +36,14 @@ contextActions.edit
         })
     );
 
+contextActions.clone
+    .subscribe(({ data: model }) => getD2()
+        .then(d2 => {
+            goToRoute('/datasets/clone/' + model.id);
+        })
+    );
+
+
 contextActions.share
     .subscribe(({ data: model }) => getD2()
         .then(d2 => {

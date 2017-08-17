@@ -33,11 +33,23 @@ const DataSetFormSteps = React.createClass({
     componentDidMount() {
         const {d2} = this.context;
         const settings = new Settings(d2);
-        const {id: datasetId} = this.props.params;
+        const {action, id: datasetId} = this.props;
+
+        const getStore = (config) => {
+            if (action === "add") {
+                return DataSetStore.add(d2, config);
+            } else if (action === "edit") {
+                return DataSetStore.edit(d2, config, datasetId);
+            } else if (action === "clone") {
+                return DataSetStore.clone(d2, config, datasetId);
+            } else {
+                throw `Unknown action: ${action}`;
+            }
+        };
 
         settings.get()
             .then(config => {
-                return DataSetStore.get(d2, config, datasetId)
+                return getStore(config)
                     .then(store => this.setState({store}))
                     .catch(err => snackActions.show({route: "/", message: `Cannot edit dataset: ${err}`}));
             })

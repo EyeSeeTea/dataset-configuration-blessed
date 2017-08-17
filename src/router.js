@@ -6,13 +6,18 @@ import DataSets from './DataSets/DataSets.component';
 import DataSetFormSteps from './DataSets/FormSteps.component';
 import snackActions from './Snackbar/snack.actions';
 
+const wizard = (action) =>
+    (props) => (<DataSetFormSteps action={action} id={props.params.id} />)
+
 const routes = (
     <Router history={hashHistory}>
         <Route path="/" component={App}>
             <IndexRedirect to="datasets" />
+            
             <Route path="datasets" component={DataSets}/>
-            <Route path="datasets/add" component={DataSetFormSteps}/>
-            <Route path="datasets/edit/:id" component={DataSetFormSteps} />
+            <Route path="datasets/add" component={wizard('add')} />
+            <Route path="datasets/edit/:id" component={wizard('edit')} />
+            <Route path="datasets/clone/:id" component={wizard('clone')} />
         </Route>
     </Router>
 );
