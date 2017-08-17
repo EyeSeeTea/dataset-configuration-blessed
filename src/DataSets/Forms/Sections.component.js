@@ -244,12 +244,12 @@ const Sections = React.createClass({
     componentDidMount() {
         const {d2} = this.context;
         const {config} = this.props;
-        const {coreCompetencies, stateSections} = this.props.store.associations;
+        const {dataset, associations} = this.props.store;
+        const {coreCompetencies, sections} = associations;
 
-        Section.getSectionsFromCoreCompetencies(d2, config, coreCompetencies).then(sectionsArray => {
-            const loadedSections = _.keyBy(sectionsArray, "name");
+        Section.getSectionsFromCoreCompetencies(d2, config, sections, coreCompetencies).then(sectionsArray => {
+            const sections = _.keyBy(sectionsArray, "name");
             const sectionNames = sectionsArray.map(section => section.name);
-            const sections = _.merge(loadedSections, _.pick(stateSections, _.keys(loadedSections)));
 
             this.setState({
                 isLoading: false,
@@ -261,7 +261,8 @@ const Sections = React.createClass({
     },
 
     _updateModelSections() {
-        const errors = this.props.store.updateModelSections(this.state.sections);
+        const {sections} = this.props.store.associations;
+        const errors = this.props.store.updateModelSections(this.state.sections, sections);
         this.setState({errors: errors});
         return _(errors).isEmpty();
     },

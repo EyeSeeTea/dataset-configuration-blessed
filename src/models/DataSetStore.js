@@ -31,14 +31,26 @@ const update = (obj1, obj2) => {
     return obj1c;
 };
 
-export default class DataSetStore {
+class Factory {
     constructor(d2, config) {
         this.d2 = d2;
         this.config = config;
-        const {associations, dataset} = this.getInitialState();
-        this.associations = associations;
-        this.dataset = dataset;
-        window.store = this;
+    }
+
+    get() {
+        const dataset = this.getInitialModel();
+        return this.getAssociations(dataset)
+            .then(associations => new DataSetStore(this.d2, this.config, dataset, associations));
+    }
+
+    getFromDB(id) {
+        const fields = [
+            '*,dataSetElements[*,categoryCombo[*,categories[*]],dataElement[*,categoryCombo[*]]]',
+            'sections[*,href],organisationUnits[*]',
+        ].join(",");
+        return this.d2.models.dataSets.get(id, {fields}).then(dataset =>
+            this.getAssociations(dataset)
+                .then(associations => new DataSetStore(this.d2, this.config, dataset, associations)));
     }
 
     getTranslation(...args) {
@@ -64,21 +76,66 @@ export default class DataSetStore {
             renderAsTabs: true,
             indicators: [],
             dataSetElements: [],
+            sections: [],
         });
     }
 
-    getInitialState() {
-        const baseDataset = this.getInitialModel();
-        const baseAssociations = {
-            project: null,
-            coreCompetencies: [],
-            dataInputStartDate: _(baseDataset.dataInputPeriods).map("openingDate").compact().min(),
-            dataInputEndDate: _(baseDataset.dataInputPeriods).map("closingDate").compact().max(),
-            sections: [],
-            stateSections: null,
-            countries: [],
+    getProject(dataset) {
+        if (dataset.name) {
+            return this.d2.models.categoryOptions
+                .filter().on("categories.id").equals(this.config.categoryProjectsId)
+                .filter().on("name").equals(dataset.name)
+                .list({fields: "*"})
+                .then(projects => projects.toArray()[0]);
+        } else {
+            return Promise.resolve(null);
+        }
+    }
+
+    getCoreCompetencies(dataset) {
+        const extractCoreCompetenciesFromSection = section => {
+            const match = section.name.match(/^(.*) (Outputs|Outcome)(@|$)/);
+            return match ? match[1] : null;
         };
-        return this.getDataFromProject(baseDataset, baseAssociations);
+        const coreCompetencyNames = _(dataset.sections.toArray())
+            .map(extractCoreCompetenciesFromSection)
+            .compact()
+            .uniq()
+
+        return this.d2.models.dataElementGroups
+            .filter().on("dataElementGroupSet.id").equals(this.config.dataElementGroupSetCoreCompetencyId)
+            .list({filter: `name:in:[${coreCompetencyNames.join(',')}]`, fields: "*"})
+            .then(collection => collection.toArray())
+    }
+
+    getAssociations(dataset) {
+        const project$ = this.getProject(dataset);
+        const coreCompetencies$ = this.getCoreCompetencies(dataset);
+
+        return Promise.all([project$, coreCompetencies$]).then(([project, coreCompetencies]) => ({
+            project,
+            coreCompetencies,
+            dataInputStartDate: _(dataset.dataInputPeriods).map("openingDate").compact().min(),
+            dataInputEndDate: _(dataset.dataInputPeriods).map("closingDate").compact().max(),
+            sections: collectionToArray(dataset.sections),
+            countries: [],
+        }));
+    }
+}
+
+export default class DataSetStore {
+    constructor(d2, config, dataset, associations) {
+        this.d2 = d2;
+        this.config = config;
+        this.dataset = dataset;
+        this.associations = associations;
+        this.getTranslation = d2.i18n.getTranslation;
+        window.store = this;
+    }
+
+    static get(d2, config, datasetId = null) {
+        const factory = new Factory(d2, config);
+        return datasetId ? factory.getFromDB(datasetId) : factory.get();
     }
 
     getDataInputPeriods(startDate, endDate) {
@@ -163,21 +220,27 @@ export default class DataSetStore {
         this.updateFromAssociations(fieldPath, oldValue);
     }
 
-    updateModelSections(stateSections) {
+    updateModelSections(stateSections, d2Sections) {
         const {sections, dataSetElements, indicators, errors} =
             Section.getDataSetInfo(this.d2, this.config, _.values(stateSections));
 
-        // Don't override previous values of dataSetElements (disaggregation)
+        // Don't override greyed fields && ID/href (so it can be updated if existing)
+        const prevSections =_(d2Sections).keyBy("name").value();
+        sections.forEach(section => {
+            const prevSection = prevSections[section.name] || {};
+            _.assign(section, _.pick(prevSection, ["id", "href", "greyedFields"]));
+        });
+
+        // Don't override dataSetElements (disaggregation)
         const newDataSetElements =
             _.keyBy(dataSetElements, dse => dse.dataElement.id);
         const prevDataSetElements =
             _.keyBy(this.dataset.dataSetElements || [], dse => dse.dataElement.id);
-        const mergedDataSetElements = _(newDataSetElements)
-            .merge(prevDataSetElements)
+        const mergedDataSetElements = _(fp.merge(newDataSetElements, prevDataSetElements))
             .at(_.keys(newDataSetElements))
             .value();
 
-        _.assign(this.associations, {stateSections, sections});
+        _.assign(this.associations, {sections});
         _.assign(this.dataset, {dataSetElements: mergedDataSetElements, indicators});
         return errors;
     }
@@ -406,7 +469,7 @@ export default class DataSetStore {
         return setSharings(this.d2, [dataset], userGroupAccessByName).then(() => saving);
     }
 
-    _createSections(saving) {
+    _saveSections(saving) {
         const {dataset, sectionsWithPersistedCocs} = saving;
         const datasetId = dataset.id;
         const sections = _(sectionsWithPersistedCocs)
@@ -486,7 +549,7 @@ export default class DataSetStore {
             .then(this._setCategoryCombosSharing.bind(this))
             .then(this._addDataSetToUserRole.bind(this))
             .then(this._shareWithGroups.bind(this))
-            .then(this._createSections.bind(this))
+            .then(this._saveSections.bind(this))
             .then(this._getDatasetLink.bind(this))
             .then(this._addOrgUnitsToProject.bind(this))
             .then(this._sendNotificationMessages.bind(this));
