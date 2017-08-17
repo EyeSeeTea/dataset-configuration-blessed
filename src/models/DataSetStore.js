@@ -53,10 +53,6 @@ class Factory {
                 .then(associations => new DataSetStore(this.d2, this.config, dataset, associations)));
     }
 
-    getTranslation(...args) {
-        return this.d2.i18n.getTranslation(...args);
-    }
-
     getInitialModel() {
         return this.d2.models.dataSet.create({
             name: undefined,
@@ -129,8 +125,11 @@ export default class DataSetStore {
         this.config = config;
         this.dataset = dataset;
         this.associations = associations;
-        this.getTranslation = d2.i18n.getTranslation;
         window.store = this;
+    }
+
+    getTranslation(...args) {
+        return this.d2.i18n.getTranslation(...args);
     }
 
     static get(d2, config, datasetId = null) {
