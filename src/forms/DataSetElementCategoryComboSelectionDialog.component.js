@@ -13,6 +13,9 @@ import SelectField from 'material-ui/SelectField/SelectField';
 import MenuItem from 'material-ui/MenuItem/MenuItem';
 import { map, memoize } from 'lodash/fp';
 import Translate from 'd2-ui/lib/i18n/Translate.component';
+import {collectionToArray} from '../utils/Dhis2Helpers';
+import _ from 'lodash';
+import fp from 'lodash/fp';
 
 const enhance = compose(
     getContext({ d2: PropTypes.object }),
@@ -57,7 +60,7 @@ const CategoryComboSelectField = enhanceCategoryComboSelectField(
 );
 
 const createGetCategoryCombosForSelect = (d2, categoryCombos) => {
-    return memoize(dataElementCategoryCombo => {
+    return memoize((dataElementCategoryCombo, selectedCatCombo) => {
         // Not in maintenance-app: show only category combos whose categories do not
         // intersect with the dataElement categories.
         const deCategoryIds = dataElementCategoryCombo.categories.map(category => category.id);
@@ -67,6 +70,14 @@ const createGetCategoryCombosForSelect = (d2, categoryCombos) => {
                 dataElementCategoryCombo.id == categoryCombo.id ||
                 _(deCategoryIds).intersection(categoryIds).isEmpty()
             );
+            
+        }).map(categoryCombo => {
+            const categoryIds = categoryCombo.categories.toArray().map(category => category.id);
+            const isSelected = _.isEqual(
+                deCategoryIds.concat(categoryIds).sort(),
+                collectionToArray(selectedCatCombo.categories).map(c => c.id).sort(),
+            );
+            return isSelected ? fp.merge(categoryCombo, {id: selectedCatCombo.id}) : categoryCombo;
         });
 
         return categoryCombosWithoutOverlap
@@ -108,7 +119,8 @@ function DataSetElementList({ dataSetElements, categoryCombos, onCategoryComboSe
     const dataSetElementsRows = dataSetElements
         .sort((left, right) => ((left.dataElement && left.dataElement.displayName || '').localeCompare(right.dataElement && right.dataElement.displayName)))
         .map(({ categoryCombo = {}, dataElement = {}, id }) => {
-            const categoryCombosForSelect = getCategoryCombosForSelect(dataElement.categoryCombo);
+            const selectedCatCombo = (categoryCombo.source || categoryCombo);
+            const categoryCombosForSelect = getCategoryCombosForSelect(dataElement.categoryCombo, selectedCatCombo);
 
             return (
                 <Row key={id} style={{ alignItems: 'center' }}>
@@ -119,7 +131,7 @@ function DataSetElementList({ dataSetElements, categoryCombos, onCategoryComboSe
                     <div style={styles.elementListItem}>
                         <CategoryComboSelectField
                             categoryCombos={categoryCombosForSelect}
-                            value={(categoryCombo.source || categoryCombo).id}
+                            value={selectedCatCombo.id}
                             onChange={(categoryCombo) => onCategoryComboSelected(id, categoryCombo)}
                         />
                     </div>

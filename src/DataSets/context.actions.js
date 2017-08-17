@@ -32,8 +32,7 @@ contextActions.details
 contextActions.edit
     .subscribe(({ data: model }) => getD2()
         .then(d2 => {
-            console.log(model)
-            alert("TODO: dataset edit");
+            goToRoute('/datasets/edit/' + model.id);
         })
     );
 

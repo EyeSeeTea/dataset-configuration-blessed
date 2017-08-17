@@ -37,18 +37,14 @@ const Sharing = React.createClass({
         }
     },
 
-    _getCountries() {
-        const countryLevelId = this.props.config.organisationUnitLevelForCountriesId;
-
-        return this.context.d2.models.organisationUnitLevels.get(countryLevelId).then(ouLevel => {
-            return this.context.d2.models.organisationUnits.list({
-                    fields: 'id,displayName,code',
-                    filter: "level:eq:" + ouLevel.level,
-                    order: 'displayName:asc',
-                    paging: false,
-                })
-                .then(collection => collection.toArray());
-        });
+    _getCountries(ouLevel) {
+        return this.context.d2.models.organisationUnits.list({
+                fields: 'id,displayName,code,level',
+                filter: "level:eq:" + ouLevel.level,
+                order: 'displayName:asc',
+                paging: false,
+            })
+            .then(collection => collection.toArray());
     },
 
     _getCurrentUserCountryCode() {
@@ -73,18 +69,20 @@ const Sharing = React.createClass({
     },
 
     componentDidMount() {
+        const countryLevelId = this.props.config.organisationUnitLevelForCountriesId;
+        const ouLevels = this.context.d2.models.organisationUnitLevels;
         const setInitialCountries = () => {
-            const {countries} = this.props.store.associations;
-            if (_(countries).isEmpty()) {
-                this.props.onFieldsChange("associations.countries", this._getInitialCountries());
-            }
+            this.props.onFieldsChange("associations.countries", this._getInitialCountries());
         };
-
-        this._getCountries().then(countries => {
-            this.setState({
-                loaded: true,
-                countriesByCode: _.keyBy(countries, getCode),
-            }, setInitialCountries);
+        
+        ouLevels.get(countryLevelId, {fields: "id,level"}).then(ouLevel => {
+            this._getCountries(ouLevel).then(countries => {
+                this.setState({
+                    countryLevel: ouLevel.level,
+                    loaded: true,
+                    countriesByCode: _.keyBy(countries, getCode),
+                }, setInitialCountries);
+            });
         });
     },
 
@@ -103,7 +101,7 @@ const Sharing = React.createClass({
         if (projectCountryCode && countriesByCode[projectCountryCode]) {
             return [countriesByCode[projectCountryCode]];
         } else {
-            const countryLevel = this.props.config.organisationUnitLevelForCountries;
+            const {countryLevel} = this.state;
             return dataset.organisationUnits.toArray().filter(ou => ou.level === countryLevel);
         }
     },
