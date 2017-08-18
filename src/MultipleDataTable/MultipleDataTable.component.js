@@ -50,7 +50,8 @@ const MultipleDataTable = React.createClass({
     },
 
     renderContextMenu() {
-        const actionAccessChecker = (this.props.isContextActionAllowed && this.props.isContextActionAllowed.bind(null, this.state.activeRow)) || (() => true);
+        const actionAccessChecker = this.props.isContextActionAllowed ?
+            this.props.isContextActionAllowed.bind(null, this.state.activeRows) : () => true;
 
         const actionsToShow = Object.keys(this.props.contextMenuActions || {})
             .filter(actionAccessChecker)
@@ -64,7 +65,6 @@ const MultipleDataTable = React.createClass({
                     target={this.state.contextMenuTarget}
                     onRequestClose={this._hideContextMenu}
                     actions={actionsToShow}
-                    // activeItem={this.state.activeRow}
                     activeItems={this.state.activeRows}
                     showContextMenu={this.state.showContextMenu}
                     icons={this.props.contextMenuIcons}
