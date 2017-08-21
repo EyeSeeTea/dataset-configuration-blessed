@@ -11,6 +11,8 @@ import {getCategoryCombos,
         setSharings,
         getUserGroups,
         mapPromise,
+        getOrgUnitsForLevel,
+        getCountryCode,
        } from '../utils/Dhis2Helpers';
 import * as Section from './Section';
 
@@ -63,8 +65,9 @@ class Factory {
     }
 
     getStore(dataset) {
-        return this.getAssociations(dataset)
-            .then(associations => new DataSetStore(this.d2, this.config, dataset, associations));
+        return Promise.all([this.getAssociations(dataset), this.getCountries()])
+            .then(([associations, countries]) =>
+                new DataSetStore(this.d2, this.config, countries, dataset, associations));
     }
 
     getDataset(id) {
@@ -73,6 +76,12 @@ class Factory {
             'sections[*,href],organisationUnits[*]',
         ].join(",");
         return this.d2.models.dataSets.get(id, {fields});
+    }
+
+    getCountries() {
+        const countryLevelId = this.config.organisationUnitLevelForCountriesId;
+        return countryLevelId ? getOrgUnitsForLevel(d2, countryLevelId) :
+            Promise.reject("No country level configured");
     }
 
     getInitialModel() {
@@ -142,9 +151,11 @@ class Factory {
 }
 
 export default class DataSetStore {
-    constructor(d2, config, dataset, associations) {
+    constructor(d2, config, countries, dataset, associations) {
         this.d2 = d2;
         this.config = config;
+        this.countriesByCode = _.keyBy(countries, getCountryCode);
+        this.countryLevel = _.isEmpty(countries) ? null : countries[0].level;
         this.dataset = dataset;
         this.associations = associations;
         window.store = this;
@@ -192,6 +203,7 @@ export default class DataSetStore {
 
     getDataFromProject(dataset, associations) {
         const {project} = associations;
+        this.associations.countries = this.getSharingCountries();
 
         if (project) {
             const newDataset = dataset.clone();
@@ -222,7 +234,20 @@ export default class DataSetStore {
         }
     }
 
-    updateFromAssociations(fieldPath, oldValue) {
+    getSharingCountries() {
+        const {dataset, associations, countriesByCode, countryLevel} = this;
+        const {project} = associations;
+        const projectCountryCode =
+            project && project.code ? project.code.slice(0, 2).toUpperCase() : null;
+
+        if (projectCountryCode && countriesByCode[projectCountryCode]) {
+            return [countriesByCode[projectCountryCode]];
+        } else {
+            return dataset.organisationUnits.toArray().filter(ou => ou.level === countryLevel);
+        }
+    }
+
+    updateLinkedFields(fieldPath, oldValue) {
         const {dataset, associations} = this;
 
         switch (fieldPath) {
@@ -242,13 +267,16 @@ export default class DataSetStore {
                 this.dataset.dataInputPeriods =
                     this.getDataInputPeriods(dataInputStartDate, dataInputEndDate);
                 break;
+            case "associations.organisationUnits":
+                this.associations.countries = this.getSharingCountries();
+                break;
         }
     }
 
     updateField(fieldPath, newValue) {
         const oldValue = fp.get(fieldPath, this);
         _.set(this, fieldPath, newValue);
-        this.updateFromAssociations(fieldPath, oldValue);
+        this.updateLinkedFields(fieldPath, oldValue);
     }
 
     updateModelSections(stateSections, d2Sections) {

@@ -34,6 +34,10 @@ const OrganisationUnit = React.createClass({
         }
     },
 
+    _onChange(orgUnits) {
+        this.props.onFieldsChange("associations.organisationUnits", orgUnits, false);
+    },
+
     render() {
         const modelDefinition = {plural: "dataSets"};
         const model = this.props.store.dataset;
@@ -44,7 +48,8 @@ const OrganisationUnit = React.createClass({
                 <OrganisationUnitTreeMultiSelect
                     modelDefinition={modelDefinition}
                     model={model}
-                    value={model.organisationUnits}
+                    value={model.organisationUnits || []}
+                    onChange={this._onChange}
                 />
             </div>
         );
