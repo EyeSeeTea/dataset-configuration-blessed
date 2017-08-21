@@ -125,6 +125,11 @@ function getUserGroups(d2, names) {
     });
 }
 
+function getSharing(d2, object) {
+    const api = d2.Api.getApi();
+    return api.get(`sharing?type=${object.modelDefinition.name}&id=${object.id}`);
+}
+
 function setSharings(d2, objects, userGroupAccessByName) {
     const api = d2.Api.getApi();
     let userGroupAccesses$;
@@ -196,4 +201,5 @@ export {
     mapPromise,
     getCountryCode,
     getOrgUnitsForLevel,
+    getSharing,
 };

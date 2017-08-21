@@ -13,6 +13,7 @@ import {getCategoryCombos,
         mapPromise,
         getOrgUnitsForLevel,
         getCountryCode,
+        getSharing,
        } from '../utils/Dhis2Helpers';
 import * as Section from './Section';
 
@@ -41,18 +42,19 @@ class Factory {
 
     get() {
         const dataset = this.getInitialModel();
-        return this.getStore(dataset);
+        return this.getStore(dataset, "add");
     }
 
     getFromDB(id) {
         return this.getDataset(id).then(dataset => {
-            return this.getStore(dataset);
+            return this.getStore(dataset, "edit");
         });
     }
 
     cloneFromDB(id) {
         return this.getDataset(id).then(dataset => {
             dataset.id = undefined;
+            dataset._sourceId = id;
             dataset.code = undefined;
             dataset.dataInputPeriods.forEach(dip => { dip.id = generateUid(); });
             dataset.dataSetElements.forEach(dse => {
@@ -60,14 +62,14 @@ class Factory {
                 dse.dataSet = {id: undefined};
             });
             dataset.sections.toArray().forEach(section => { section.id = undefined; });
-            return this.getStore(dataset);
+            return this.getStore(dataset, "clone");
         });
     }
 
-    getStore(dataset) {
-        return Promise.all([this.getAssociations(dataset), this.getCountries()])
-            .then(([associations, countries]) =>
-                new DataSetStore(this.d2, this.config, countries, dataset, associations));
+    getStore(dataset, action) {
+        return this.getCountries().then(countries =>
+            this.getAssociations(dataset, countries).then(associations =>
+                new DataSetStore(action, this.d2, this.config, countries, dataset, associations)));
     }
 
     getDataset(id) {
@@ -135,23 +137,42 @@ class Factory {
             .then(collection => collection.toArray())
     }
 
-    getAssociations(dataset) {
-        const project$ = this.getProject(dataset);
-        const coreCompetencies$ = this.getCoreCompetencies(dataset);
+    getCountriesFromSharing(dataset, countries) {
+        const datasetId = dataset.id || dataset._sourceId;
 
-        return Promise.all([project$, coreCompetencies$]).then(([project, coreCompetencies]) => ({
+        if (datasetId) {
+            const _dataset = this.d2.models.dataSets.create({id: datasetId});
+            const countriesByCode = _.keyBy(countries, getCountryCode);
+            const getCode = userGroupAccess => userGroupAccess.displayName.split("_")[0];
+            return getSharing(this.d2, _dataset)
+                .then(sharing => _(sharing.object.userGroupAccesses).map(getCode).uniq().value())
+                .then(sharingCountryCodes => _(countriesByCode).at(sharingCountryCodes).compact().value());
+        } else {
+            return Promise.resolve([]);
+        }
+    }
+
+    getAssociations(dataset, countries) {
+        const promises = [
+            this.getProject(dataset),
+            this.getCoreCompetencies(dataset),
+            this.getCountriesFromSharing(dataset, countries),
+        ];
+
+        return Promise.all(promises).then(([project, coreCompetencies, sharingCountries]) => ({
             project,
             coreCompetencies,
             dataInputStartDate: _(dataset.dataInputPeriods).map("openingDate").compact().min(),
             dataInputEndDate: _(dataset.dataInputPeriods).map("closingDate").compact().max(),
             sections: collectionToArray(dataset.sections),
-            countries: [],
+            countries: sharingCountries,
         }));
     }
 }
 
 export default class DataSetStore {
-    constructor(d2, config, countries, dataset, associations) {
+    constructor(action, d2, config, countries, dataset, associations) {
+        this.action = action;
         this.d2 = d2;
         this.config = config;
         this.countriesByCode = _.keyBy(countries, getCountryCode);
