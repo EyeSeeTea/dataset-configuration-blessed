@@ -586,14 +586,15 @@ export default class DataSetStore {
         const {dataset, href} = saving;
         const d2 = this.d2;
         const userName = this.d2.currentUser.name;
-        const createMsg = {
-            subject: `Dataset created: ${dataset.name}`,
-            body: `New dataset created: ${dataset.name} by ${userName}:\n\n${href}`,
+        const op = this.action === "edit" ? "edited" : "created";
+        const saveMsg = {
+            subject: `Dataset ${op}: ${dataset.name}`,
+            body: `New dataset ${op}: ${dataset.name} by ${userName}:\n\n${href}`,
         };
         const warningsList = saving.warnings.map(s => "- " + s).join("\n");
         const warningMsg = _.isEmpty(saving.warnings) ? null : {
-            subject: `Dataset created with warnings: ${dataset.name}`,
-            body: `New dataset created (${dataset.name} by ${userName}) has some warnings:` +
+            subject: `Dataset ${op} with warnings: ${dataset.name}`,
+            body: `New dataset ${op} (${dataset.name} by ${userName}) has some warnings:` +
                 `\n\n${warningsList}\n\n${href}`,
         };
 
@@ -610,7 +611,7 @@ export default class DataSetStore {
             .then(col => col.toArray())
             .then(userGroups => {
                 return Promise.all(_.compact([
-                    sendMessage(d2, createMsg.subject, createMsg.body, userGroups),
+                    sendMessage(d2, saveMsg.subject, saveMsg.body, userGroups),
                     warningMsg && sendMessage(d2, warningMsg.subject, warningMsg.body, userGroups),
                 ]));
             })
