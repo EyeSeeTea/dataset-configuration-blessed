@@ -21,11 +21,15 @@ const MultipleDataTable = React.createClass({
             table: React.PropTypes.object,
             header: React.PropTypes.object,
         }),
+        activeRows: React.PropTypes.arrayOf(React.PropTypes.object),
+        onActiveRowsChange: React.PropTypes.func,
     },
 
     getDefaultProps() {
         return {
             styles: {},
+            activeRows: [],
+            onActiveRowsChange: () => {},
         };
     },
 
@@ -46,6 +50,7 @@ const MultipleDataTable = React.createClass({
 
         return {
             columns: props.columns || [{name: 'name'}, {name: 'lastUpdated'}],
+            activeRows: props.activeRows,
             dataRows,
         };
     },
@@ -142,11 +147,15 @@ const MultipleDataTable = React.createClass({
         if(!this.state.activeRows){
             return false;
         }
-        return this.state.activeRows.filter((row) => row===rowSource).length>0;
+        return _.includes(this.state.activeRows, rowSource);
     },
     
     isEventCtrlClick(event){
         return this.props.isMultipleSelectionAllowed && event && event.ctrlKey;       
+    },
+
+    notifyActiveRows() {
+        this.props.onActiveRowsChange(this.state.activeRows);
     },
 
     handleRowClick(event, rowSource) {
@@ -167,7 +176,7 @@ const MultipleDataTable = React.createClass({
             contextMenuTarget: event.currentTarget,
             showContextMenu: true,
             activeRows: newActiveRows
-        });       
+        }, this.notifyActiveRows);       
     },
     
     handlePrimaryClick(event, rowSource) {        
@@ -175,7 +184,7 @@ const MultipleDataTable = React.createClass({
         if(!this.isEventCtrlClick(event)){     
             this.setState({
                 activeRows: []
-            });            
+            }, this.notifyActiveRows);            
             this.props.primaryAction(rowSource);
             return;
         }
@@ -185,14 +194,14 @@ const MultipleDataTable = React.createClass({
         this.setState({
             activeRows:newActiveRows,
             showContextMenu: false,
-        });
+        }, this.notifyActiveRows);
     },      
        
     _hideContextMenu() {
         this.setState({
             activeRows: [],         
             showContextMenu: false,
-        });
+        }, this.notifyActiveRows);
     },    
     
     updateContextSelection(rowSource){
