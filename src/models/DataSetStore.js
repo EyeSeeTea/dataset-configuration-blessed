@@ -176,6 +176,7 @@ export default class DataSetStore {
         this.d2 = d2;
         this.config = config;
         this.countriesByCode = _.keyBy(countries, getCountryCode);
+        this.countriesById = _.keyBy(countries, "id");
         this.countryLevel = _.isEmpty(countries) ? null : countries[0].level;
         this.dataset = dataset;
         this.associations = associations;
@@ -256,7 +257,7 @@ export default class DataSetStore {
     }
 
     getSharingCountries() {
-        const {dataset, associations, countriesByCode, countryLevel} = this;
+        const {dataset, associations, countriesByCode, countriesById, countryLevel} = this;
         const {project} = associations;
         const projectCountryCode =
             project && project.code ? project.code.slice(0, 2).toUpperCase() : null;
@@ -264,7 +265,9 @@ export default class DataSetStore {
         if (projectCountryCode && countriesByCode[projectCountryCode]) {
             return [countriesByCode[projectCountryCode]];
         } else {
-            return dataset.organisationUnits.toArray().filter(ou => ou.level === countryLevel);
+            return _(countriesById)
+                .at(dataset.organisationUnits.toArray().map(ou => ou.id))
+                .compact().value();
         }
     }
 
