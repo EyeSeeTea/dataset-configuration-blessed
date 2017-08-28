@@ -113,9 +113,9 @@ class Factory {
         if (dataset.name) {
             return this.d2.models.categoryOptions
                 .filter().on("categories.id").equals(this.config.categoryProjectsId)
-                .filter().on("name").ilike(dataset.name)
-                .list({fields: "*"})
-                .then(projects => projects.toArray()[0]);
+                .list({fields: "id,name", paging: false})
+                .then(collection => collection.toArray())
+                .then(projects => _(projects).find(project => _.includes(dataset.name, project.name)));
         } else {
             return Promise.resolve(null);
         }
