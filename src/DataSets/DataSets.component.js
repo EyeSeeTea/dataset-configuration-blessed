@@ -21,6 +21,7 @@ import DetailsBoxWithScroll from './DetailsBoxWithScroll.component';
 import listActions from './list.actions';
 import { contextActions, contextMenuIcons, isContextActionAllowed } from './context.actions';
 import detailsStore from './details.store';
+import deleteStore from './delete.store';
 import 'd2-ui/scss/DataTable.scss';
 
 import Settings from '../models/Settings';
@@ -85,6 +86,10 @@ const DataSets = React.createClass({
         });
         
         this.registerDisposable(detailsStoreDisposable);
+
+        this.registerDisposable(deleteStore.subscribe(deleteObject => {
+            this.doSearch();
+        }));
     },
 
     doSearch(value) {
