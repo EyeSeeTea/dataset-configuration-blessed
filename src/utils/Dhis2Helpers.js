@@ -30,13 +30,14 @@ function getCountryCode(orgUnit) {
 
 function getOrgUnitsForLevel(d2, levelId) {
     return d2.models.organisationUnitLevels.get(levelId, {fields: "id,level"}).then(ouLevel => {
-        return d2.models.organisationUnits.list({
-                fields: 'id,displayName,code,level',
+        return d2.models.organisationUnits
+            .list({
+                fields: 'id,displayName,code,level,children::isNotEmpty',
                 filter: "level:eq:" + ouLevel.level,
                 order: 'displayName:asc',
                 paging: false,
             })
-            .then(collection => collection.toArray());
+            .then(collection => collection.toArray().filter(ou => ou.children));
     })
 }
 
