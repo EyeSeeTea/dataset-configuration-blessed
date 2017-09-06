@@ -28,7 +28,7 @@ _.mixin({
         var dest = [];
         var source2 = _.clone(source);
         while(source2.length) {
-          dest.push(source2.splice(0, n))
+          dest.push(source2.splice(0, n));
         }
         return dest;
     },
@@ -72,8 +72,6 @@ var loadJs = function(url, cb) {
     $.getScript(url, cb);
 };
 
-var contentSelector = "#contentDiv";
-
 var emptyField = "__undefined";
 
 var separator = "@";
@@ -107,12 +105,12 @@ var processGroupedTab = function(tabsByTheme, sectionName) {
 
                 return $("<li/>").addClass("panel panel-default").append(
                     hasThemeHeader ? getThemeHeader(themeNameTitle, subsectionKey) : $("<span/>"),
-                    $("<div/>").attr("id", subsectionKey).addClass("panel-collapse collapse in").append(
+                    $("<div/>").attr("id", subsectionKey).addClass("panel-collapse in").append(
                         _.map(tabsByGroup, (elementsInGroup, groupName) => {
                             var showGroupTitle = _.size(tabsByGroup) > 0 && groupName !== emptyField;
 
                             return $("<div/>").append(
-                                showGroupTitle ? $("<h4/>").text(groupName) : $("<span/>"),
+                                showGroupTitle ? $("<h4/>").css({display: 'none'}).text(groupName) : $("<span/>"),
                                 $("<div/>").append(_.map(elementsInGroup, (tab) => {
                                     return getTabContents(tab).html();
                                 }))
@@ -156,14 +154,14 @@ var groupSubsections = function() {
 
     // renderAsTabs == false
     $(".formSection .cent h3").toArray().map($).forEach(titleTag => {
-        titleTag.text(titleTag.text().replace("@", " → "));
+        titleTag.text(titleTag.text().replace(/@/g, " → "));
     });
 };
 
 var hideGreyedColumnsAndSplit = function() {
     $(".sectionTable").not(".floatThead-table").get().map($).forEach(table => {
         var firstRow = table.find("tbody tr:first-child td input.entryfield");
-        if (firstRow.size() == 0)
+        if (firstRow.size() === 0)
             return;
         var cocIds = firstRow.get().map(input => $(input).attr("id").split("-")[1]);
         var tdInputs = table.find("tbody tr td input.entryfield").get();
@@ -175,7 +173,7 @@ var hideGreyedColumnsAndSplit = function() {
             .value();
 
         var categories = table.find("thead tr").get()
-            .map(tr => _.chain($(tr).find("th[scope=col]").get()).map(th => $(th).text().trim()).uniq().value())
+            .map(tr => _.chain($(tr).find("th[scope=col]").get()).map(th => $(th).text().trim()).uniq().value());
             
         // Get cartesian product of headers (categories) and remove disabled categoryOptionCombos
         var cocs = _.chain(categories)
@@ -200,6 +198,7 @@ var hideGreyedColumnsAndSplit = function() {
         }).compact().value();
 
         var data = {
+            group: table.parents("li").find("h4").text(),
             categories: categories,
             cocs: cocs,
             rows: rows,
@@ -234,8 +233,7 @@ var buildTable = function(data) {
             .groupConsecutiveBy(coc => coc.cos.slice(0, categoryIndex + 1))
             .map(group => {
                 var label = group[0].cos[categoryIndex];
-                return $("<th />", {colspan: group.length, scope: "col"})
-                    .append($("<span />", {align: "center"}).text(label))
+                return $("<th>", {class: "nrcdataheader", colspan: group.length, scope: "col"}).text(label);
             })
             .value();
     });
@@ -243,39 +241,41 @@ var buildTable = function(data) {
     return $("<table>", {id: "sectionTable", class: "sectionTable", cellspacing: "0"}).append([
         $("<thead>").append(
             categoryThsList.map((categoryThs, index) => $("<tr>").append(
-                $("<td>"),
+                $("<th>", {class: "nrcinfoheader"}).html(index === 0 && data.group || "&nbsp;"),
                 categoryThs,
-                index === 0 && data.showRowTotals ? $("<th>", {rowspan: nCategories}).text("Total") : null,
+                index === 0 && data.showRowTotals ?
+                    $("<th>", {class: "nrctotalheader", rowspan: nCategories, verticalAlign: "top"}).text("Total") :
+                    null
             ))
         ),
         $("<tbody>").append(
             data.rows.map(row => {
                 // id = "row-DE-COC1-COC2-.."
                 var rowTotalId = ["row", row.de.id].concat(getValues(row).map(val => val.coc)).join("-");
-                var rowTotal = $("<input>", {class: "total-cell", type: "text", disabled: "", id: rowTotalId});
+                var rowTotal = $("<input>", {class: "dataelementtotal", type: "text", disabled: "", id: rowTotalId});
                 return $("<tr>").append(
-                    row.de.td.clone(),
+                    $("<td>", {class: "nrcindicatorName"}).text(row.de.name),
                     getValues(row).map(val => val.td.clone()),
-                    data.showRowTotals ? $("<td>").append(rowTotal) : null,
+                    data.showRowTotals ? $("<td>").append(rowTotal) : null
                 );
             }),
             data.showColumnTotals ?
                 $("<tr>").append(
-                    $("<td>").text("Total"),
+                    $("<td>", {class: "nrcindicatorName"}).text("Total"),
                     getValues(data.rows[0]).map(val =>
                         $("<td>").append(
-                            $("<input>", {class: "total-cell", type: "text", id: "col-" + val.coc, disabled: ""})
+                            $("<input>", {class: "dataelementtotal", type: "text", id: "col-" + val.coc, disabled: ""})
                         )
                     )
-                ) : null,
-        ),
+                ) : null
+        )
     ]);
 };
 
 var tableFitsInViewport = function(table) {
     // Add the table temporally to the DOM to get real sizes
-    table.appendTo("#mainPage");
-    var maxWidth = $(window).width() - $("#mainPage").offset().left;
+    table.appendTo("#contentDiv");
+    var maxWidth = $(window).width() - $("#contentDiv").offset().left;
     var fits = table.width() <= maxWidth;
     table.remove();
     return fits;
@@ -299,7 +299,7 @@ var applyChangesToForm = function() {
 };
 
 var init = function() {
-    var contentDiv = $(contentSelector);
+    var contentDiv = $("#contentDiv");
     var isDataEntryPage = window.dhis2 && window.dhis2.de &&
         window.dhis2.de.updateIndicators && contentDiv.length > 0;
 
