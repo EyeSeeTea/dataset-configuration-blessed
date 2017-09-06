@@ -15,7 +15,7 @@ function redirectToLogin(baseUrl) {
 function getCategoryCombos(d2) {
     return d2.models.categoryCombos.list({
         fields: [
-            'id,displayName',
+            'id,displayName,isDefault',
             'categories[id,displayName,categoryOptions[id,displayName]]',
             'categoryOptionCombos[id,displayName,categoryOptions[id,displayName]]',
         ].join(','),

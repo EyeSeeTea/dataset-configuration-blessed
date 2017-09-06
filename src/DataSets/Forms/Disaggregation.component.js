@@ -18,8 +18,9 @@ const Disaggregation = React.createClass({
     },
 
     componentDidMount() {
-        getCategoryCombos(this.context.d2)
-            .then(categoryCombos => this.setState({categoryCombos: categoryCombos.toArray()}));
+        getCategoryCombos(this.context.d2).then(categoryCombos => {
+            this.setState({categoryCombos: categoryCombos.toArray().filter(cc => !cc.isDefault)});
+        });
     },
 
     componentWillReceiveProps(props) {
