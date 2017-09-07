@@ -11,7 +11,7 @@ const SearchBoxWrapper = (props) => {
 
     const wrapperStyle = {
         display: 'inline-block',
-        width: '50%',
+        width: '40%',
         position: 'relative',
         margin: '5px 0px'
     };
@@ -40,7 +40,7 @@ const Disaggregation = React.createClass({
     componentDidMount() {
         getCategoryCombos(this.context.d2).then(categoryCombos => {
             this.setState({
-                categoryCombos: categoryCombos.toArray().filter(cc => !cc.isDefault),
+                categoryCombos: categoryCombos.toArray(),
             });
         });
     },

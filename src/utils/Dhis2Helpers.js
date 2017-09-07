@@ -25,7 +25,7 @@ function getCategoryCombos(d2) {
 }
 
 function collectionToArray(collectionOrArray) {
-    return collectionOrArray.toArray ? collectionOrArray.toArray() : collectionOrArray;
+    return collectionOrArray.toArray ? collectionOrArray.toArray() : (collectionOrArray || []);
 }
 
 // Keep track of the created categoryCombos so objects are reused
