@@ -67,11 +67,13 @@ const DataSets = React.createClass({
             d2: this.context.d2,
             currentUserHasAdminRole: settings.currentUserHasAdminRole(),
             settingsOpen: false,
+            sorting: null,
+            searchValue: null,
         }
     },
 
     componentDidMount() {
-        this.doSearch();
+        this.getDataSets();
         
         //Sets listener to update detailsbox
         const detailsStoreDisposable = detailsStore.subscribe(detailsObject => {
@@ -81,21 +83,20 @@ const DataSets = React.createClass({
         this.registerDisposable(detailsStoreDisposable);
     },
 
-    doSearch(value) {
-        let dataSets = this.context.d2.models.dataSets;
-        if (value) {
-            dataSets = dataSets.filter().on('displayName').ilike(value);
-        }
+    getDataSets() {
+        const {sorting, searchValue} = this.state;
+        const allDataSets = this.context.d2.models.dataSets;
+        const filteredDataSets =
+            searchValue ? allDataSets.filter().on('displayName').ilike(searchValue) : allDataSets;
+        const order = sorting ? sorting.join(":") : undefined;
 
-        dataSets.list()
-            .then(da => {
-                this.setState({
-                    isLoading: false,
-                    pager: da.pager,
-                    dataRows: da.toArray()
-                });
-            }
-            );
+        filteredDataSets.list({order}).then(da => {
+            this.setState({
+                isLoading: false,
+                pager: da.pager,
+                dataRows: da.toArray()
+            });
+        });
     },
     
     searchListByName(searchObserver) {
@@ -105,8 +106,8 @@ const DataSets = React.createClass({
             .subscribe((value) => {
                 this.setState({
                     isLoading: true,
-                });
-                this.doSearch(value);                
+                    searchValue: value,
+                }, this.getDataSets);
             });
 
         this.registerDisposable(searchListByNameDisposable);
@@ -120,8 +121,11 @@ const DataSets = React.createClass({
         this.setState({settingsOpen: false});
     },
 
-    render() {
+    _onColumnSort(sorting) {
+        this.setState({sorting}, this.getDataSets);
+    },
 
+    render() {
         const currentlyShown = calculatePageValue(this.state.pager);
 
         const paginationProps = {
@@ -162,9 +166,9 @@ const DataSets = React.createClass({
         };
 
         const columns = [
-            {name: 'name'}, 
-            {name: 'publicAccess'}, 
-            {name: 'lastUpdated'},
+            {name: 'name', sortable: true},
+            {name: 'publicAccess', sortable: true,},
+            {name: 'lastUpdated', sortable: true},
         ];
 
         const renderSettingsButton = () => (
@@ -197,6 +201,7 @@ const DataSets = React.createClass({
                         <MultipleDataTable
                             rows={this.state.dataRows}
                             columns={columns}
+                            onColumnSort={this._onColumnSort}
                             contextMenuActions={contextActions}
                             contextMenuIcons={contextMenuIcons}
                             primaryAction={contextActions.details}
