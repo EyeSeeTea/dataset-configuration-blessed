@@ -92,7 +92,10 @@ const createGetCategoryCombosForSelect = (d2, categoryCombos) => {
             acc.push(categoryCombo);
             return acc;
         }, [])
-        .filter(cc => !(cc.isDefault && cc.displayName !== d2.i18n.getTranslation('no_override')));
+        .filter(cc => !(
+            cc.displayName !== d2.i18n.getTranslation('no_override') &&
+            (cc.isDefault || collectionToArray(cc.categories).length > 1)
+        ));
     });
 };
 
