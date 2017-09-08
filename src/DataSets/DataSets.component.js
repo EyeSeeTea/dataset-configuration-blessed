@@ -90,7 +90,7 @@ const DataSets = React.createClass({
         this.registerDisposable(detailsStoreDisposable);
 
         this.registerDisposable(deleteStore.subscribe(deleteObject => {
-            this.doSearch();
+            this.getDataSets();
         }));
     },
 
