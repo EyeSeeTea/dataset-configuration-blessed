@@ -24,6 +24,22 @@ function getCategoryCombos(d2) {
     });
 }
 
+function getCountryCode(orgUnit) {
+    return orgUnit ? orgUnit.code.split("_")[0] : null;
+}
+
+function getOrgUnitsForLevel(d2, levelId) {
+    return d2.models.organisationUnitLevels.get(levelId, {fields: "id,level"}).then(ouLevel => {
+        return d2.models.organisationUnits.list({
+                fields: 'id,displayName,code,level',
+                filter: "level:eq:" + ouLevel.level,
+                order: 'displayName:asc',
+                paging: false,
+            })
+            .then(collection => collection.toArray());
+    })
+}
+
 function collectionToArray(collectionOrArray) {
     return collectionOrArray.toArray ? collectionOrArray.toArray() : (collectionOrArray || []);
 }
@@ -109,6 +125,11 @@ function getUserGroups(d2, names) {
     });
 }
 
+function getSharing(d2, object) {
+    const api = d2.Api.getApi();
+    return api.get(`sharing?type=${object.modelDefinition.name}&id=${object.id}`);
+}
+
 function setSharings(d2, objects, userGroupAccessByName) {
     const api = d2.Api.getApi();
     let userGroupAccesses$;
@@ -178,4 +199,7 @@ export {
     sendMessage,
     getUserGroups,
     mapPromise,
+    getCountryCode,
+    getOrgUnitsForLevel,
+    getSharing,
 };

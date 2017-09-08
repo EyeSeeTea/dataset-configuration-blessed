@@ -24,7 +24,7 @@ Notes:
     * DataElements can only be used within one section. Since we are getting DataElements from
       indicators, we can have duplicated items that must be removed.
 */
-export const getSectionsFromCoreCompetencies = (d2, config, coreCompetencies) => {
+export const getSectionsFromCoreCompetencies = (d2, config, d2Sections, coreCompetencies) => {
     const initialDataPromises = [
         getDataElementGroupRelations(d2),
         getIndicatorsByGroupName(d2, coreCompetencies),
@@ -38,8 +38,27 @@ export const getSectionsFromCoreCompetencies = (d2, config, coreCompetencies) =>
                 getOutputSection(dataElements, getSectionOpts),
                 getOutcomeSection(dataElements, getSectionOpts),
             ];
-		}));
+		})).then(sections => mergeWithD2Sections(sections, d2Sections));
 	});
+};
+
+const mergeWithD2Sections = (sections, d2Sections) => {
+    if (_.isEmpty(d2Sections))
+        return sections;
+
+    const deIds = new Set(_(d2Sections).flatMap(d2s => d2s.dataElements.toArray().map(de => de.id)));
+    const d2SectionByName = _.keyBy(d2Sections, s => s.name.split("@")[0]);
+
+    return sections.map(section => {
+        const referenceD2Section = d2SectionByName[section.name];
+        if (referenceD2Section) {
+            section.showRowTotals = referenceD2Section.showRowTotals;
+            section.showColumnTotals = referenceD2Section.showColumnTotals;
+        }
+        section.dataElements = _.mapValues(section.dataElements,
+            deInfo => _.merge(deInfo, {selected: deIds.has(deInfo.id)}));
+        return section;
+    });
 };
 
 /* Return an object with the info of the sections and selected dataElements:
@@ -48,6 +67,7 @@ export const getSectionsFromCoreCompetencies = (d2, config, coreCompetencies) =>
         sections: [d2.models.Section]
         dataSetElements: [dataElement]
         indicators: [Indicator]
+        errors: [String]
     }
 */
 export const getDataSetInfo = (d2, config, sections) => {

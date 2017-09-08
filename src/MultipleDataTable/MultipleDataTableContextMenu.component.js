@@ -32,22 +32,24 @@ const MultipleDataTableContextMenu = React.createClass({
         const cmStyle = {
             position: 'fixed',
         };
+        const {actions, target, activeItems, icons, showContextMenu, ...popoverProps} = this.props;
+
         return (
             <Popover
-                {...this.props}
-                open={this.props.showContextMenu}
-                anchorEl={this.props.target}
+                {...popoverProps}
+                open={showContextMenu}
+                anchorEl={target}
                 anchorOrigin={{horizontal: 'middle', vertical: 'center'}}
                 animated={false}
                 style={cmStyle}
                 animation={Paper}
             >
-                <Menu className="data-table__context-menu" openDirection="bottom-right" desktop>
+                <Menu className="data-table__context-menu" desktop>
                     {actionList.map((action) => {
-                        const iconName = this.props.icons[action] ? this.props.icons[action] : action;
+                        const iconName = icons[action] ? icons[action] : action;
 
                         return (<MenuItem key={action}
-                                          data-object-id={this.props.activeItems}
+                                          data-object-id={activeItems}
                                           className={'data-table__context-menu__item'}
                                           onClick={this.handleClick.bind(this, action)}
                                           primaryText={this.getTranslation(action)}

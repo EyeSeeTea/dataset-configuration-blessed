@@ -32,10 +32,17 @@ contextActions.details
 contextActions.edit
     .subscribe(({ data: model }) => getD2()
         .then(d2 => {
-            console.log(model)
-            alert("TODO: dataset edit");
+            goToRoute('/datasets/edit/' + model.id);
         })
     );
+
+contextActions.clone
+    .subscribe(({ data: model }) => getD2()
+        .then(d2 => {
+            goToRoute('/datasets/clone/' + model.id);
+        })
+    );
+
 
 contextActions.share
     .subscribe(({ data: model }) => getD2()
@@ -62,6 +69,7 @@ contextActions.define_associations
 const contextMenuIcons = {
     sharing: 'share',
     assignToOrgUnits: 'business',
+    clone: 'content_copy',
 };
 
 const isContextActionAllowed = function(model, action) {
