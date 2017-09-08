@@ -459,7 +459,7 @@ const Sections = React.createClass({
                         <div>
                             <SectionsSearchBox name={currentSectionName} onChange={this._setFilterName} />
                         </div>
-                        <div style={{marginTop: -30}}>
+                        <div style={{marginTop: -25}}>
                             {!this._sectionsVisible() &&
                                 this._renderSelectFilter(dataElementsAll, 'coreCompetency', {width: '20%'})}
 

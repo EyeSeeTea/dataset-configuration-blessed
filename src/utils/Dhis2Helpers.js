@@ -15,7 +15,7 @@ function redirectToLogin(baseUrl) {
 function getCategoryCombos(d2) {
     return d2.models.categoryCombos.list({
         fields: [
-            'id,displayName',
+            'id,displayName,isDefault',
             'categories[id,displayName,categoryOptions[id,displayName]]',
             'categoryOptionCombos[id,displayName,categoryOptions[id,displayName]]',
         ].join(','),
@@ -42,7 +42,8 @@ function getOrgUnitsForLevel(d2, levelId) {
 }
 
 function collectionToArray(collectionOrArray) {
-    return collectionOrArray.toArray ? collectionOrArray.toArray() : collectionOrArray;
+    return collectionOrArray && collectionOrArray.toArray ?
+        collectionOrArray.toArray() : (collectionOrArray || []);
 }
 
 // Keep track of the created categoryCombos so objects are reused

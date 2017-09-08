@@ -30,10 +30,23 @@ const enhance = compose(
     })
 );
 
+const getCategoryOptions = (categoryCombo) => {
+    if (categoryCombo.isDefault) {
+        return "";
+    } else {
+        return !categoryCombo ? null : collectionToArray(categoryCombo.categories)
+            .map(category =>
+                collectionToArray(category.categoryOptions).map(co => co.displayName).join(" - "))
+            .join(" / ");
+    }
+}
+
 const getOptions = memoize(function (categoryCombos) {
-    return map(({ displayName, id}) => (
-        <MenuItem key={id} primaryText={displayName} value={id} />
-    ), categoryCombos);
+    return categoryCombos.map(categoryCombo => {
+        const {displayName, id} = categoryCombo;
+        const categoryOptions = getCategoryOptions(categoryCombo);
+        return (<MenuItem key={id} primaryText={displayName} value={id} title={categoryOptions} />);
+    });
 });
 
 const enhanceCategoryComboSelectField = withHandlers({
@@ -43,12 +56,13 @@ const enhanceCategoryComboSelectField = withHandlers({
     });
 
 const CategoryComboSelectField = enhanceCategoryComboSelectField(
-    function CategoryComboSelectField({ categoryCombos, value, onChange }) {
-        const options = getOptions(categoryCombos)
+    function CategoryComboSelectField({ categoryCombos, categoryCombo, onChange }) {
+        const options = getOptions(categoryCombos);
 
         return (
             <SelectField
-                value={value}
+                value={categoryCombo ? categoryCombo.id : null}
+                title={getCategoryOptions(categoryCombo)}
                 onChange={onChange}
                 fullWidth
                 floatingLabelText={<Translate>override_data_element_category_combo</Translate>}
@@ -92,7 +106,16 @@ const createGetCategoryCombosForSelect = (d2, categoryCombos) => {
 
             acc.push(categoryCombo);
             return acc;
-        }, []);
+        }, [])
+        .filter(cc => {
+            if (cc.id === selectedCatCombo.id || cc.id === dataElementCategoryCombo.id) {
+                return true;
+            } else if (cc.isDefault || collectionToArray(cc.categories).length > 1) {
+                return false;
+            } else {
+                return true;
+            }
+        });
     });
 };
 
@@ -121,17 +144,20 @@ function DataSetElementList({ dataSetElements, categoryCombos, onCategoryComboSe
         .map(({ categoryCombo = {}, dataElement = {}, id }) => {
             const selectedCatCombo = (categoryCombo.source || categoryCombo);
             const categoryCombosForSelect = getCategoryCombosForSelect(dataElement.categoryCombo, selectedCatCombo);
+            const categoryOptions = getCategoryOptions(dataElement.categoryCombo);
 
             return (
                 <Row key={id} style={{ alignItems: 'center' }}>
                     <div style={styles.elementListItem}>
                         <div>{dataElement.displayName}</div>
-                        <div style={styles.originalCategoryCombo}>{dataElement.categoryCombo.displayName}</div>
+                        <div title={categoryOptions} style={styles.originalCategoryCombo}>
+                            {dataElement.categoryCombo.displayName}
+                        </div>
                     </div>
                     <div style={styles.elementListItem}>
                         <CategoryComboSelectField
                             categoryCombos={categoryCombosForSelect}
-                            value={selectedCatCombo.id}
+                            categoryCombo={selectedCatCombo}
                             onChange={(categoryCombo) => onCategoryComboSelected(id, categoryCombo)}
                         />
                     </div>
