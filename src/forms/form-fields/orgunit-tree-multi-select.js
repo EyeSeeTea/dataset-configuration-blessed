@@ -242,7 +242,8 @@ export default class OrganisationUnitTreeMultiSelect extends React.Component {
             modelOrgUnits.remove(ou);
         });
 
-        this.setState({ selectedOrgUnits: selectedOrgUnitPaths });
+        this.setState({ selectedOrgUnits: selectedOrgUnitPaths },
+            () => { this.props.onChange(modelOrgUnits); });
     }
 
     _handleClick(event, orgUnit) {
@@ -253,7 +254,7 @@ export default class OrganisationUnitTreeMultiSelect extends React.Component {
                 this.props.model.organisationUnits.remove(orgUnit);
 
                 return { selectedOrgUnits: state.selectedOrgUnits };
-            });
+            }, () => { this.props.onChange(this.props.model.organisationUnits); });
         } else {
             this.setState(state => {
                 state.selectedOrgUnits.push(orgUnit.path);
@@ -261,7 +262,7 @@ export default class OrganisationUnitTreeMultiSelect extends React.Component {
                 this.props.model.organisationUnits.add(orgUnit);
 
                 return { selectedOrgUnits: state.selectedOrgUnits };
-            });
+            }, () => { this.props.onChange(this.props.model.organisationUnits); });
         }
     }
 }
@@ -273,4 +274,5 @@ OrganisationUnitTreeMultiSelect.propTypes = {
 };
 OrganisationUnitTreeMultiSelect.defaultProps = {
     value: [],
+    onChange: () => {},
 };
