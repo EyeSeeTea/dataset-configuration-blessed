@@ -486,6 +486,7 @@ const Sections = React.createClass({
                         <MultipleDataTable
                             styles={{table: {width: 'auto'}}}
                             columns={columns}
+                            hideRowsActionsIcon={true}
                             onColumnSort={this._onColumnSort}
                             rows={rows}
                             contextMenuActions={Action.createActionsFromNames([])}
