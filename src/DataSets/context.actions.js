@@ -1,6 +1,6 @@
 import Action from 'd2-ui/lib/action/Action';
-import { config, getInstance as getD2 } from 'd2/lib/d2';
 import detailsStore from './details.store';
+import deleteStore from './delete.store';
 import { goToRoute } from '../router';
 import _ from 'lodash';
 
@@ -60,7 +60,7 @@ const {contextActions, contextMenuIcons, isContextActionAllowed} = setupActions(
     {
         name: 'delete',
         multiple: true,
-        onClick: datasets => console.log("TODO: delete", datasets),
+        onClick: datasets => deleteStore.delete(datasets),
     },
 ]);
 

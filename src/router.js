@@ -4,7 +4,6 @@ import log from 'loglevel';
 import App from './App/App.component';
 import DataSets from './DataSets/DataSets.component';
 import DataSetFormSteps from './DataSets/FormSteps.component';
-import snackActions from './Snackbar/snack.actions';
 
 const wizard = (action) =>
     (props) => (<DataSetFormSteps action={action} id={props.params.id} />)
