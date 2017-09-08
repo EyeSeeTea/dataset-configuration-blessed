@@ -1,5 +1,7 @@
 import React from 'react';
 import log from 'loglevel';
+import fp from 'lodash/fp';
+import _ from 'lodash';
 
 import Translate from 'd2-ui/lib/i18n/Translate.mixin';
 import ObserverRegistry from '../utils/ObserverRegistry.mixin';
@@ -25,6 +27,10 @@ import Settings from '../models/Settings';
 import SettingsDialog from '../Settings/Settings.component';
 import IconButton from 'material-ui/IconButton';
 import SettingsIcon from 'material-ui/svg-icons/action/settings';
+import Checkbox from 'material-ui/Checkbox/Checkbox';
+import FormHelpers from '../forms/FormHelpers';
+
+const {SimpleCheckBox} = FormHelpers;
 
 export function calculatePageValue(pager) {
     const pageSize = 50; // TODO: Make the page size dynamic
@@ -94,7 +100,7 @@ const DataSets = React.createClass({
             this.setState({
                 isLoading: false,
                 pager: da.pager,
-                dataRows: da.toArray()
+                dataRows: da.toArray().map(dr => _.merge(dr, {selected: false}))
             });
         });
     },
@@ -119,6 +125,29 @@ const DataSets = React.createClass({
 
     closeSettings() {
         this.setState({settingsOpen: false});
+    },
+
+    onSelectToggle(ev, dataset) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        this.setState({
+            dataRows: this.state.dataRows
+                .map(dr => dr.id === dataset.id ? _.merge(dr, {selected: !dr.selected}) : dr)
+        });
+    },
+
+    onSelectAllToggle(value) {
+        this.setState({
+            dataRows: this.state.dataRows.map(dr => _.merge(dr, {selected: !value}))
+        });
+    },
+
+    onActiveRowsChange(datasets) {
+        const selectedIds = new Set(datasets.map(ds => ds.id));
+
+        this.setState({
+            dataRows: this.state.dataRows.map(dr => _.merge(dr, {selected: selectedIds.has(dr.id)}))
+        });
     },
 
     _onColumnSort(sorting) {
@@ -165,11 +194,33 @@ const DataSets = React.createClass({
             },
         };
 
+        const rows = this.state.dataRows.map(dr => fp.merge(dr, {selected:
+            (<SimpleCheckBox onClick={ev => this.onSelectToggle(ev, dr)} checked={dr.selected} />)}));
+        const selectedHeaderChecked = !_.isEmpty(this.state.dataRows) &&
+            this.state.dataRows.every(row => row.selected);
+        const selectedColumnContents = (
+            <Checkbox
+                checked={selectedHeaderChecked}
+                onCheck={() => this.onSelectAllToggle(selectedHeaderChecked)}
+                iconStyle={{width: 'auto'}}
+            />
+        );
+
         const columns = [
+            {
+                name: 'selected',
+                style: {width: 20},
+                text: "",
+                sortable: false,
+                contents: selectedColumnContents,
+            },
             {name: 'name', sortable: true},
             {name: 'publicAccess', sortable: true,},
             {name: 'lastUpdated', sortable: true},
         ];
+
+        const activeRows = _(rows).keyBy("id")
+            .at(this.state.dataRows.filter(dr => dr.selected).map(dr => dr.id)).value();
 
         const renderSettingsButton = () => (
             <div style={{float: 'right'}}>
@@ -199,13 +250,15 @@ const DataSets = React.createClass({
                 <div style={styles.listDetailsWrap}>
                     <div style={styles.dataTableWrap}>
                         <MultipleDataTable
-                            rows={this.state.dataRows}
+                            rows={rows}
                             columns={columns}
                             onColumnSort={this._onColumnSort}
                             contextMenuActions={contextActions}
                             contextMenuIcons={contextMenuIcons}
                             primaryAction={contextActions.details}
                             isContextActionAllowed={isContextActionAllowed}
+                            activeRows={activeRows}
+                            onActiveRowsChange={this.onActiveRowsChange}
                             isMultipleSelectionAllowed={true}
                             />
                         {this.state.dataRows.length || this.state.isLoading ? null : <div>No results found</div>}
