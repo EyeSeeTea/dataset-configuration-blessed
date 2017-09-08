@@ -11,6 +11,9 @@ import {getCategoryCombos,
         setSharings,
         getUserGroups,
         mapPromise,
+        getOrgUnitsForLevel,
+        getCountryCode,
+        getSharing,
        } from '../utils/Dhis2Helpers';
 import * as Section from './Section';
 
@@ -39,18 +42,19 @@ class Factory {
 
     get() {
         const dataset = this.getInitialModel();
-        return this.getStore(dataset);
+        return this.getStore(dataset, "add");
     }
 
     getFromDB(id) {
         return this.getDataset(id).then(dataset => {
-            return this.getStore(dataset);
+            return this.getStore(dataset, "edit");
         });
     }
 
     cloneFromDB(id) {
         return this.getDataset(id).then(dataset => {
             dataset.id = undefined;
+            dataset._sourceId = id;
             dataset.code = undefined;
             dataset.dataInputPeriods.forEach(dip => { dip.id = generateUid(); });
             dataset.dataSetElements.forEach(dse => {
@@ -58,13 +62,14 @@ class Factory {
                 dse.dataSet = {id: undefined};
             });
             dataset.sections.toArray().forEach(section => { section.id = undefined; });
-            return this.getStore(dataset);
+            return this.getStore(dataset, "clone");
         });
     }
 
-    getStore(dataset) {
-        return this.getAssociations(dataset)
-            .then(associations => new DataSetStore(this.d2, this.config, dataset, associations));
+    getStore(dataset, action) {
+        return this.getCountries().then(countries =>
+            this.getAssociations(dataset, countries).then(associations =>
+                new DataSetStore(action, this.d2, this.config, countries, dataset, associations)));
     }
 
     getDataset(id) {
@@ -73,6 +78,12 @@ class Factory {
             'sections[*,href],organisationUnits[*]',
         ].join(",");
         return this.d2.models.dataSets.get(id, {fields});
+    }
+
+    getCountries() {
+        const countryLevelId = this.config.organisationUnitLevelForCountriesId;
+        return countryLevelId ? getOrgUnitsForLevel(d2, countryLevelId) :
+            Promise.reject("No country level configured");
     }
 
     getInitialModel() {
@@ -102,9 +113,9 @@ class Factory {
         if (dataset.name) {
             return this.d2.models.categoryOptions
                 .filter().on("categories.id").equals(this.config.categoryProjectsId)
-                .filter().on("name").equals(dataset.name)
-                .list({fields: "*"})
-                .then(projects => projects.toArray()[0]);
+                .list({fields: "id,name", paging: false})
+                .then(collection => collection.toArray())
+                .then(projects => _(projects).find(project => _.includes(dataset.name, project.name)));
         } else {
             return Promise.resolve(null);
         }
@@ -126,25 +137,47 @@ class Factory {
             .then(collection => collection.toArray())
     }
 
-    getAssociations(dataset) {
-        const project$ = this.getProject(dataset);
-        const coreCompetencies$ = this.getCoreCompetencies(dataset);
+    getCountriesFromSharing(dataset, countries) {
+        const datasetId = dataset.id || dataset._sourceId;
 
-        return Promise.all([project$, coreCompetencies$]).then(([project, coreCompetencies]) => ({
+        if (datasetId) {
+            const _dataset = this.d2.models.dataSets.create({id: datasetId});
+            const countriesByCode = _.keyBy(countries, getCountryCode);
+            const getCode = userGroupAccess => userGroupAccess.displayName.split("_")[0];
+            return getSharing(this.d2, _dataset)
+                .then(sharing => _(sharing.object.userGroupAccesses).map(getCode).uniq().value())
+                .then(sharingCountryCodes => _(countriesByCode).at(sharingCountryCodes).compact().value());
+        } else {
+            return Promise.resolve([]);
+        }
+    }
+
+    getAssociations(dataset, countries) {
+        const promises = [
+            this.getProject(dataset),
+            this.getCoreCompetencies(dataset),
+            this.getCountriesFromSharing(dataset, countries),
+        ];
+
+        return Promise.all(promises).then(([project, coreCompetencies, sharingCountries]) => ({
             project,
             coreCompetencies,
             dataInputStartDate: _(dataset.dataInputPeriods).map("openingDate").compact().min(),
             dataInputEndDate: _(dataset.dataInputPeriods).map("closingDate").compact().max(),
             sections: collectionToArray(dataset.sections),
-            countries: [],
+            countries: sharingCountries,
         }));
     }
 }
 
 export default class DataSetStore {
-    constructor(d2, config, dataset, associations) {
+    constructor(action, d2, config, countries, dataset, associations) {
+        this.action = action;
         this.d2 = d2;
         this.config = config;
+        this.countriesByCode = _.keyBy(countries, getCountryCode);
+        this.countriesById = _.keyBy(countries, "id");
+        this.countryLevel = _.isEmpty(countries) ? null : countries[0].level;
         this.dataset = dataset;
         this.associations = associations;
         window.store = this;
@@ -192,6 +225,7 @@ export default class DataSetStore {
 
     getDataFromProject(dataset, associations) {
         const {project} = associations;
+        this.associations.countries = this.getSharingCountries();
 
         if (project) {
             const newDataset = dataset.clone();
@@ -222,7 +256,22 @@ export default class DataSetStore {
         }
     }
 
-    updateFromAssociations(fieldPath, oldValue) {
+    getSharingCountries() {
+        const {dataset, associations, countriesByCode, countriesById, countryLevel} = this;
+        const {project} = associations;
+        const projectCountryCode =
+            project && project.code ? project.code.slice(0, 2).toUpperCase() : null;
+
+        if (projectCountryCode && countriesByCode[projectCountryCode]) {
+            return [countriesByCode[projectCountryCode]];
+        } else {
+            return _(countriesById)
+                .at(dataset.organisationUnits.toArray().map(ou => ou.id))
+                .compact().value();
+        }
+    }
+
+    updateLinkedFields(fieldPath, oldValue) {
         const {dataset, associations} = this;
 
         switch (fieldPath) {
@@ -242,13 +291,16 @@ export default class DataSetStore {
                 this.dataset.dataInputPeriods =
                     this.getDataInputPeriods(dataInputStartDate, dataInputEndDate);
                 break;
+            case "associations.organisationUnits":
+                this.associations.countries = this.getSharingCountries();
+                break;
         }
     }
 
     updateField(fieldPath, newValue) {
         const oldValue = fp.get(fieldPath, this);
         _.set(this, fieldPath, newValue);
-        this.updateFromAssociations(fieldPath, oldValue);
+        this.updateLinkedFields(fieldPath, oldValue);
     }
 
     updateModelSections(stateSections, d2Sections) {
@@ -537,14 +589,15 @@ export default class DataSetStore {
         const {dataset, href} = saving;
         const d2 = this.d2;
         const userName = this.d2.currentUser.name;
-        const createMsg = {
-            subject: `Dataset created: ${dataset.name}`,
-            body: `New dataset created: ${dataset.name} by ${userName}:\n\n${href}`,
+        const op = this.action === "edit" ? "edited" : "created";
+        const saveMsg = {
+            subject: `Dataset ${op}: ${dataset.name}`,
+            body: `New dataset ${op}: ${dataset.name} by ${userName}:\n\n${href}`,
         };
         const warningsList = saving.warnings.map(s => "- " + s).join("\n");
         const warningMsg = _.isEmpty(saving.warnings) ? null : {
-            subject: `Dataset created with warnings: ${dataset.name}`,
-            body: `New dataset created (${dataset.name} by ${userName}) has some warnings:` +
+            subject: `Dataset ${op} with warnings: ${dataset.name}`,
+            body: `New dataset ${op} (${dataset.name} by ${userName}) has some warnings:` +
                 `\n\n${warningsList}\n\n${href}`,
         };
 
@@ -561,7 +614,7 @@ export default class DataSetStore {
             .then(col => col.toArray())
             .then(userGroups => {
                 return Promise.all(_.compact([
-                    sendMessage(d2, createMsg.subject, createMsg.body, userGroups),
+                    sendMessage(d2, saveMsg.subject, saveMsg.body, userGroups),
                     warningMsg && sendMessage(d2, warningMsg.subject, warningMsg.body, userGroups),
                 ]));
             })
