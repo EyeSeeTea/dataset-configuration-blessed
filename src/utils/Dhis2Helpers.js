@@ -41,7 +41,8 @@ function getOrgUnitsForLevel(d2, levelId) {
 }
 
 function collectionToArray(collectionOrArray) {
-    return collectionOrArray.toArray ? collectionOrArray.toArray() : (collectionOrArray || []);
+    return collectionOrArray && collectionOrArray.toArray ?
+        collectionOrArray.toArray() : (collectionOrArray || []);
 }
 
 // Keep track of the created categoryCombos so objects are reused

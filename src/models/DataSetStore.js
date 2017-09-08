@@ -74,7 +74,7 @@ class Factory {
 
     getDataset(id) {
         const fields = [
-            '*,dataSetElements[*,categoryCombo[*,categories[*]],dataElement[*,categoryCombo[*]]]',
+            '*,dataSetElements[*,categoryCombo[*,categories[*,categoryOptions[*]]],dataElement[*,categoryCombo[*]]]',
             'sections[*,href],organisationUnits[*]',
         ].join(",");
         return this.d2.models.dataSets.get(id, {fields});

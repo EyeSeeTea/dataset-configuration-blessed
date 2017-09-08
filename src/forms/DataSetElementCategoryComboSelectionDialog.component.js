@@ -31,7 +31,7 @@ const enhance = compose(
 );
 
 const getCategoryOptions = (categoryCombo) => {
-    if (categoryCombo.isDefault || categoryCombo.displayName === d2.i18n.getTranslation('no_override')) {
+    if (categoryCombo.isDefault) {
         return "";
     } else {
         return !categoryCombo ? null : collectionToArray(categoryCombo.categories)
