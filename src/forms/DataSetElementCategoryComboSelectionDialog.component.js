@@ -107,10 +107,15 @@ const createGetCategoryCombosForSelect = (d2, categoryCombos) => {
             acc.push(categoryCombo);
             return acc;
         }, [])
-        .filter(cc => !(
-            cc.id !== selectedCatCombo.id &&
-            (cc.isDefault || collectionToArray(cc.categories).length > 1)
-        ));
+        .filter(cc => {
+            if (cc.id === selectedCatCombo.id || cc.id === dataElementCategoryCombo.id) {
+                return true;
+            } else if (cc.isDefault || collectionToArray(cc.categories).length > 1) {
+                return false;
+            } else {
+                return true;
+            }
+        });
     });
 };
 
