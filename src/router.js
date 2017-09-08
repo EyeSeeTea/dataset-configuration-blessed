@@ -9,6 +9,9 @@ import snackActions from './Snackbar/snack.actions';
 const wizard = (action) =>
     (props) => (<DataSetFormSteps action={action} id={props.params.id} />)
 
+const wizard = (action) =>
+    (props) => (<DataSetFormSteps action={action} id={props.params.id} />)
+
 const routes = (
     <Router history={hashHistory}>
         <Route path="/" component={App}>

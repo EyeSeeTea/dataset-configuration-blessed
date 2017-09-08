@@ -1,80 +1,68 @@
 import Action from 'd2-ui/lib/action/Action';
-import { config, getInstance as getD2 } from 'd2/lib/d2';
 import detailsStore from './details.store';
-import log from 'loglevel';
+import deleteStore from './delete.store';
 import { goToRoute } from '../router';
-import { Subject } from 'rx';
+import _ from 'lodash';
 
-export const afterDeleteHook$ = new Subject();
+const setupActions = (actions) => {
+    const actionsByName = _.keyBy(actions, "name");
+    const contextActions = Action.createActionsFromNames(actions.map(a => a.name));
+    const contextMenuIcons = _(actions).map(a => [a.name, a.icon || a.name]).fromPairs().value();
 
-const contextActions = Action.createActionsFromNames([
-    'edit',
-    'share',
-    'define_associations',
-    'details',
-    'clone',
-    'delete',
-]);
+    const isContextActionAllowed = function(selection, actionName) {
+        const action = actionsByName[actionName];
 
-const confirm = (message) => new Promise((resolve, reject) => {
-    if (window.confirm(message)) {
-        resolve();
-    }
-    reject();
-});
+        if (!action || !selection) {
+            return false;
+        } else if (!action.multiple && selection.length != 1) {
+            return false;
+        } else {
+            return true;
+        }
+    };
 
-contextActions.details
-    .subscribe(({ data: model }) => {
-        console.log(model)
-        detailsStore.setState(model);
+    actions.filter(a => a.onClick).forEach(action => {
+        contextActions[action.name].subscribe(({data}) => {
+            const arg = action.multiple && !_.isArray(data) ? [data] : data;
+            action.onClick(arg);
+        });
     });
 
-contextActions.edit
-    .subscribe(({ data: model }) => getD2()
-        .then(d2 => {
-            goToRoute('/datasets/edit/' + model.id);
-        })
-    );
-
-contextActions.clone
-    .subscribe(({ data: model }) => getD2()
-        .then(d2 => {
-            goToRoute('/datasets/clone/' + model.id);
-        })
-    );
-
-
-contextActions.share
-    .subscribe(({ data: model }) => getD2()
-        .then(d2 => {
-            alert("TODO sharing dataset: ",model.displayName);
-            console.log(model.id);
-        })
-    );
-
-contextActions.delete
-    .subscribe(({ data: model }) => getD2()
-        .then(d2 => {            
-            alert("TODO deleting dataset: ");
-        })
-    );
-
-contextActions.define_associations
-    .subscribe(({ data: model }) => getD2()
-        .then(d2 => {
-            alert("TODO assignToOrgUnits dataset: ");
-        })
-    );
-
-const contextMenuIcons = {
-    sharing: 'share',
-    assignToOrgUnits: 'business',
-    clone: 'content_copy',
+    return {contextActions, contextMenuIcons, isContextActionAllowed};
 };
 
-const isContextActionAllowed = function(model, action) {
-    return true;
-};
+const {contextActions, contextMenuIcons, isContextActionAllowed} = setupActions([
+    {
+        name: 'edit',
+        multiple: false,
+        onClick: dataset => goToRoute(`/datasets/edit/${dataset.id}`),
+    },
+    {
+        name: 'share',
+        multiple: true,
+    },
+    {
+        name: 'define_associations',
+        multiple: true,
+        icon: "business",
+    },
+    {
+        name: 'details',
+        multiple: false,
+        onClick: dataset => detailsStore.setState(dataset),
+    },
+    {
+        name: 'clone',
+        multiple: false,
+        icon: "content_copy",
+        onClick: dataset => goToRoute(`/datasets/clone/${dataset.id}`),
+    },
+    {
+        name: 'delete',
+        multiple: true,
+        onClick: datasets => deleteStore.delete(datasets),
+    },
+]);
 
 exports.contextActions = contextActions;
 exports.contextMenuIcons = contextMenuIcons;
