@@ -26,8 +26,9 @@ _.mixin({
 
     inGroupsOf: function(source, n) {
         var dest = [];
-        while(source.length) {
-          dest.push(source.splice(0, n))
+        var source2 = _.clone(source);
+        while(source2.length) {
+          dest.push(source2.splice(0, n));
         }
         return dest;
     },
@@ -71,8 +72,6 @@ var loadJs = function(url, cb) {
     $.getScript(url, cb);
 };
 
-var contentSelector = "#contentDiv";
-
 var emptyField = "__undefined";
 
 var separator = "@";
@@ -100,18 +99,18 @@ var processGroupedTab = function(tabsByTheme, sectionName) {
     var groupedContents =
         $("<ul/>").addClass("list-unstyled").append(
             _.map(tabsByTheme, (tabsByGroup, themeName) => {
-                var hasThemeHeader = _.size(tabsByTheme) > 1;
+                var hasThemeHeader = _.size(tabsByTheme) > 0;
                 var themeNameTitle = themeName !== emptyField ? themeName : "Default";
                 var subsectionKey = (sectionName + "-" + themeName).replace(/ /g, "");
 
                 return $("<li/>").addClass("panel panel-default").append(
                     hasThemeHeader ? getThemeHeader(themeNameTitle, subsectionKey) : $("<span/>"),
-                    $("<div/>").attr("id", subsectionKey).addClass("panel-collapse collapse in").append(
+                    $("<div/>").attr("id", subsectionKey).addClass("panel-collapse in").append(
                         _.map(tabsByGroup, (elementsInGroup, groupName) => {
-                            var showGroupTitle = _.size(tabsByGroup) > 1 && groupName !== emptyField;
+                            var showGroupTitle = _.size(tabsByGroup) > 0 && groupName !== emptyField;
 
                             return $("<div/>").append(
-                                showGroupTitle ? $("<h4/>").text(groupName) : $("<span/>"),
+                                showGroupTitle ? $("<h4/>").css({display: 'none'}).text(groupName) : $("<span/>"),
                                 $("<div/>").append(_.map(elementsInGroup, (tab) => {
                                     return getTabContents(tab).html();
                                 }))
@@ -150,103 +149,136 @@ var getGroupedTabs = function() {
 };
 
 var groupSubsections = function() {
-    // renderAsTabs = true
+    // renderAsTabs == true
     _.each(getGroupedTabs(), processGroupedTab);
 
-    // renderAsTabs = false
+    // renderAsTabs == false
     $(".formSection .cent h3").toArray().map($).forEach(titleTag => {
-        titleTag.text(titleTag.text().replace("@", " → "));
+        titleTag.text(titleTag.text().replace(/@/g, " → "));
     });
 };
 
-var buildTable = function(table, data) {
-    var nCategories = data[0].categories.length;
-    var categoryRows = _.range(nCategories).map(categoryIndex => {
-        return _.chain(data)
-            .map(columnData => columnData.categories)
-            .groupConsecutiveBy(xs => xs.slice(0, categoryIndex+1))
-            .map(group => {
-                var label = group[0][categoryIndex];
-                return $("<th />", {colspan: group.length, scope: "col"})
-                    .append($("<span />", {align: "center"}).text(label))
-            })
-            .value();
-    });
-
-    var newTable = table.clone();
-
-    // Show only enabled headers
-    _.chain(newTable.find("thead tr").get().map($)).zip(categoryRows).each(pair => {
-        var tr = pair[0], row = pair[1];
-        tr.find("th").remove()
-        tr.append(row);
-    });
-
-    // Show only enabled data entries
-    var rowValues = _.transpose(data.map(columnData => columnData.values));
-
-    _.chain(newTable.find("tbody tr").get().map($)).zip(rowValues).each(pair => {
-        var tr = pair[0], values = pair[1];
-        tr.find("td").slice(1).remove();
-        tr.append(values);
-    });
-
-    return newTable;
-};
-
-var hideGreyedColumns = function() {
+var hideGreyedColumnsAndSplit = function() {
     $(".sectionTable").not(".floatThead-table").get().map($).forEach(table => {
-        // Get fully disabled columns
-        var nColumns = table.find("tbody tr:nth-child(1) td input").size();
-        if (nColumns == 0)
+        var firstRow = table.find("tbody tr:first-child td input.entryfield");
+        if (firstRow.size() === 0)
             return;
-        var tdInputs = table.find("tbody tr td input").get();
-        var rows = _.chain(tdInputs).inGroupsOf(nColumns).value();
-        var columns = _.transpose(rows);
-        var disabledColumnIndexes = _.chain(columns)
-            .map((inputs, idx) => _.all(inputs, input => input.disabled) ? idx : null)
-            .reject(x => x === null)
+        var cocIds = firstRow.get().map(input => $(input).attr("id").split("-")[1]);
+        var tdInputs = table.find("tbody tr td input.entryfield").get();
+
+        var disabledCocIds = _.chain(table.find("tbody input.entryfield").get())
+            .groupBy(input => $(input).attr("id").split("-")[1])
+            .map((tds, cocId) => _.every(tds, td => td.disabled) ? cocId : null)
+            .compact()
             .value();
 
+        var categories = table.find("thead tr").get()
+            .map(tr => _.chain($(tr).find("th[scope=col]").get()).map(th => $(th).text().trim()).uniq().value());
+            
         // Get cartesian product of headers (categories) and remove disabled categoryOptionCombos
-        var categoryOptionsList = _(table.find("thead tr").get())
-            .map(tr => _.chain($(tr).find("th")).map(th => $(th).text().trim()).uniq().value())
-        var nCategories = categoryOptionsList.length;
-        var transposedValues = _.transpose(_.inGroupsOf(table.find("tbody tr td:not(:first-child)").get(), nColumns));
-        var allData = _.chain(categoryOptionsList)
+        var cocs = _.chain(categories)
             .cartesianProduct()
-            .zip(transposedValues)
-            .map(pair => ({categories: pair[0], values: pair[1]}))
+            .zip(cocIds)
+            .map(pair => ({cos: pair[0], id: pair[1]}))
+            .reject(coc => _(disabledCocIds).contains(coc.id))
             .value();
-        var data = _.chain(_.range(allData.length))
-            .difference(disabledColumnIndexes).map(idx => allData[idx]).value();
 
-        var newTables = splitTables(table, data, 0);
+        var rows = _.chain(table.find("tbody tr").get()).map($).map(tr => {
+            var td = tr.find("td:first-child");
+            var tdId = td.attr("id");
+            if (tdId) {
+                var deId = tdId.split("-")[0];
+                var deName = td.text().trim();
+                var valuesByCocId = _.chain(tr.find("td input.entryfield").get()).map($).map(input => {
+                    var cocId = input.attr("id").split("-")[1];
+                    return [cocId, {td: input.parent("td"), coc: cocId}];
+                }).object().value();
+                return {de: {id: deId, name: deName, td: td}, valuesByCocId: valuesByCocId};
+            }
+        }).compact().value();
+
+        var data = {
+            group: table.parents("li").find("h4").text(),
+            categories: categories,
+            cocs: cocs,
+            rows: rows,
+            showRowTotals: table.find("tbody tr:first-child td:last-child input.total-cell").size() > 0,
+            showColumnTotals: table.find("tbody tr:last-child td:nth-child(2) input.total-cell").size() > 0,
+        };
+        var newTables = splitTables(data, 0);
         table.replaceWith($("<div>").append(newTables));
-    })
+    });
 };
 
-var splitTables = function(origTable, data, index) {
-    var nCategories = data[0].categories.length;
-    var table = buildTable(origTable, data);
-    var tableFitsInViewport = function(table) {
-        // Add the table temporally to the DOM to get real sizes
-        table.appendTo("#mainPage");
-        var maxWidth = $(window).width() - $("#mainPage").offset().left;
-        var fits = table.width() <= maxWidth;
-        table.remove();
-        return fits;
-    };
+var splitTables = function(data, index) {
+    var nCategories = data.categories.length;
+    var table = buildTable(data);
 
     if (index >= nCategories - 1 || tableFitsInViewport(table)) {
         return [table];
     } else {
-        return _.chain(data)
-            .groupConsecutiveBy(columnData => _.take(columnData.categories, index + 1))
-            .map(splitData => splitTables(origTable, splitData, index + 1))
+        return _.chain(data.cocs)
+            .groupConsecutiveBy(coc => coc.cos.slice(0, index + 1))
+            .map(splitCocs => splitTables(_.extend({}, data, {cocs: splitCocs}), index + 1))
             .flatten(1)
             .value();
     }
+};
+
+var buildTable = function(data) {
+    var getValues = (row) => data.cocs.map(coc => row.valuesByCocId[coc.id]);
+    var nCategories = data.categories.length;
+    var categoryThsList = _.range(nCategories).map(categoryIndex => {
+        return _.chain(data.cocs)
+            .groupConsecutiveBy(coc => coc.cos.slice(0, categoryIndex + 1))
+            .map(group => {
+                var label = group[0].cos[categoryIndex];
+                return $("<th>", {class: "nrcdataheader", colspan: group.length, scope: "col"}).text(label);
+            })
+            .value();
+    });
+
+    return $("<table>", {id: "sectionTable", class: "sectionTable", cellspacing: "0"}).append([
+        $("<thead>").append(
+            categoryThsList.map((categoryThs, index) => $("<tr>").append(
+                $("<th>", {class: "nrcinfoheader"}).html(index === 0 && data.group || "&nbsp;"),
+                categoryThs,
+                index === 0 && data.showRowTotals ?
+                    $("<th>", {class: "nrctotalheader", rowspan: nCategories, verticalAlign: "top"}).text("Total") :
+                    null
+            ))
+        ),
+        $("<tbody>").append(
+            data.rows.map(row => {
+                // id = "row-DE-COC1-COC2-.."
+                var rowTotalId = ["row", row.de.id].concat(getValues(row).map(val => val.coc)).join("-");
+                var rowTotal = $("<input>", {class: "dataelementtotal", type: "text", disabled: "", id: rowTotalId});
+                return $("<tr>").append(
+                    $("<td>", {class: "nrcindicatorName"}).text(row.de.name),
+                    getValues(row).map(val => val.td.clone()),
+                    data.showRowTotals ? $("<td>").append(rowTotal) : null
+                );
+            }),
+            data.showColumnTotals ?
+                $("<tr>").append(
+                    $("<td>", {class: "nrcindicatorName"}).text("Total"),
+                    getValues(data.rows[0]).map(val =>
+                        $("<td>").append(
+                            $("<input>", {class: "dataelementtotal", type: "text", id: "col-" + val.coc, disabled: ""})
+                        )
+                    )
+                ) : null
+        )
+    ]);
+};
+
+var tableFitsInViewport = function(table) {
+    // Add the table temporally to the DOM to get real sizes
+    table.appendTo("#contentDiv");
+    var maxWidth = $(window).width() - $("#contentDiv").offset().left;
+    var fits = table.width() <= maxWidth;
+    table.remove();
+    return fits;
 };
 
 var fixActionsBox = function() {
@@ -254,14 +286,20 @@ var fixActionsBox = function() {
     $("#completenessDiv").css("width", "+=5px");
 };
 
+var renumerateInputFields = function() {
+    var lastIndex = _.chain($("[tabindex]").get()).map(x => parseInt($(x).attr("tabindex"))).max().value() || 0;
+    $("#contentDiv input.entryfield").each((i, input) => $(input).attr("tabindex", lastIndex + i + 1));
+};
+
 var applyChangesToForm = function() {
     groupSubsections();
-    hideGreyedColumns();
+    hideGreyedColumnsAndSplit();
+    renumerateInputFields();
     fixActionsBox();
 };
 
 var init = function() {
-    var contentDiv = $(contentSelector);
+    var contentDiv = $("#contentDiv");
     var isDataEntryPage = window.dhis2 && window.dhis2.de &&
         window.dhis2.de.updateIndicators && contentDiv.length > 0;
 

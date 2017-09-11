@@ -11,6 +11,7 @@ import Disaggregation from './Forms/Disaggregation.component';
 import Sharing from './Forms/Sharing.component';
 import GreyFields from './Forms/GreyFields.component';
 import Save from './Forms/Save.component';
+import snackActions from '../Snackbar/snack.actions';
 
 import DataSetStore from '../models/DataSetStore';
 import Settings from '../models/Settings';
@@ -30,14 +31,31 @@ const DataSetFormSteps = React.createClass({
     },
 
     componentDidMount() {
-        const settings = new Settings(this.context.d2);
+        const {d2} = this.context;
+        const settings = new Settings(d2);
+        const {action, id: datasetId} = this.props;
+
+        const getStore = (config) => {
+            if (action === "add") {
+                return DataSetStore.add(d2, config);
+            } else if (action === "edit") {
+                return DataSetStore.edit(d2, config, datasetId);
+            } else if (action === "clone") {
+                return DataSetStore.clone(d2, config, datasetId);
+            } else {
+                throw `Unknown action: ${action}`;
+            }
+        };
+
         settings.get()
             .then(config => {
-                this.setState({
-                    store: new DataSetStore(this.context.d2, config),
-                });
+                return getStore(config)
+                    .then(store => this.setState({store}))
+                    .catch(err => snackActions.show({route: "/", message: `Cannot edit dataset: ${err}`}));
             })
-            .catch(err => alert('Error: settings not found'));
+            .catch(err => {
+                snackActions.show({route: "/", message: `Error: settings not found: ${err}`});
+            });
     },
 
     _onFieldsChange(stepId, fieldPath, newValue, update = true) {

@@ -41,6 +41,7 @@ const MultipleDataTableRow = React.createClass({
         isActive: React.PropTypes.bool,
         isEven: React.PropTypes.bool,
         isOdd: React.PropTypes.bool,
+        hideActionsIcon: React.PropTypes.bool,
         itemClicked: React.PropTypes.func.isRequired,
         primaryClick: React.PropTypes.func.isRequired    
     },
@@ -117,6 +118,11 @@ const MultipleDataTableRow = React.createClass({
             <div className={classList}>
                 {columns}
                 <div className={'data-table__rows__row__column'} style={{width: '1%'}}>
+                    {this.props.hideActionsIcon ? null : 
+                        <IconButton tooltip={this.getTranslation('actions')} onClick={this.iconMenuClick}>
+                            <MoreVert />
+                        </IconButton>
+                    }
                 </div>
             </div>
         );
