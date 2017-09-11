@@ -273,54 +273,54 @@ background-color: grey;
 
 /* NRC web-dataentry */
 
-#contentDiv #tabs .nrcsubsection {
+#contentDiv .nrcsubsection {
     background-color: #fff;
     height: 5px;
 }
 
-#contentDiv #tabs input.entryfield {
+#contentDiv input.entryfield {
     width: 70px;
     height: 18px;
     padding: 2px;
 }
 
-#contentDiv #tabs input.dataelementtotal {
+#contentDiv input.dataelementtotal {
     width: 70px;
     height: 16px;
     padding: 2px;
 }
 
-#contentDiv #tabs input.indicator {
+#contentDiv input.indicator {
     width: 70px;
     height: 18px;
     padding: 2px;
 }
 
-#contentDiv #tabs tr:hover {
+#contentDiv tr:hover {
     background-color: #e5e5e5
 }
 
-#contentDiv #tabs th {
+#contentDiv th {
     border-style: hidden !important;
 }
 
-#contentDiv #tabs td {
+#contentDiv td {
     padding: 2px !important;
     height: 16px;
     text-align: center;
     border-style: none !important;
 }
 
-#contentDiv #tabs td.nrcindicatorName {
+#contentDiv td.nrcindicatorName {
     text-align: left;
 }
 
-#contentDiv #tabs td.lastinrow {
+#contentDiv td.lastinrow {
     background-color: #eee;
     text-align: center;
 }
 
-#contentDiv #tabs th.nrcinfoheader {
+#contentDiv th.nrcinfoheader {
     text-align: left;
     border-bottom-style: hidden;
     border-left-style: hidden;
@@ -331,7 +331,7 @@ background-color: grey;
     padding: 2px !important;
 }
 
-#contentDiv #tabs th.nrcdataheader {
+#contentDiv th.nrcdataheader {
     text-align: center;
     border-bottom: 1px solid #ddd !important;
     background-color: #eaf7fb;
@@ -342,7 +342,7 @@ background-color: grey;
     padding-right: 10px;
 }
 
-#contentDiv #tabs th.nrctotalheader {
+#contentDiv th.nrctotalheader {
     text-align: center;
     border-bottom: 1px solid #ddd !important;
     background-color: #eee;
@@ -353,18 +353,18 @@ background-color: grey;
     padding-right: 10px;
 }
 
-#contentDiv #tabs .panel {
+#contentDiv .panel {
     margin-bottom: 7px;
 }
 
-#contentDiv #tabs .panel-body {
+#contentDiv .panel-body {
     padding-top: 0;
     padding-left: 8px;
     padding-right: 8px;
     padding-bottom: 4px;
 }
 
-#contentDiv #tabs .panel-default > .panel-heading {
+#contentDiv .panel-default > .panel-heading {
     background-color: #3c3c3c;
     border-color: #3c3c3c;
     padding: 7px;
@@ -372,18 +372,46 @@ background-color: grey;
     cursor: pointer;
 }
 
-#contentDiv #tabs a.nrc-panel-title {
+.ui-state-active a, .ui-state-active a:link, .ui-state-active a:visited {
+    color: #053e21;
+}
+
+.ui-widget-header {
+    background: none;
+    background-color: #2f3867;
+}
+
+#contentDiv a.nrc-panel-title {
     color: white;
     cursor: pointer;
 }
  
-#contentDiv #tabs .accordion-toggle:after {
+#contentDiv .accordion-toggle:after {
     font-family: FontAwesome;
     content: "\f077";
     float: right;
     color: white !important;
 }
 
-#contentDiv #tabs .panel-heading.collapsed .accordion-toggle:after {
+#contentDiv .panel-heading.collapsed .accordion-toggle:after {
     content: "\f078";
+}
+
+/* From light_blue.css */
+
+.page p,.page td,.page th,.page input,.page select,.page textarea 
+{
+  font-size: 9pt;
+}
+
+.page th
+{
+  text-align: left;
+  color: #39547d;
+  padding: 3px 0 3px 1px;
+  font-size: 13px;
+  font-weight: bold;
+  border-collapse: collapse;
+  border-bottom: 1px solid #cad5e5;
+  min-height: 28px;
 }

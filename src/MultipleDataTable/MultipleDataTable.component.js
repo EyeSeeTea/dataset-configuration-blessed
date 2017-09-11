@@ -15,16 +15,21 @@ const MultipleDataTable = React.createClass({
         isContextActionAllowed: React.PropTypes.func,
         isMultipleSelectionAllowed: React.PropTypes.bool,
         columns: React.PropTypes.arrayOf(React.PropTypes.object),
+        hideRowsActionsIcon: React.PropTypes.bool,
         onColumnSort: React.PropTypes.func,
         styles: React.PropTypes.shape({
             table: React.PropTypes.object,
             header: React.PropTypes.object,
         }),
+        activeRows: React.PropTypes.arrayOf(React.PropTypes.object),
+        onActiveRowsChange: React.PropTypes.func,
     },
 
     getDefaultProps() {
         return {
             styles: {},
+            activeRows: [],
+            onActiveRowsChange: () => {},
         };
     },
 
@@ -45,12 +50,14 @@ const MultipleDataTable = React.createClass({
 
         return {
             columns: props.columns || [{name: 'name'}, {name: 'lastUpdated'}],
+            activeRows: props.activeRows,
             dataRows,
         };
     },
 
     renderContextMenu() {
-        const actionAccessChecker = (this.props.isContextActionAllowed && this.props.isContextActionAllowed.bind(null, this.state.activeRow)) || (() => true);
+        const actionAccessChecker = this.props.isContextActionAllowed ?
+            this.props.isContextActionAllowed.bind(null, this.state.activeRows) : () => true;
 
         const actionsToShow = Object.keys(this.props.contextMenuActions || {})
             .filter(actionAccessChecker)
@@ -64,7 +71,6 @@ const MultipleDataTable = React.createClass({
                     target={this.state.contextMenuTarget}
                     onRequestClose={this._hideContextMenu}
                     actions={actionsToShow}
-                    // activeItem={this.state.activeRow}
                     activeItems={this.state.activeRows}
                     showContextMenu={this.state.showContextMenu}
                     icons={this.props.contextMenuIcons}
@@ -107,6 +113,7 @@ const MultipleDataTable = React.createClass({
                         key={dataRowsId}
                         dataSource={dataRowsSource}
                         columns={this.state.columns.map(c => c.name)}
+                        hideActionsIcon={this.props.hideRowsActionsIcon}
                         isActive={this.isRowActive(dataRowsSource)}                        
                         itemClicked={this.handleRowClick}
                         primaryClick={this.handlePrimaryClick}                                                                     
@@ -140,19 +147,22 @@ const MultipleDataTable = React.createClass({
         if(!this.state.activeRows){
             return false;
         }
-        return this.state.activeRows.filter((row) => row===rowSource).length>0;
+        return _.includes(this.state.activeRows, rowSource);
     },
     
     isEventCtrlClick(event){
         return this.props.isMultipleSelectionAllowed && event && event.ctrlKey;       
     },
 
+    notifyActiveRows() {
+        this.props.onActiveRowsChange(this.state.activeRows);
+    },
+
     handleRowClick(event, rowSource) {
         //Update activeRows according to click|ctlr+click
         var newActiveRows;
-        //A click on itemMenu clears selection        
         if(event.isIconMenuClick){
-            newActiveRows = [];
+            newActiveRows = [rowSource];
         }else if (this.isEventCtrlClick(event) || this.isRowActive(rowSource)){
             //Remain selection + rowSource if not already selected
             newActiveRows = this.updateContextSelection(rowSource);                            
@@ -166,7 +176,7 @@ const MultipleDataTable = React.createClass({
             contextMenuTarget: event.currentTarget,
             showContextMenu: true,
             activeRows: newActiveRows
-        });       
+        }, this.notifyActiveRows);       
     },
     
     handlePrimaryClick(event, rowSource) {        
@@ -174,7 +184,7 @@ const MultipleDataTable = React.createClass({
         if(!this.isEventCtrlClick(event)){     
             this.setState({
                 activeRows: []
-            });            
+            }, this.notifyActiveRows);            
             this.props.primaryAction(rowSource);
             return;
         }
@@ -184,14 +194,14 @@ const MultipleDataTable = React.createClass({
         this.setState({
             activeRows:newActiveRows,
             showContextMenu: false,
-        });
+        }, this.notifyActiveRows);
     },      
        
     _hideContextMenu() {
         this.setState({
             activeRows: [],         
             showContextMenu: false,
-        });
+        }, this.notifyActiveRows);
     },    
     
     updateContextSelection(rowSource){
