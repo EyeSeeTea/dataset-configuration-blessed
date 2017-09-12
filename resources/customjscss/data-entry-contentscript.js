@@ -273,10 +273,14 @@ var buildTable = function(data) {
 };
 
 var tableFitsInViewport = function(table) {
-    // Add the table temporally to the DOM to get real sizes
-    table.appendTo("#contentDiv");
-    var maxWidth = $(window).width() - $("#contentDiv").offset().left;
-    var fits = table.width() <= maxWidth;
+    // Add the table temporally to the DOM to get its real size
+    var content = $("#contentDiv");
+    content.show();
+    table.appendTo(content);
+    var maxWidth = $(window).width() - content.offset().left;
+    var tableWidth = table.width();
+    var fits = tableWidth <= maxWidth;
+    content.hide();
     table.remove();
     return fits;
 };
