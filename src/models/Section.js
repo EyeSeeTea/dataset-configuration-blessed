@@ -43,22 +43,25 @@ export const getSectionsFromCoreCompetencies = (d2, config, d2Sections, coreComp
 };
 
 const mergeWithD2Sections = (sections, d2Sections) => {
-    if (_.isEmpty(d2Sections))
-        return sections;
+    const d2SectionsByName = _.groupBy(d2Sections, d2s => d2s.name.split("@")[0]);
+    const processSection = section => {
+        const referenceD2Sections = d2SectionsByName[section.name];
 
-    const deIds = new Set(_(d2Sections).flatMap(d2s => d2s.dataElements.toArray().map(de => de.id)));
-    const d2SectionByName = _.keyBy(d2Sections, s => s.name.split("@")[0]);
+        if (!_.isEmpty(referenceD2Sections)) {
+            const referenceD2Section = referenceD2Sections[0];
+            const dataElementsIds = new Set(
+                _(referenceD2Sections).flatMap(d2s => d2s.dataElements.toArray().map(de => de.id))
+            );
 
-    return sections.map(section => {
-        const referenceD2Section = d2SectionByName[section.name];
-        if (referenceD2Section) {
             section.showRowTotals = referenceD2Section.showRowTotals;
             section.showColumnTotals = referenceD2Section.showColumnTotals;
+            section.dataElements = _.mapValues(section.dataElements,
+                deInfo => _.merge(deInfo, {selected: dataElementsIds.has(deInfo.id)}));
         }
-        section.dataElements = _.mapValues(section.dataElements,
-            deInfo => _.merge(deInfo, {selected: deIds.has(deInfo.id)}));
         return section;
-    });
+    };
+
+    return sections.map(processSection);
 };
 
 /* Return an object with the info of the sections and selected dataElements:
