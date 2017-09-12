@@ -160,13 +160,13 @@ var groupSubsections = function() {
 
 var hideGreyedColumnsAndSplit = function() {
     $(".sectionTable").not(".floatThead-table").get().map($).forEach(table => {
-        var firstRow = table.find("tbody tr:first-child td input.entryfield");
+        var firstRow = table.find("tbody tr:first-child td .entryfield");
         if (firstRow.size() === 0)
             return;
         var cocIds = firstRow.get().map(input => $(input).attr("id").split("-")[1]);
-        var tdInputs = table.find("tbody tr td input.entryfield").get();
+        var tdInputs = table.find("tbody tr td .entryfield").get();
 
-        var disabledCocIds = _.chain(table.find("tbody input.entryfield").get())
+        var disabledCocIds = _.chain(table.find("tbody .entryfield").get())
             .groupBy(input => $(input).attr("id").split("-")[1])
             .map((tds, cocId) => _.every(tds, td => td.disabled) ? cocId : null)
             .compact()
@@ -189,7 +189,7 @@ var hideGreyedColumnsAndSplit = function() {
             if (tdId) {
                 var deId = tdId.split("-")[0];
                 var deName = td.text().trim();
-                var valuesByCocId = _.chain(tr.find("td input.entryfield").get()).map($).map(input => {
+                var valuesByCocId = _.chain(tr.find("td .entryfield").get()).map($).map(input => {
                     var cocId = input.attr("id").split("-")[1];
                     return [cocId, {td: input.parent("td"), coc: cocId}];
                 }).object().value();
@@ -288,7 +288,7 @@ var fixActionsBox = function() {
 
 var renumerateInputFields = function() {
     var lastIndex = _.chain($("[tabindex]").get()).map(x => parseInt($(x).attr("tabindex"))).max().value() || 0;
-    $("#contentDiv input.entryfield").each((i, input) => $(input).attr("tabindex", lastIndex + i + 1));
+    $("#contentDiv .entryfield").each((i, input) => $(input).attr("tabindex", lastIndex + i + 1));
 };
 
 var applyChangesToForm = function() {
