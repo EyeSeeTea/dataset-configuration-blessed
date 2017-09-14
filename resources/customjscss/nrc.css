@@ -313,6 +313,8 @@ background-color: grey;
 
 #contentDiv td.nrcindicatorName {
     text-align: left;
+    white-space: normal;
+    max-width: 33%;
 }
 
 #contentDiv td.lastinrow {
