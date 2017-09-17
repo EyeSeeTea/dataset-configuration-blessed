@@ -23,6 +23,29 @@ class App extends AppWithD2 {
 
     componentDidMount() {
         super.componentDidMount();
+        this.setupFeedback();
+    }
+
+    setupFeedback() {
+        $.feedbackGithub({
+          token: atob("OTZhMzE0MTlmNTgzNTdmYWI5NWVjODBiNTZhNDNjOWExODY4YjQyOQ=="),
+          issues: {
+            repository: "EyeSeeTea/dataset-configuration-blessed",
+            title: "User feedback",
+            renderBody: (body) => {
+                return [
+                    "## dhis2\n",
+                    "- Username: " + d2.currentUser.username,
+                    body,
+                ].join("\n");
+            },
+          },
+          snapshots: {
+            repository: "EyeSeeTeaBotTest/snapshots",
+            branch: "master",
+          },
+          feedback: {},
+        });
     }
 
     render() {
