@@ -4367,7 +4367,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
     }, {}], 6: [function (require, module, exports) {
         module.exports = "<div id=feedback-overview><div class=feedback-logo>Feedback</div><div id=feedback-overview-description><div id=feedback-overview-description-text><h3>Description</h3></div></div><div id=feedback-overview-screenshot><h3>Screenshot</h3></div><div class=feedback-buttons><button id=feedback-submit class=\"feedback-submit-btn feedback-btn-gray\">Submit</button> <button id=feedback-overview-back class=\"feedback-back-btn feedback-btn-gray\">Back</button></div><div id=feedback-overview-error>Please enter a description.</div><div class=feedback-wizard-close></div></div>";
     }, {}], 7: [function (require, module, exports) {
-        module.exports = "<div id=feedback-submit-error><div class=feedback-logo>Feedback</div><p>Sadly an error occured while sending your feedback. Please try again.</p><button class=\"feedback-close-btn feedback-btn-blue\">OK</button><div class=feedback-wizard-close></div></div>";
+        module.exports = "<div id=feedback-submit-error><div class=feedback-logo>Feedback</div><p>Sadly an error occured while sending your feedback. Please try again.</p><button class=\"feedback-close-btn feedback-btn-gray\">OK</button><div class=feedback-wizard-close></div></div>";
     }, {}], 8: [function (require, module, exports) {
-        module.exports = "<div id=feedback-submit-success><div class=feedback-logo>Feedback</div><p>Thank you for your feedback.</p><button class=\"feedback-close-btn feedback-btn-blue\">OK</button><div class=feedback-wizard-close></div></div>";
+        module.exports = "<div id=feedback-submit-success><div class=feedback-logo>Feedback</div><p>Thank you for your feedback.</p><button class=\"feedback-close-btn feedback-btn-gray\">OK</button><div class=feedback-wizard-close></div></div>";
     }, {}] }, {}, [2]);
