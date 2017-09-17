@@ -3540,7 +3540,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                     postURL: true,
                     proxy: undefined,
                     letterRendering: false,
-                    initButtonText: 'Send feedback',
+                    initButtonText: 'Send Feedback',
                     strokeStyle: 'black',
                     shadowColor: 'black',
                     shadowOffsetX: 1,
@@ -3952,13 +3952,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                             $('#feedback-welcome').show();
                         });
 
-                        $(document).on('mousedown', '.feedback-sethighlight', function () {
+                        $(document).on('click', '.feedback-sethighlight', function () {
                             highlight = 1;
                             $(this).addClass('feedback-active');
                             $('.feedback-setblackout').removeClass('feedback-active');
                         });
 
-                        $(document).on('mousedown', '.feedback-setblackout', function () {
+                        $(document).on('click', '.feedback-setblackout', function () {
                             highlight = 0;
                             $(this).addClass('feedback-active');
                             $('.feedback-sethighlight').removeClass('feedback-active');
@@ -4365,7 +4365,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
     }, {}], 5: [function (require, module, exports) {
         module.exports = "<div id=feedback-highlighter><div class=feedback-logo>Feedback</div><p>Click and drag on the page to help us better understand your feedback. You can move this dialog if it's in the way.</p><button class=\"feedback-sethighlight feedback-active\"><div class=ico></div><span>Highlight</span></button><label>Highlight areas relevant to your feedback.</label><button class=feedback-setblackout><div class=ico></div><span>Black out</span></button><label class=lower>Black out any personal information.</label><div class=feedback-buttons><button id=feedback-highlighter-next class=\"feedback-next-btn feedback-btn-gray\">Next</button> <button id=feedback-highlighter-back class=\"feedback-back-btn feedback-btn-gray\">Back</button></div><div class=feedback-wizard-close></div></div>";
     }, {}], 6: [function (require, module, exports) {
-        module.exports = "<div id=feedback-overview><div class=feedback-logo>Feedback</div><div id=feedback-overview-description><div id=feedback-overview-description-text><h3>Description</h3></div></div><div id=feedback-overview-screenshot><h3>Screenshot</h3></div><div class=feedback-buttons><button id=feedback-submit class=\"feedback-submit-btn feedback-btn-blue\">Submit</button> <button id=feedback-overview-back class=\"feedback-back-btn feedback-btn-gray\">Back</button></div><div id=feedback-overview-error>Please enter a description.</div><div class=feedback-wizard-close></div></div>";
+        module.exports = "<div id=feedback-overview><div class=feedback-logo>Feedback</div><div id=feedback-overview-description><div id=feedback-overview-description-text><h3>Description</h3></div></div><div id=feedback-overview-screenshot><h3>Screenshot</h3></div><div class=feedback-buttons><button id=feedback-submit class=\"feedback-submit-btn feedback-btn-gray\">Submit</button> <button id=feedback-overview-back class=\"feedback-back-btn feedback-btn-gray\">Back</button></div><div id=feedback-overview-error>Please enter a description.</div><div class=feedback-wizard-close></div></div>";
     }, {}], 7: [function (require, module, exports) {
         module.exports = "<div id=feedback-submit-error><div class=feedback-logo>Feedback</div><p>Sadly an error occured while sending your feedback. Please try again.</p><button class=\"feedback-close-btn feedback-btn-blue\">OK</button><div class=feedback-wizard-close></div></div>";
     }, {}], 8: [function (require, module, exports) {

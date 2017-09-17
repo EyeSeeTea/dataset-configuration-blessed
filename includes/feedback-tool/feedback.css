@@ -2,18 +2,19 @@
   font-size: 14px;
   position: fixed;
   bottom: -3px;
-  right: 100px;
+  right: 200px;
   width: auto;
 }
 #feedback-module p {
   font-size: 13px;
+  margin-bottom: 25px;
 }
 #feedback-note-tmp {
   width: 444px;
   height: auto;
   min-height: 90px;
   outline: none;
-  font-family: Arial, sans-serif;
+  font-family: Roboto, sans-serif;
   padding: 4px;
 }
 #feedback-note-tmp:focus,
@@ -33,13 +34,11 @@
   position: fixed;
 }
 .feedback-logo {
-  background: url(icons.png) 0px 0px no-repeat;
   width: 34px;
   margin-bottom: 16px;
-  font-size: 16px;
-  font-weight: normal;
+  font-size: 22px;
+  font-weight: bold;
   line-height: 32px;
-  padding-left: 40px;
   height: 32px;
 }
 .feedback-next-btn {
@@ -155,37 +154,27 @@
 .feedback-btn-gray {
   text-align: center;
   cursor: pointer;
-  font-family: 'Open sans';
+  font-family: Roboto, sans-serif;
   border: 1px solid #dcdcdc;
   border: 1px solid rgba(0, 0, 0, 0.1);
-  color: #444;
+  color: white;
   -webkit-border-radius: 2px;
   -moz-border-radius: 2px;
   border-radius: 2px;
   -moz-background-clip: padding;
   -webkit-background-clip: padding-box;
   background-clip: padding-box;
-  background-color: #f5f5f5;
-  background: -webkit-gradient(linear, left top, left bottom, from(#f5f5f5), to(#f1f1f1));
-  background: -webkit-linear-gradient(top, #f5f5f5, #f1f1f1);
-  background: -moz-linear-gradient(top, #f5f5f5, #f1f1f1);
-  background: -ms-linear-gradient(top, #f5f5f5, #f1f1f1);
-  background: -o-linear-gradient(top, #f5f5f5, #f1f1f1);
+  background-color: rgb(255, 152, 0);
+  font-weight: 600;
+  letter-spacing: 0.5px;
 }
 .feedback-btn-gray:hover {
-  color: #333;
-  border: 1px solid #c6c6c6;
-  background-color: #f8f8f8;
-  background: -webkit-gradient(linear, left top, left bottom, from(#f8f8f8), to(#f1f1f1));
-  background: -webkit-linear-gradient(top, #f8f8f8, #f1f1f1);
-  background: -moz-linear-gradient(top, #f8f8f8, #f1f1f1);
-  background: -ms-linear-gradient(top, #f8f8f8, #f1f1f1);
-  background: -o-linear-gradient(top, #f8f8f8, #f1f1f1);
+  border: 2px solid rgb(255,152,0);
 }
 .feedback-btn-blue {
   text-align: center;
   cursor: pointer;
-  font-family: 'Open sans';
+  font-family: Roboto, sans-serif;
   -webkit-border-radius: 2px;
   -moz-border-radius: 2px;
   border-radius: 2px;
@@ -211,7 +200,7 @@
 #feedback-overview,
 #feedback-submit-success,
 #feedback-submit-error {
-  font-family: Arial, sans-serif;
+  font-family: Roboto, sans-serif;
   z-index: 40000;
   padding: 30px 42px;
   width: 540px;
@@ -337,10 +326,11 @@
 }
 #feedback-overview-note {
   width: 314px;
-  padding: 4px;
-  height: 90px;
+  padding: 10px;
+  height: 150px;
   outline: none;
-  font-family: Arial, sans-serif;
+  font-family: Roboto, sans-serif;
+  line-height: 20px;
 }
 #feedback-overview-screenshot {
   float: right;
