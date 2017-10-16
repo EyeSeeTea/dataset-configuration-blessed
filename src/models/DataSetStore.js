@@ -556,12 +556,17 @@ export default class DataSetStore {
     _saveSections(saving) {
         const {dataset, sectionsWithPersistedCocs} = saving;
         const datasetId = dataset.id;
-        const sections = _(sectionsWithPersistedCocs)
+        const sectionsToSave = _(sectionsWithPersistedCocs)
             .sortBy(section => section.name)
             .map(section => update(section, {dataSet: {id: datasetId}}))
             .value();
-
-        return mapPromise(sections, section => section.save()).then(() => saving);
+        const sectionsToDelete = dataset.sections.toArray()
+            .filter(existingSection => !_.includes(_.map(sectionsToSave, "id"), existingSection.id));
+        const actions = _.concat(
+            _.map(sectionsToSave, section => ["save", section]),
+            _.map(sectionsToDelete, section => ["delete", section])
+        );
+        return mapPromise(actions, ([method, section]) => section[method]()).then(() => saving);
     }
 
     _getDatasetLink(saving) {
