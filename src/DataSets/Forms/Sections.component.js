@@ -261,8 +261,7 @@ const Sections = React.createClass({
     },
 
     _updateModelSections() {
-        const {sections} = this.props.store.associations;
-        const errors = this.props.store.updateModelSections(this.state.sections, sections);
+        const errors = this.props.store.updateModelSections(this.state.sections);
         this.setState({errors: errors});
         return _(errors).isEmpty();
     },

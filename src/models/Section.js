@@ -55,12 +55,10 @@ export const getDataSetInfo = (d2, config, sections) => {
     const [selectedOutputDataElements, selectedIndicators] = _(sections)
         .flatMap(section => _(section.items).values().filter(de => de.selected).value())
         .partition(item => item.type == "dataElement");
-
     const selectedDataElements = _.concat(
         selectedOutputDataElements,
         _(selectedIndicators).flatMap("dataElements").value()
     );
-
     const dataSetElements = _(selectedDataElements)
         .map(dataElement => ({
             id: generateUid(),
@@ -103,27 +101,28 @@ const getSectionName = (d2Section) => {
 };
 
 const updateSectionsFromD2Sections = (sections, d2Sections) => {
-    const sectionsByName = _(d2Sections).groupBy(d2Section => d2Section.name.split("@")[0]).value();
+    const d2SectionsByName = _(d2Sections).groupBy(getSectionName).value();
     const getItemIds = (d2Sections) =>
          _(d2Sections)
             .flatMap(d2s => [d2s.dataElements, d2s.indicators])
-            .flatMap(collection => collection.toArray().map(item => item.id))
+            .flatMap(collection => collection.toArray().map(obj => obj.id))
             .value();
+    const updateSection = section => {
+        const d2SectionsForSection = d2SectionsByName[section.name];
 
-    return sections.map(section => {
-        const _d2Sections = sectionsByName[section.name];
+        if (d2SectionsForSection) {
+            const d2Section = d2SectionsForSection[0];
+            const itemsIds = new Set(getItemIds(d2SectionsForSection));
 
-        if (_d2Sections) {
-            const _d2Section = _d2Sections[0];
-            const itemsIds = new Set(getItemIds(_d2Sections));
-
-            section.showRowTotals = _d2Section.showRowTotals;
-            section.showColumnTotals = _d2Section.showColumnTotals;
+            section.showRowTotals = d2Section.showRowTotals;
+            section.showColumnTotals = d2Section.showColumnTotals;
             section.items = _.mapValues(section.items,
                 obj => fp.merge(obj, {selected: itemsIds.has(obj.id)}));
         }
         return section;
-    });
+    };
+
+    return sections.map(updateSection);
 };
 
 const getD2Sections = (d2, section) => {
@@ -182,7 +181,6 @@ const getOutputSection = (opts) => {
             disaggregation: dataElement.categoryCombo.name !== "default" ? dataElement.categoryCombo.name : "None",
         };
     };
-
     const indexedDataElementsInfo = _(dataElements)
         .map(getDataElementInfo)
         .sortBy(info => [!info.selected, info.name])
@@ -202,7 +200,6 @@ const getOutcomeSection = (opts) => {
     const {d2, config, degRelations, indicatorsByGroupName, coreCompetency} = opts;
     const sectionName = coreCompetency.name + " Outcomes";
     const indicators = indicatorsByGroupName[coreCompetency.name] || {};
-
     const getIndicatorInfo = (indicator, dataElements) => {
         const dataElement = dataElements[0];
         const groupSets = _(dataElements)
@@ -363,7 +360,8 @@ const getOutputDataElementsByCoreCompetencyId = (d2, config, coreCompetencies) =
     return getDataElements(d2, ccFilters).then(dataElements => {
         return _(coreCompetencies)
             .map(cc => [cc.id, filterDataElements(dataElements, [cc.id, config.dataElementGroupOutputId])])
-            .fromPairs().value();
+            .fromPairs()
+            .value();
     });
 };
 
@@ -375,6 +373,7 @@ const getIndicatorsByGroupName = (d2, coreCompetencies) => {
         .then(indicatorGroups =>
             _(indicatorGroups)
                 .map(indGroup => [indGroup.name, indGroup.indicators.toArray()])
-                .fromPairs().value()
+                .fromPairs()
+                .value()
         );
 };
