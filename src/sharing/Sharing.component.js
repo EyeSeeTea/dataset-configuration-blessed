@@ -59,15 +59,15 @@ export default createClass({
         this.disposable && this.disposable.dispose();
     },
 
-    getTitle(objects) {
-        const base = objects.map(obj => obj.name).join(", ");
+    getTitle(objects, maxShown = 2) {
+        const base = _(objects).take(maxShown).map(obj => obj.name).join(", ");
 
-        if (objects.length <= 2) {
+        if (objects.length <= maxShown) {
             return base;
         } else {
             return this.context.d2.i18n.getTranslation("this_and_n_others", {
                 this: base,
-                n: objects.length - 2,
+                n: objects.length - maxShown,
             });
         }
     },
