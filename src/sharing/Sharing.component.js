@@ -60,7 +60,7 @@ export default createClass({
     },
 
     getTitle(objects, maxShown = 2) {
-        const base = _(objects).take(maxShown).map(obj => obj.name).join(", ");
+        const base = _(objects).take(maxShown).map("name").join(", ");
 
         if (objects.length <= maxShown) {
             return base;
