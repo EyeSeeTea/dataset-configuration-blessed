@@ -12,7 +12,7 @@ import ListActionBar from '../ListActionBar/ListActionBar.component';
 import Sidebar from 'd2-ui/lib/sidebar/Sidebar.component';
 import SearchBox from '../SearchBox/SearchBox.component';
 import Pagination from 'd2-ui/lib/pagination/Pagination.component';
-import OrgUnitsDialog from '../orgunits/OrgUnitsDialog.component';
+import OrgUnitsDialog from 'd2-ui/lib/org-unit-dialog/OrgUnitsDialog.component';
 import '../Pagination/Pagination.scss';
 
 // import DataTable from 'd2-ui/lib/data-table/DataTable.component';
