@@ -25,7 +25,7 @@ Notes:
     * DataElements can only be used within one section. Since we are getting DataElements from
       indicators, we can have duplicated items that must be removed.
 */
-export const getSections = (d2, config, dataset, d2Sections, coreCompetencies) => {
+export const getSections = (d2, config, dataset, d2Sections, initialCoreCompetencies, coreCompetencies) => {
     const data$ = [
         getDataElementGroupRelations(d2),
         getIndicatorsByGroupName(d2, coreCompetencies),
@@ -39,7 +39,7 @@ export const getSections = (d2, config, dataset, d2Sections, coreCompetencies) =
                 indicatorsByGroupName, dataElementsByCCId,
             };
             return [getOutputSection(opts), getOutcomeSection(opts)];
-		})).then(sections => updateSectionsFromD2Sections(dataset, sections, d2Sections));
+		})).then(sections => updateSectionsFromD2Sections(dataset, sections, d2Sections, initialCoreCompetencies));
 	});
 };
 
@@ -102,7 +102,7 @@ const getSectionName = (d2Section) => {
     return d2Section.name.split("@")[0];
 };
 
-const updateSectionsFromD2Sections = (dataset, sections, d2Sections) => {
+const updateSectionsFromD2Sections = (dataset, sections, d2Sections, initialCoreCompetencies) => {
     const d2SectionsByName = _(d2Sections).groupBy(getSectionName).value();
     const getItemIds = (d2Sections) =>
          _(d2Sections)
@@ -111,6 +111,8 @@ const updateSectionsFromD2Sections = (dataset, sections, d2Sections) => {
             .value();
     const updateSection = section => {
         const d2SectionsForSection = d2SectionsByName[section.name];
+        const sectionWasInInitialCoreCompetencies =
+            _(initialCoreCompetencies).some(cc => cc.id === section.coreCompetency.id);
 
         if (d2SectionsForSection) {
             const d2Section = d2SectionsForSection[0];
@@ -120,6 +122,10 @@ const updateSectionsFromD2Sections = (dataset, sections, d2Sections) => {
             section.showColumnTotals = d2Section.showColumnTotals;
             section.items = _.mapValues(section.items,
                 obj => fp.merge(obj, {selected: itemsIds.has(obj.id)}));
+        } else if (sectionWasInInitialCoreCompetencies) {
+            // This section was not persisted, but its core compentency was amongst the initial ones,
+            // meaning that no items were selected. So clear all default _selected_ values.
+            section.items = _.mapValues(section.items, obj => fp.merge(obj, {selected: false}));
         }
         return section;
     };
@@ -196,6 +202,7 @@ const getOutputSection = (opts) => {
         showRowTotals: false,
         showColumnTotals: false,
         items: indexedDataElementsInfo,
+        coreCompetency,
     };
 };
 
@@ -246,6 +253,7 @@ const getOutcomeSection = (opts) => {
             showRowTotals: false,
             showColumnTotals: false,
             items: indexedIndicatorsInfo,
+            coreCompetency,
         };
     });
 };

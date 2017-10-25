@@ -162,6 +162,7 @@ class Factory {
         return Promise.all(promises).then(([project, coreCompetencies, sharingCountries]) => ({
             project,
             coreCompetencies,
+            initialCoreCompetencies: coreCompetencies,
             dataInputStartDate: _(dataset.dataInputPeriods).map("openingDate").compact().min(),
             dataInputEndDate: _(dataset.dataInputPeriods).map("closingDate").compact().max(),
             sections: collectionToArray(dataset.sections),

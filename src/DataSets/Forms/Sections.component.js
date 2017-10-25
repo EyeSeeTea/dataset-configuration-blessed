@@ -245,9 +245,9 @@ const Sections = React.createClass({
         const {d2} = this.context;
         const {config} = this.props;
         const {dataset, associations} = this.props.store;
-        const {coreCompetencies, sections} = associations;
+        const {coreCompetencies, sections, initialCoreCompetencies} = associations;
 
-        Section.getSections(d2, config, dataset, sections, coreCompetencies).then(sectionsArray => {
+        Section.getSections(d2, config, dataset, sections, initialCoreCompetencies, coreCompetencies).then(sectionsArray => {
             const sections = _.keyBy(sectionsArray, "name");
             const sectionNames = sectionsArray.map(section => section.name);
 
