@@ -12,6 +12,7 @@ import ListActionBar from '../ListActionBar/ListActionBar.component';
 import Sidebar from 'd2-ui/lib/sidebar/Sidebar.component';
 import SearchBox from '../SearchBox/SearchBox.component';
 import Pagination from 'd2-ui/lib/pagination/Pagination.component';
+import OrgUnitsDialog from '../orgunits/OrgUnitsDialog.component';
 import '../Pagination/Pagination.scss';
 
 // import DataTable from 'd2-ui/lib/data-table/DataTable.component';
@@ -22,6 +23,7 @@ import listActions from './list.actions';
 import { contextActions, contextMenuIcons, isContextActionAllowed } from './context.actions';
 import detailsStore from './details.store';
 import deleteStore from './delete.store';
+import orgUnitsStore from './orgUnits.store';
 import 'd2-ui/scss/DataTable.scss';
 
 import Settings from '../models/Settings';
@@ -42,7 +44,6 @@ export function calculatePageValue(pager) {
 
     return `${startItem} - ${endItem > total ? total : endItem}`;
 }
-
 const DataSets = React.createClass({
     propTypes: {
         name: React.PropTypes.string
@@ -76,21 +77,25 @@ const DataSets = React.createClass({
             settingsOpen: false,
             sorting: null,
             searchValue: null,
+            orgUnits: null,
         }
     },
 
     componentDidMount() {
+        const d2 = this.context.d2;
         this.getDataSets();
         
-        //Sets listener to update detailsbox
-        const detailsStoreDisposable = detailsStore.subscribe(detailsObject => {
+        this.registerDisposable(detailsStore.subscribe(detailsObject => {
             this.setState({ detailsObject });
-        });
-        
-        this.registerDisposable(detailsStoreDisposable);
+        }));
 
-        this.registerDisposable(deleteStore.subscribe(deleteObject => {
+        this.registerDisposable(deleteStore.subscribe(deleteObjects => {
             this.getDataSets();
+        }));
+
+        this.registerDisposable(orgUnitsStore.subscribe(datasets => {
+            const d2Datasets = datasets.map(dataset => d2.models.dataSets.create(dataset));
+            this.setState({orgUnits: {models: d2Datasets}});
         }));
     },
 
@@ -100,8 +105,9 @@ const DataSets = React.createClass({
         const filteredDataSets =
             searchValue ? allDataSets.filter().on('displayName').ilike(searchValue) : allDataSets;
         const order = sorting ? sorting.join(":") : undefined;
+        const fields = "*,organisationUnits[id,path]"
 
-        filteredDataSets.list({order}).then(da => {
+        filteredDataSets.list({order, fields}).then(da => {
             this.setState({
                 isLoading: false,
                 pager: da.pager,
@@ -238,6 +244,13 @@ const DataSets = React.createClass({
         return (
             <div>
                 <SettingsDialog open={this.state.settingsOpen} onRequestClose={this.closeSettings} />
+                {this.state.orgUnits ? <OrgUnitsDialog
+                     objects={this.state.orgUnits.models}
+                     open={true}
+                     onRequestClose={() => this.setState({orgUnits: null})}
+                     contentStyle={{width: '1150px', maxWidth: 'none'}}
+                     bodyStyle={{minHeight: '440px', maxHeight: '600px'}}
+                 /> : null }
 
                 <div>
                     <div style={{ float: 'left', width: '75%' }}>
