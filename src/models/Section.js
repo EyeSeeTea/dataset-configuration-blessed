@@ -1,5 +1,7 @@
-import { generateUid } from 'd2/lib/uid';
+import {generateUid} from 'd2/lib/uid';
+import {collectionToArray} from '../utils/Dhis2Helpers';
 import fp from 'lodash/fp';
+
 
 /* Return an array of sections containing its data elements and associated indicators. Schema:
 
@@ -23,7 +25,7 @@ Notes:
     * DataElements can only be used within one section. Since we are getting DataElements from
       indicators, we can have duplicated items that must be removed.
 */
-export const getSections = (d2, config, d2Sections, coreCompetencies) => {
+export const getSections = (d2, config, dataset, d2Sections, coreCompetencies) => {
     const data$ = [
         getDataElementGroupRelations(d2),
         getIndicatorsByGroupName(d2, coreCompetencies),
@@ -37,7 +39,7 @@ export const getSections = (d2, config, d2Sections, coreCompetencies) => {
                 indicatorsByGroupName, dataElementsByCCId,
             };
             return [getOutputSection(opts), getOutcomeSection(opts)];
-		})).then(sections => updateSectionsFromD2Sections(sections, d2Sections));
+		})).then(sections => updateSectionsFromD2Sections(dataset, sections, d2Sections));
 	});
 };
 
@@ -100,12 +102,12 @@ const getSectionName = (d2Section) => {
     return d2Section.name.split("@")[0];
 };
 
-const updateSectionsFromD2Sections = (sections, d2Sections) => {
+const updateSectionsFromD2Sections = (dataset, sections, d2Sections) => {
     const d2SectionsByName = _(d2Sections).groupBy(getSectionName).value();
     const getItemIds = (d2Sections) =>
          _(d2Sections)
-            .flatMap(d2s => [d2s.dataElements, d2s.indicators])
-            .flatMap(collection => collection.toArray().map(obj => obj.id))
+            .flatMap(d2s => [d2s.dataElements, dataset.indicators])
+            .flatMap(collection => collectionToArray(collection).map(obj => obj.id))
             .value();
     const updateSection = section => {
         const d2SectionsForSection = d2SectionsByName[section.name];
@@ -136,7 +138,8 @@ const getD2Sections = (d2, section) => {
             showRowTotals: section.showRowTotals,
             showColumnTotals: section.showColumnTotals,
             dataElements: dataElements.map(de => ({id: de.id})),
-            indicators: indicators.map(ind => ({id: ind.id})),
+            // No indicators for section, just in the data set (they are not rendered in data-entry)
+            indicators: [],
             greyedFields: [],
         });
     };
