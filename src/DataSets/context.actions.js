@@ -1,6 +1,7 @@
 import Action from 'd2-ui/lib/action/Action';
 import detailsStore from './details.store';
 import deleteStore from './delete.store';
+import sharingStore from './sharing.store';
 import { goToRoute } from '../router';
 import _ from 'lodash';
 
@@ -40,6 +41,7 @@ const {contextActions, contextMenuIcons, isContextActionAllowed} = setupActions(
     {
         name: 'share',
         multiple: true,
+        onClick: datasets => sharingStore.setState(datasets),
     },
     {
         name: 'define_associations',
