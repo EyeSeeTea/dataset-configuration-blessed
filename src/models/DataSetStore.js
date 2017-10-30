@@ -123,7 +123,7 @@ class Factory {
 
     getCoreCompetencies(dataset) {
         const extractCoreCompetenciesFromSection = section => {
-            const match = section.name.match(/^(.*) (Outputs|Outcome)(@|$)/);
+            const match = section.name.match(/^(.*) (Outputs|Outcomes)(@|$)/);
             return match ? match[1] : null;
         };
         const coreCompetencyNames = _(dataset.sections.toArray())
@@ -162,6 +162,7 @@ class Factory {
         return Promise.all(promises).then(([project, coreCompetencies, sharingCountries]) => ({
             project,
             coreCompetencies,
+            initialCoreCompetencies: coreCompetencies,
             dataInputStartDate: _(dataset.dataInputPeriods).map("openingDate").compact().min(),
             dataInputEndDate: _(dataset.dataInputPeriods).map("closingDate").compact().max(),
             sections: collectionToArray(dataset.sections),
@@ -303,15 +304,29 @@ export default class DataSetStore {
         this.updateLinkedFields(fieldPath, oldValue);
     }
 
-    updateModelSections(stateSections, d2Sections) {
+    updateModelSections(stateSections) {
         const {sections, dataSetElements, indicators, errors} =
             Section.getDataSetInfo(this.d2, this.config, _.values(stateSections));
 
-        // Don't override greyed fields && ID/href (so it can be updated if existing)
-        const prevSections =_(d2Sections).keyBy("name").value();
-        sections.forEach(section => {
-            const prevSection = prevSections[section.name] || {};
-            update(section, _.pick(prevSection, ["id", "href", "greyedFields"]));
+        const prevSections = this.associations.sections;
+        const sectionsByName =_(sections).keyBy("name").value();
+        const prevSectionsByName =_(prevSections).keyBy("name").value();
+        const allNames = _(sections).concat(prevSections).map("name").uniq().value();
+
+        const mergedSections = allNames.map(name => {
+            const section = sectionsByName[name];
+            if (section) {
+                // Keep id/href/greyedFields for existing sections
+                const prevSection = prevSectionsByName[name] || {};
+                update(section, _.pick(prevSection, ["id", "href", "greyedFields"]));
+                return section;
+            } else {
+                // Section has no DE/indicators in this new configuration
+                const section = prevSectionsByName[name];
+                section.dataElements.clear();
+                section.indicators.clear();
+                return section;
+            }
         });
 
         // Don't override dataSetElements (disaggregation)
@@ -323,7 +338,7 @@ export default class DataSetStore {
             .at(_.keys(newDataSetElements))
             .value();
 
-        update(this.associations, {sections});
+        update(this.associations, {sections: mergedSections});
         update(this.dataset, {dataSetElements: mergedDataSetElements, indicators});
         return errors;
     }
@@ -556,12 +571,18 @@ export default class DataSetStore {
     _saveSections(saving) {
         const {dataset, sectionsWithPersistedCocs} = saving;
         const datasetId = dataset.id;
-        const sections = _(sectionsWithPersistedCocs)
+        const sectionsToSave = _(sectionsWithPersistedCocs)
+            .filter(section => section.dataElements.size > 0 || section.indicators.size > 0)
             .sortBy(section => section.name)
             .map(section => update(section, {dataSet: {id: datasetId}}))
             .value();
-
-        return mapPromise(sections, section => section.save()).then(() => saving);
+        const sectionsToDelete = dataset.sections.toArray()
+            .filter(existingSection => !_.includes(_.map(sectionsToSave, "id"), existingSection.id));
+        const actions = _.concat(
+            _.map(sectionsToSave, section => ["save", section]),
+            _.map(sectionsToDelete, section => ["delete", section])
+        );
+        return mapPromise(actions, ([method, section]) => section[method]()).then(() => saving);
     }
 
     _getDatasetLink(saving) {
