@@ -171,17 +171,17 @@ const SectionConfig = React.createClass({
     },
 });
 
-const ThemeTabs = ({title, dataElements, allLabel, onSelected, visible = true}) => {
+const ThemeTabs = ({title, items, allLabel, onSelected, visible = true}) => {
     if (!visible)
         return null;
 
-    const renderTabs = (dataElements) => {
-        const themesFromDataElements = _(dataElements)
+    const renderTabs = (items) => {
+        const themesFromItems = _(items)
             .map("theme").uniq().compact()
             .map(s => ({key: s, label: s})).sortBy("label").value();
-        const themes = [{key: '', label: allLabel}, ...themesFromDataElements];
+        const themes = [{key: '', label: allLabel}, ...themesFromItems];
 
-        if (_(themesFromDataElements).isEmpty()) {
+        if (_(themesFromItems).isEmpty()) {
             return null;
         } else {
             return (
@@ -204,7 +204,7 @@ const ThemeTabs = ({title, dataElements, allLabel, onSelected, visible = true}) 
     return (
         <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
             {title && <Chip style={{marginRight: 10}}>{title}</Chip>}
-            {renderTabs(dataElements)}
+            {renderTabs(items)}
         </div>
     );
 };
@@ -245,9 +245,9 @@ const Sections = React.createClass({
         const {d2} = this.context;
         const {config} = this.props;
         const {dataset, associations} = this.props.store;
-        const {coreCompetencies, sections} = associations;
+        const {coreCompetencies, sections, initialCoreCompetencies} = associations;
 
-        Section.getSectionsFromCoreCompetencies(d2, config, sections, coreCompetencies).then(sectionsArray => {
+        Section.getSections(d2, config, dataset, sections, initialCoreCompetencies, coreCompetencies).then(sectionsArray => {
             const sections = _.keyBy(sectionsArray, "name");
             const sectionNames = sectionsArray.map(section => section.name);
 
@@ -261,8 +261,7 @@ const Sections = React.createClass({
     },
 
     _updateModelSections() {
-        const {sections} = this.props.store.associations;
-        const errors = this.props.store.updateModelSections(this.state.sections, sections);
+        const errors = this.props.store.updateModelSections(this.state.sections);
         this.setState({errors: errors});
         return _(errors).isEmpty();
     },
@@ -271,18 +270,18 @@ const Sections = React.createClass({
         this.registerDisposable(searchObserver.subscribe(s => this.setState({filterName: s})));
     },
 
-    _getFilteredDataElements(dataElements) {
+    _getFilteredItems(items) {
         const {filters, filterName, sorting} = this.state;
-        const getFiltered = (dataElements) =>
-            _.reduce(filters, (dataElements_, val, key) =>
-                dataElements_.filter(de => !key || val === null || val === undefined || de[key] == val),
-                dataElements);
-        const getFilteredByName = (dataElements) =>
-            !filterName ? dataElements :
-                dataElements.filter(de => _.includes(de.name.toLowerCase(), filterName.toLowerCase()));
-        const getSorted = (dataElements) =>
-            !sorting ? dataElements : _(dataElements).orderBy([sorting[0]], [sorting[1]]).value();
-        return getSorted(getFilteredByName(getFiltered(_.values(dataElements))));
+        const getFiltered = (items) =>
+            _.reduce(filters, (items_, val, key) =>
+                items_.filter(de => !key || val === null || val === undefined || de[key] == val),
+                items);
+        const getFilteredByName = (items) =>
+            !filterName ? items :
+                items.filter(de => _.includes(de.name.toLowerCase(), filterName.toLowerCase()));
+        const getSorted = (items) =>
+            !sorting ? items : _(items).orderBy([sorting[0]], [sorting[1]]).value();
+        return getSorted(getFilteredByName(getFiltered(_.values(items))));
     },
 
     _onColumnSort(sorting) {
@@ -294,9 +293,9 @@ const Sections = React.createClass({
         this.setState({filters: newFilters});
     },
 
-    _renderSelectFilter(dataElementsAll, column, styles) {
+    _renderSelectFilter(itemsAll, column, styles) {
         const label = this.getTranslation(camelCaseToUnderscores(column));
-        const items = _(dataElementsAll).values().map(column).uniq().compact()
+        const items = _(itemsAll).values().map(column).uniq().compact()
             .map(value => ({value: value, text: value})).value();
 
         return (
@@ -309,11 +308,11 @@ const Sections = React.createClass({
         );
     },
 
-    _selectRows(visibleDataElements, selectedHeaderChecked) {
-        const newState = visibleDataElements.reduce(
+    _selectRows(visibleItems, selectedHeaderChecked) {
+        const newState = visibleItems.reduce(
             (state, dataElement) => {
                 const path = [
-                    "sections", dataElement.coreCompetency, "dataElements",
+                    "sections", dataElement.coreCompetency, "items",
                     dataElement.id, "selected",
                 ];
                 return fp.set(path, selectedHeaderChecked, state);
@@ -323,7 +322,7 @@ const Sections = React.createClass({
     },
 
     _onSelectedToggled(dataElement) {
-        const path = ["sections", dataElement.coreCompetency, "dataElements", dataElement.id, "selected"];
+        const path = ["sections", dataElement.coreCompetency, "items", dataElement.id, "selected"];
         const oldValue = fp.get(path, this.state);
         this.setState(fp.set(path, !oldValue, this.state));
     },
@@ -354,8 +353,8 @@ const Sections = React.createClass({
         return this._sectionsVisible() ? [currentSection] : _.at(sections, sectionNames);
     },
 
-    _getDataElements() {
-        return _.flatMap(this._getVisibleSections(), section => _.values(section.dataElements));
+    _getItems() {
+        return _.flatMap(this._getVisibleSections(), section => _.values(section.items));
     },
 
     _renderForm() {
@@ -366,11 +365,11 @@ const Sections = React.createClass({
             return (<div>{this.getTranslation("no_elements_found")}</div>);
         }
         
-        const dataElementsAll = this._getDataElements();
-        const dataElements = this._getFilteredDataElements(dataElementsAll);
+        const itemsAll = this._getItems();
+        const items = this._getFilteredItems(itemsAll);
         const selectedHeaderChecked =
-            !_.isEmpty(dataElements) && dataElements.every(dr => dr.selected);
-        const rows = _.map(dataElements, dataElement =>
+            !_.isEmpty(items) && items.every(dr => dr.selected);
+        const rows = _.map(items, dataElement =>
             _.mapValues(dataElement, (value, name) =>
                 // When there are many rows, material-ui's rich <Checkbox> slows down the rendering,
                 // use a more simple checkbox and try to mimic the look.
@@ -386,7 +385,7 @@ const Sections = React.createClass({
         const selectedColumnContents = (
             <Checkbox
                 checked={selectedHeaderChecked}
-                onCheck={() => this._selectRows(dataElements, !selectedHeaderChecked)}
+                onCheck={() => this._selectRows(items, !selectedHeaderChecked)}
                 iconStyle={{width: 'auto'}}
             />
         );
@@ -444,7 +443,7 @@ const Sections = React.createClass({
                         title={sidebarOpen ? null : currentSection.name}
                         visible={this._sectionsVisible()}
                         onSelected={themeKey => this._onFilter("theme", themeKey)}
-                        dataElements={dataElementsAll}
+                        items={itemsAll}
                         allLabel={this.getTranslation('all')}
                     />
 
@@ -461,14 +460,14 @@ const Sections = React.createClass({
                         </div>
                         <div style={{marginTop: -25}}>
                             {!this._sectionsVisible() &&
-                                this._renderSelectFilter(dataElementsAll, 'coreCompetency', {width: '20%'})}
+                                this._renderSelectFilter(itemsAll, 'coreCompetency', {width: '20%'})}
 
                             {!this._sectionsVisible() &&
-                                this._renderSelectFilter(dataElementsAll, 'theme', {width: '20%'})}
+                                this._renderSelectFilter(itemsAll, 'theme', {width: '20%'})}
 
-                            {this._renderSelectFilter(dataElementsAll, 'group', {width: '20%'})}
+                            {this._renderSelectFilter(itemsAll, 'group', {width: '20%'})}
 
-                            {this._renderSelectFilter(dataElementsAll, 'origin', {width: '20%'})}
+                            {this._renderSelectFilter(itemsAll, 'origin', {width: '20%'})}
 
                             <FilterSelectField
                                 label={this.getTranslation('selected')}
