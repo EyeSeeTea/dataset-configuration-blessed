@@ -108,6 +108,10 @@ max-width: 75px;
 
 }
 
+.entryarea {
+    max-width: 300px;
+}
+
 /* input criteria at top of the data entry page */
 
 .inputCriteria {
