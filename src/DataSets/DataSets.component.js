@@ -13,6 +13,7 @@ import Sidebar from 'd2-ui/lib/sidebar/Sidebar.component';
 import SearchBox from '../SearchBox/SearchBox.component';
 import Pagination from 'd2-ui/lib/pagination/Pagination.component';
 import OrgUnitsDialog from 'd2-ui/lib/org-unit-dialog/OrgUnitsDialog.component';
+import SharingDialog from 'd2-ui/lib/sharing/SharingDialog.component';
 import '../Pagination/Pagination.scss';
 
 // import DataTable from 'd2-ui/lib/data-table/DataTable.component';
@@ -24,6 +25,7 @@ import { contextActions, contextMenuIcons, isContextActionAllowed } from './cont
 import detailsStore from './details.store';
 import deleteStore from './delete.store';
 import orgUnitsStore from './orgUnits.store';
+import sharingStore from './sharing.store';
 import 'd2-ui/scss/DataTable.scss';
 
 import Settings from '../models/Settings';
@@ -81,6 +83,7 @@ const DataSets = React.createClass({
         }
     },
 
+
     componentDidMount() {
         const d2 = this.context.d2;
         this.getDataSets();
@@ -96,6 +99,11 @@ const DataSets = React.createClass({
         this.registerDisposable(orgUnitsStore.subscribe(datasets => {
             const d2Datasets = datasets.map(dataset => d2.models.dataSets.create(dataset));
             this.setState({orgUnits: {models: d2Datasets}});
+        }));
+
+        this.registerDisposable(sharingStore.subscribe(datasets => {
+            const d2Datasets = datasets.map(dataset => d2.models.dataSets.create(dataset));
+            this.setState({sharing: {models: d2Datasets}});
         }));
     },
 
@@ -251,6 +259,13 @@ const DataSets = React.createClass({
                      contentStyle={{width: '1150px', maxWidth: 'none'}}
                      bodyStyle={{minHeight: '440px', maxHeight: '600px'}}
                  /> : null }
+
+                {this.state.sharing ? <SharingDialog
+                    objectsToShare={this.state.sharing.models}
+                    open={true}
+                    onRequestClose={() => this.setState({sharing: null})}
+                    bodyStyle={{minHeight: '400px'}}
+                /> : null }
 
                 <div>
                     <div style={{ float: 'left', width: '75%' }}>

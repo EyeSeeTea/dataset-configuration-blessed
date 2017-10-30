@@ -11,7 +11,7 @@ const styles = {
     table: {
         borderSpacing: 0,
         borderCollapse: 'collapse',
-        margin: '0px',
+        margin: '5px 0px',
     },
     th: {
         whiteSpace: 'nowrap',
@@ -155,18 +155,21 @@ class GreyFieldsTable extends React.Component {
         );
     }
 
-    renderTableHeader(dataSetElements, categoryComboId) {
+    _getCategoryOptionCombos(categoryComboId) {
         const categoryCombo = this.state.categoryCombosById[categoryComboId];
         const categories = categoryCombo.categories.toArray();
         const categoryOptions = categories.map(c => c.categoryOptions.toArray());
-        const categoryOptionsProducts = _.cartesianProduct(...categoryOptions);
+        return _.cartesianProduct(...categoryOptions);
+    }
 
-        const rows = _.range(categories.length).map(idx => {
-          return _(categoryOptionsProducts)
-            .groupConsecutiveBy(product => product[idx])
+    renderTableHeader(dataSetElements, categoryCombo, categoryOptionCombos) {
+        const nCategories = categoryOptionCombos[0].length
+        const rows = _.range(nCategories).map(idx => {
+          return _(categoryOptionCombos)
+            .groupConsecutiveBy(product => product.slice(0, idx + 1))
             .map(consecutiveProducts => {
                 const cocs = consecutiveProducts
-                    .map(cos => getKey({id: categoryComboId}, cos))
+                    .map(cos => getKey(categoryCombo, cos))
                     .map(key => this.state.cocByCategoryKey[key]);
                 return {label: consecutiveProducts[0][idx].displayName, cocs: cocs}
             })
@@ -231,17 +234,13 @@ class GreyFieldsTable extends React.Component {
                 currentSectionDataElementIds.indexOf(a.dataElement.id) - currentSectionDataElementIds.indexOf(b.dataElement.id));
     }
 
-    renderDataElements(dataSetElements) {
+    renderDataElements(dataSetElements, categoryOptionCombos) {
         return dataSetElements
             .map((dse, deNum) => {
-                const categoryOptionsProducts = _.cartesianProduct(
-                    ...collectionToArray(dse.categoryCombo.categories)
-                        .map(cat => collectionToArray(cat.categoryOptions))
-                );
                 return (
                     <tr key={deNum} style={{ background: deNum % 2 === 0 ? 'none' : '#f0f0f0' }}>
                         <td style={styles.tdDataElement}>{dse.dataElement.displayName}</td>
-                        {categoryOptionsProducts.map(cos => this.renderCheckbox(dse, cos))}
+                        {categoryOptionCombos.map(cos => this.renderCheckbox(dse, cos))}
                     </tr>
                 );
             });
@@ -276,19 +275,40 @@ class GreyFieldsTable extends React.Component {
         const categoryCombosToShow = currentCategoryCombo ?
             [currentCategoryCombo] : categoryCombosForVisibleSections;
 
-        const renderTable = (categoryCombo) => {
+        const renderTable = (categoryCombo, cocs) => {
             const dataSetElements = this._getDataSetElements(categoryCombo.id);
+            const key = [categoryCombo, ..._.flatten(cocs)].map(x => x.id).join("-");
 
+            return (
+                <table key={key} style={styles.table}>
+                    <tbody>
+                        {this.renderTableHeader(dataSetElements, categoryCombo, cocs)}
+                        {this.renderDataElements(dataSetElements, cocs)}
+                    </tbody>
+                </table>
+            );
+        };
+
+        const renderTablesForCocs = (categoryCombo, cocs, categoryIndex) => {
+            const nCategories = cocs[0].length
+            if (cocs.length <= 10 || categoryIndex >= nCategories -1) {
+                return renderTable(categoryCombo, cocs);
+            } else {
+                const tables = _(cocs)
+                    .groupConsecutiveBy(cos => cos.slice(0, categoryIndex + 1))
+                    .flatMap(splitCocs =>
+                        renderTablesForCocs(categoryCombo, splitCocs, categoryIndex + 1))
+                    .value();
+                return (<div>{tables}</div>);
+            }
+        };
+
+        const renderTables = (categoryCombo) => {
+            const cocs = this._getCategoryOptionCombos(categoryCombo.id);
             return (
                 <div key={categoryCombo.id}>
                     <h2>{this._getCategoryComboLabel(categoryCombo)}</h2>
-
-                    <table style={styles.table}>
-                        <tbody>
-                            {this.renderTableHeader(dataSetElements, categoryCombo.id)}
-                            {this.renderDataElements(dataSetElements)}
-                        </tbody>
-                    </table>
+                    {renderTablesForCocs(categoryCombo, cocs, 0)}
                 </div>
             );
         };
@@ -327,7 +347,7 @@ class GreyFieldsTable extends React.Component {
                     style={{ width: '33%' }}
                 />
 
-                {categoryCombosToShow.map(categoryCombo => renderTable(categoryCombo))}
+                {categoryCombosToShow.map(categoryCombo => renderTables(categoryCombo))}
             </div>
         );
     }
