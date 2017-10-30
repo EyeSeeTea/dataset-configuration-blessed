@@ -4,7 +4,7 @@ import FormBuilder from 'd2-ui/lib/forms/FormBuilder.component';
 import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
 import Card from 'material-ui/Card/Card';
 import CardText from 'material-ui/Card/CardText';
-import OrganisationUnitTreeMultiSelect from '../../forms/form-fields/orgunit-tree-multi-select';
+import OrganisationUnitTreeMultiSelect from 'd2-ui/lib/org-unit-select/orgunit-tree-multi-select';
 
 import OrgUnitTree from 'd2-ui/lib/org-unit-tree/OrgUnitTree.component';
 import OrgUnitSelectByLevel from 'd2-ui/lib/org-unit-select/OrgUnitSelectByLevel.component';
