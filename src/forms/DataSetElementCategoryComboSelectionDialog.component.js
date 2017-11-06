@@ -140,7 +140,6 @@ function DataSetElementList({ dataSetElements, categoryCombos, onCategoryComboSe
     const getCategoryCombosForSelect = createGetCategoryCombosForSelect(d2, categoryCombos);
 
     const dataSetElementsRows = dataSetElements
-        .sort((left, right) => ((left.dataElement && left.dataElement.displayName || '').localeCompare(right.dataElement && right.dataElement.displayName)))
         .map(({ categoryCombo = {}, dataElement = {}, id }) => {
             const selectedCatCombo = (categoryCombo.source || categoryCombo);
             const categoryCombosForSelect = getCategoryCombosForSelect(dataElement.categoryCombo, selectedCatCombo);
