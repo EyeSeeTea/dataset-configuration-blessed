@@ -39,7 +39,7 @@ export const getSections = (d2, config, dataset, d2Sections, initialCoreCompeten
                 indicatorsByGroupName, dataElementsByCCId,
             };
             return [getOutputSection(opts), getOutcomeSection(opts)];
-		})).then(sections => updateSectionsFromD2Sections(dataset, sections, d2Sections, initialCoreCompetencies));
+		})).then(sections => updateSectionsFromD2Sections(sections, d2Sections, initialCoreCompetencies));
 	});
 };
 
@@ -102,11 +102,11 @@ const getSectionName = (d2Section) => {
     return d2Section.name.split("@")[0];
 };
 
-const updateSectionsFromD2Sections = (dataset, sections, d2Sections, initialCoreCompetencies) => {
+const updateSectionsFromD2Sections = (sections, d2Sections, initialCoreCompetencies) => {
     const d2SectionsByName = _(d2Sections).groupBy(getSectionName).value();
     const getItemIds = (d2Sections) =>
          _(d2Sections)
-            .flatMap(d2s => [d2s.dataElements, dataset.indicators])
+            .flatMap(d2s => [d2s.dataElements, d2s.indicators])
             .flatMap(collection => collectionToArray(collection).map(obj => obj.id))
             .value();
     const updateSection = section => {
@@ -144,8 +144,7 @@ const getD2Sections = (d2, section) => {
             showRowTotals: section.showRowTotals,
             showColumnTotals: section.showColumnTotals,
             dataElements: dataElements.map(de => ({id: de.id})),
-            // No indicators for section, just in the data set (they are not rendered in data-entry)
-            indicators: [],
+            indicators: indicators.map(ind => ({id: ind.id})),
             greyedFields: [],
         });
     };
