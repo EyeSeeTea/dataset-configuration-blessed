@@ -258,50 +258,25 @@ const getOutcomeSection = (opts) => {
 };
 
 const getDataElementsByIndicator = (d2, indicators) => {
-    const filtersWithIndicadors = _(indicators)
-        .flatMap(indicator => {
-            const fromNumerator = getDeIdsFromFormula(indicator.numerator).map(id => ["id", id]);
-            const fromDenominator = getDeIdsFromFormula(indicator.denominator).map(id => ["id", id]);
-            const fromComments = [["code", indicator.code + "-C"]];
-            return _([fromNumerator, fromDenominator, fromComments])
-                .flatten()
-                .map(filter => ({indicator, filter}))
-                .value();
-        }).value();
-    const filtersToIndicators = _(filtersWithIndicadors)
-        .map(({filter, indicator}) => [filter.join("."), indicator])
-        .groupBy(([filterKey, indicatorId]) => filterKey)
-        .map((vs, k) => [k, vs.map(([filterKey, indicator]) => indicator)])
-        .fromPairs()
-        .value();
-    const filters = filtersWithIndicadors.map(fi => fi.filter);
-
-    return getDataElements(d2, filters).then(dataElements => {
-        return _(dataElements)
-            .flatMap(dataElement => {
-                const indicators = _([
-                    filtersToIndicators["id." + dataElement.id],
-                    filtersToIndicators["code." + dataElement.code],
-                ]).compact().flatten().value();
-                return indicators.map(indicator => ({indicatorId: indicator.id, dataElements: dataElement}));
-            })
-            .groupBy("indicatorId")
-            .map((objs, indicatorId) => [indicatorId, _(objs).flatMap("dataElements").value()])
-            .fromPairs()
-            .value();
-    });
-
-    const getFilters = indicator => {
+    const filtersForIndicator = indicators.map(indicator => {
         const fromNumerator = getDeIdsFromFormula(indicator.numerator).map(id => ["id", id]);
         const fromDenominator = getDeIdsFromFormula(indicator.denominator).map(id => ["id", id]);
         const fromComments = [["code", indicator.code + "-C"]];
-        return _.concat(fromNumerator, fromDenominator, fromComments);
+        return {indicator, filters: _.flatten([fromNumerator, fromDenominator, fromComments])};
+    });
+    const getMapping = (dataElements) => {
+        return _(filtersForIndicator)
+            .map(({indicator, filters}) => {
+                const dataElementsForIndicator = _(filters)
+                    .flatMap(([key, value]) => dataElements.filter(de => de[key] === value)).value();
+                return [indicator.id, dataElementsForIndicator];
+            })
+            .fromPairs()
+            .value();
     };
+    const allFilters = _(filtersForIndicator).flatMap("filters").value();
 
-    return _(indicators)
-        .map(indicator => [indicator.id, getDataElements(d2, getFilters(indicator))])
-        .fromPairs()
-        .value();
+    return getDataElements(d2, allFilters).then(getMapping);
 };
 
 const matchAll = (string, re) => {
