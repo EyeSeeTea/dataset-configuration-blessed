@@ -99,6 +99,16 @@ border-color: #fff;
 
 }
 
+.indicatorArea {
+    margin-top: -50px;
+    margin-bottom: 5px;
+    border-top: none;
+}
+
+.indicatorArea td {
+    width: 100% !important;
+    text-align: left !important;
+}
 
 .entryfield,
 .indicator
@@ -298,6 +308,7 @@ background-color: grey;
     width: 70px;
     height: 18px;
     padding: 2px;
+    background-color: #CCC;
 }
 
 #contentDiv tr:hover {
