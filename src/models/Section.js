@@ -47,49 +47,34 @@ export const getSections = (d2, config, dataset, d2Sections, initialCoreCompeten
 
     {
         sections: [d2.models.Section]
-        dataSetElements: [dataElement]
+        dataSetElements: [dataSetElement]
         indicators: [Indicator]
         errors: [String]
     }
 */
 export const getDataSetInfo = (d2, config, sections) => {
     const d2Sections = _(sections).flatMap(section => getD2Sections(d2, section)).value();
-    const [selectedOutputDataElements, selectedIndicators] = _(sections)
-        .flatMap(section => _(section.items).values().filter(de => de.selected).value())
-        .partition(item => item.type == "dataElement");
-    const selectedDataElements = _.concat(
-        selectedOutputDataElements,
-        _(selectedIndicators).flatMap("dataElements").value()
-    );
-    const dataSetElements = _(selectedDataElements)
-        .map(dataElement => ({
-            id: generateUid(),
-            dataSet: {},
+    const dataElements = _(d2Sections).flatMap(d2s => d2s.dataElements.toArray()).value();
+    const indicators = _(d2Sections).flatMap(d2s => d2s.indicators.toArray()).value();
+    const dataSetElements = dataElements.map(dataElement => ({
+        id: generateUid(),
+        dataSet: {},
+        categoryCombo: dataElement.categoryCombo,
+        dataElement: {
+            id: dataElement.id,
+            displayName: dataElement.name,
             categoryCombo: dataElement.categoryCombo,
-            dataElement: {
-                id: dataElement.id,
-                displayName: dataElement.name,
-                categoryCombo: dataElement.categoryCombo,
-            },
-        }))
-        .value();
-    const indicators = _(selectedIndicators)
-        .uniqBy("id")
-        .map(indicator => ({id: indicator.id}))
-        .value();
-    const dataElementsById = _(selectedDataElements).keyBy("id").value();
-    const errors = _(selectedDataElements)
-        .map(de => de.id)
-        .countBy()
-        .map((count, deId) => count > 1 ? deId : null)
-        .compact()
-        .map(repeatedDeId => {
-            const invalidSections = sections
-                .filter(section => _(section.dataElements).keys().includes(repeatedDeId))
-                .map(section => section.name)
-                .join(', ');
-            const deName = dataElementsById[repeatedDeId].name;
-            return `DataElement '${deName}' used in multiple sections`;
+        },
+    }));
+    const dataElementsById = _(dataElements).keyBy("id").value();
+    const errors = _(dataElements)
+        .map("id").countBy().map((count, deId) => count > 1 ? deId : null).compact()
+        .map(repeatedId => {
+            const deName = dataElementsById[repeatedId].name;
+            const invalidSections = d2Sections
+                .filter(d2Section => d2Section.dataElements.has(repeatedId))
+                .map(d2Section => d2Section.name);
+            return `Data element '${deName}' is used in multiple sections: ${invalidSections.join(', ')}`;
         })
         .value();
 
@@ -143,8 +128,8 @@ const getD2Sections = (d2, section) => {
             displayName: d2SectionName,
             showRowTotals: section.showRowTotals,
             showColumnTotals: section.showColumnTotals,
-            dataElements: dataElements.map(de => ({id: de.id})),
-            indicators: indicators.map(ind => ({id: ind.id})),
+            dataElements: dataElements.map(de => ({id: de.id, name: de.name, categoryCombo: de.categoryCombo})),
+            indicators: indicators.map(ind => ({id: ind.id, name: ind.name})),
             greyedFields: [],
         });
     };
