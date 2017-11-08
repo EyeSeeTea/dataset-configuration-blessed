@@ -19,7 +19,7 @@ import Popover from 'material-ui/Popover/Popover';
 import MoreVert from 'material-ui/svg-icons/navigation/more-vert';
 import IconButton from 'material-ui/IconButton/IconButton';
 import PopoverAnimationDefault from 'material-ui/Popover/PopoverAnimationDefault';
-import * as Section from '../../models/Section';
+import {getSections, getItemStatus} from '../../models/Section';
 import Card from 'material-ui/Card/Card';
 import CardHeader from 'material-ui/Card/CardHeader';
 import CardText from 'material-ui/Card/CardText';
@@ -247,7 +247,7 @@ const Sections = React.createClass({
         const {dataset, associations} = this.props.store;
         const {coreCompetencies, sections, initialCoreCompetencies} = associations;
 
-        Section.getSections(d2, config, dataset, sections, initialCoreCompetencies, coreCompetencies).then(sectionsArray => {
+        getSections(d2, config, dataset, sections, initialCoreCompetencies, coreCompetencies).then(sectionsArray => {
             const sections = _.keyBy(sectionsArray, "name");
             const sectionNames = sectionsArray.map(section => section.name);
 
@@ -279,9 +279,11 @@ const Sections = React.createClass({
         const getFilteredByName = (items) =>
             !filterName ? items :
                 items.filter(de => _.includes(de.name.toLowerCase(), filterName.toLowerCase()));
+        const getDefaultOrder = (items) =>
+            _(items).sortBy(item => [!item.selectedOnLoad, getItemStatus(item) === "phased-out", item.name]).value();
         const getSorted = (items) =>
-            !sorting ? items : _(items).orderBy([sorting[0]], [sorting[1]]).value();
-        return getSorted(getFilteredByName(getFiltered(_.values(items))));
+            !sorting ? getDefaultOrder(items) : _(items).orderBy([sorting[0]], [sorting[1]]).value();
+        return getSorted(getFilteredByName(getFiltered(items)));
     },
 
     _onColumnSort(sorting) {
@@ -310,19 +312,16 @@ const Sections = React.createClass({
 
     _selectRows(visibleItems, selectedHeaderChecked) {
         const newState = visibleItems.reduce(
-            (state, dataElement) => {
-                const path = [
-                    "sections", dataElement.coreCompetency, "items",
-                    dataElement.id, "selected",
-                ];
+            (state, item) => {
+                const path = ["sections", item.coreCompetency, "items", item.id, "selected"];
                 return fp.set(path, selectedHeaderChecked, state);
             },
             this.state);
         this.setState(newState);
     },
 
-    _onSelectedToggled(dataElement) {
-        const path = ["sections", dataElement.coreCompetency, "items", dataElement.id, "selected"];
+    _onSelectedToggled(item) {
+        const path = ["sections", item.coreCompetency, "items", item.id, "selected"];
         const oldValue = fp.get(path, this.state);
         this.setState(fp.set(path, !oldValue, this.state));
     },
@@ -357,6 +356,30 @@ const Sections = React.createClass({
         return _.flatMap(this._getVisibleSections(), section => _.values(section.items));
     },
 
+    _getCellValue(value, column, item) {
+        switch(column) {
+            case "selected":
+                // When there are many rows, material-ui's rich <Checkbox> slows down the rendering,
+                // use a more simple checkbox and try to mimic the look as much as possible.
+                return (
+                    <div onClick={() => this._onSelectedToggled(item)}>
+                        <input type="checkbox" readOnly={true}
+                               checked={value} className="simple-checkbox">
+                        </input>
+                        <span></span>
+                    </div>
+                );
+            case "status":
+                if (getItemStatus(item) == "phased-out") {
+                    return <span style={{backgroundColor: "#F99"}}>{value}</span>;
+                } else {
+                    return value;
+                }
+            default:
+                return value;
+        }
+    },
+
     _renderForm() {
         const {sidebarOpen, currentSectionName, sections, filters} = this.state;
         const {dataset} = this.props.store;
@@ -369,18 +392,11 @@ const Sections = React.createClass({
         const items = this._getFilteredItems(itemsAll);
         const selectedHeaderChecked =
             !_.isEmpty(items) && items.every(dr => dr.selected);
-        const rows = _.map(items, dataElement =>
-            _.mapValues(dataElement, (value, name) =>
-                // When there are many rows, material-ui's rich <Checkbox> slows down the rendering,
-                // use a more simple checkbox and try to mimic the look.
-                name != "selected" ? value :
-                    <div onClick={() => this._onSelectedToggled(dataElement)}>
-                        <input type="checkbox" readOnly={true}
-                               checked={value} className="simple-checkbox">
-                        </input>
-                        <span></span>
-                    </div>
-            )
+        const rows = _.map(items, item =>
+            _(item)
+                .mapValues((k, v) => this._getCellValue(k, v, item))
+                .set("_style", getItemStatus(item) === "phased-out" ? {backgroundColor: "#FEE"} : {})
+                .value()
         );
         const selectedColumnContents = (
             <Checkbox
@@ -416,6 +432,10 @@ const Sections = React.createClass({
             },
             {
                 name: 'origin',
+                sortable: true,
+            },
+            {
+                name: 'status',
                 sortable: true,
             },
             {
