@@ -54,6 +54,11 @@ export default class Settings {
             defaultFilter: "code:eq:GL_DETHEME_DEGROUPSET",
         },
         {
+            name: "indicatorGroupSetThemeId",
+            model: "indicatorGroupSet",
+            defaultFilter: "name:eq:Theme",
+        },
+        {
             name: "dataElementGroupSetOriginId",
             model: "dataElementGroupSet",
             defaultFilter: "code:eq:GL_DEORIGIN_DEGROUPSET",
