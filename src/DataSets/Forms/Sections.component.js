@@ -439,10 +439,10 @@ const Sections = React.createClass({
                 name: 'status',
                 sortable: true,
             },
-            {
+            currentSection.type === "output" ? {
                 name: 'disaggregation',
                 sortable: true,
-            },
+            } : null,
         ]);
 
         const visibleSections = this._getVisibleSections();
