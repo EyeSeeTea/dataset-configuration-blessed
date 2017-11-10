@@ -53,10 +53,11 @@ export const getSections = (d2, config, dataset, d2Sections, initialCoreCompeten
     }
 */
 export const getDataSetInfo = (d2, config, sections) => {
-    const d2Sections = _(sections).flatMap(section => getD2Sections(d2, section)).value();
+    const d2Sections = _(sections).flatMap(section => getD2Sections(d2, section))
+        .map((d2s, index) => _.set(d2s, "sortOrder", index)).value();
     const [selectedOutputDataElements, selectedIndicators] = _(sections)
         .flatMap(section => _(section.items).values().filter(de => de.selected).value())
-        .partition(item => item.type == "dataElement");
+        .partition(item => item.type === "dataElement");
     const selectedDataElements = _.concat(
         selectedOutputDataElements,
         _(selectedIndicators).flatMap("dataElements").value()
@@ -116,8 +117,10 @@ export const getItemStatus = (item) => {
 
 /* Private functions */
 
+const sectionSep = "@";
+
 const getSectionName = (d2Section) => {
-    return d2Section.name.split("@")[0];
+    return d2Section.name.split(sectionSep)[0];
 };
 
 const updateSectionsFromD2Sections = (sections, d2Sections, initialCoreCompetencies) => {
@@ -155,32 +158,32 @@ const updateSectionsFromD2Sections = (sections, d2Sections, initialCoreCompetenc
 };
 
 const getD2Sections = (d2, section) => {
-    const getD2Section = (objs, d2SectionName) => {
-        const dataElements = _(objs).map("dataElement").uniqBy("id").value();
-        const indicators = _(objs).map("indicator").compact().uniqBy("id").value();
+    const getD2Section = (items, d2SectionName) => {
+        const dataElements = _(items).flatMap(item => item.type === "dataElement" ? [item] : item.dataElements);
+        const indicators = _(items).flatMap(item => item.type === "indicator" ? [item] : []);
 
         return d2.models.sections.create({
             name: d2SectionName,
             displayName: d2SectionName,
             showRowTotals: section.showRowTotals,
             showColumnTotals: section.showColumnTotals,
-            dataElements: dataElements.map(de => ({id: de.id})),
-            indicators: indicators.map(ind => ({id: ind.id})),
+            dataElements: dataElements.map(de => ({id: de.id})).uniqBy("id").value(),
+            indicators: indicators.map(ind => ({id: ind.id})).uniqBy("id").value(),
             greyedFields: [],
         });
     };
-    const getObjs = item => {
+    const sectionName = (item) => {
+        let values;
         if (item.type === "dataElement") {
-            return [{dataElement: item, indicator: null}];
-        } else { // indicator
-            return item.dataElements.map(de => ({dataElement: de, indicator: item}));
+            values = [section.name, item.theme, item.group];
+        } else { // Indicator. When group is not present, use the indicator code itself to group
+            const group = item.group || item.code;
+            values = [section.name, item.theme, group];
         }
-    };
-    const getSectionName = ({dataElement}) =>
-        [section.name, dataElement.theme, dataElement.group].join("@").replace(/@*$/, '');
+        return values.join(sectionSep).replace(new RegExp(sectionSep + "*$"), '');
+    }
 
-    return _(section.items).values().filter("selected").flatMap(getObjs).groupBy(getSectionName)
-        .map(getD2Section).value();
+    return _(section.items).values().filter("selected").groupBy(sectionName).map(getD2Section).value();
 };
 
 const getOutputSection = (opts) => {
@@ -200,6 +203,7 @@ const getOutputSection = (opts) => {
         return {
             type: "dataElement",
             id: dataElement.id,
+            code: dataElement.code,
             name: dataElement.name,
             displayName: dataElement.name,
             coreCompetency: sectionName,
@@ -233,17 +237,11 @@ const getOutcomeSection = (opts) => {
     const sectionName = coreCompetency.name + " Outcomes";
     const indicators = indicatorsByGroupName[coreCompetency.name] || {};
     const getIndicatorInfo = (indicator, dataElements) => {
-        const dataElement = dataElements[0];
-        const dataElementGroupSets = _(dataElements)
-            .flatMap(de => de.dataElementGroups.toArray())
-            .map(deg => [degRelations[deg.id], deg])
-            .fromPairs().value();
         const indicatorGroupSets = _(indicator.indicatorGroups.toArray())
             .map(ig => [igRelations[ig.id], ig]).fromPairs().value();
         const origin = indicatorGroupSets[config.indicatorGroupSetOriginId];
-        const theme = dataElementGroupSets[config.dataElementGroupSetThemeId];
-        const group = _(dataElement.attributeValues)
-            .find(av => av.attribute.id === config.attributeGroupId)
+        const theme = indicatorGroupSets[config.indicatorGroupSetThemeId];
+        const group = _(indicator.attributeValues).find(av => av.attribute.id === config.attributeGroupId);
         const mandatoryIndicatorId = config.dataElementGroupGlobalIndicatorMandatoryId;
         const igSetStatus = indicatorGroupSets[config.indicatorGroupSetStatusId];
 
@@ -251,16 +249,17 @@ const getOutcomeSection = (opts) => {
             type: "indicator",
             dataElements: dataElements,
             id: indicator.id,
+            code: indicator.code,
             name: indicator.name,
             displayName: indicator.name,
             coreCompetency: sectionName,
             theme: theme ? theme.name : null,
             group: group ? group.value : null,
-            categoryCombo: dataElement.categoryCombo,
+            categoryCombo: null,
             selected: origin ? origin.id === mandatoryIndicatorId : false,
             origin: origin ? origin.name : null,
             status: igSetStatus ? igSetStatus.name : null,
-            disaggregation: dataElement.categoryCombo.name !== "default" ? dataElement.categoryCombo.name : "None",
+            disaggregation: null,
         };
     };
 
