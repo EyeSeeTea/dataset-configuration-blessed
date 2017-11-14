@@ -372,7 +372,7 @@ const Sections = React.createClass({
                 );
             case "status":
                 if (getItemStatus(item) == "phased-out") {
-                    return <span style={{backgroundColor: "#F99"}}>{value}</span>;
+                    return <span style={{backgroundColor: "#F99", color: "white", padding: "4px"}}>{value}</span>;
                 } else {
                     return value;
                 }
