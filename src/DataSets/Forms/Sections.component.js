@@ -291,7 +291,8 @@ const Sections = React.createClass({
     },
 
     _onFilter(key, value) {
-        const newFilters = _.merge(this.state.filters, {[key]: value});
+        const newFilters = _({}).assign(this.state.filters).set(key, value)
+            .pickBy((value, key) => value || value === false).value();
         this.setState({filters: newFilters});
     },
 
