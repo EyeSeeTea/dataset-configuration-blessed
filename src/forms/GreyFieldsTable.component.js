@@ -299,7 +299,12 @@ class GreyFieldsTable extends React.Component {
                     .flatMap(splitCocs =>
                         renderTablesForCocs(categoryCombo, splitCocs, categoryIndex + 1))
                     .value();
-                return (<div>{tables}</div>);
+                const key = categoryCombo.id + _(cocs).flatten().map("id").join("");
+                return (
+                    <div key={key}>
+                        {tables}
+                    </div>
+                );
             }
         };
 

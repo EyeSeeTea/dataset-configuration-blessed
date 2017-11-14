@@ -49,14 +49,39 @@ export default class Settings {
             defaultFilter: "code:eq:GL_MAND_DEGROUP",
         },
         {
+            name: "indicatorGroupGlobalIndicatorMandatoryId",
+            model: "indicatorGroup",
+            defaultFilter: "name:eq:Global Indicators (Mandatory)",
+        },
+        {
             name: "dataElementGroupSetThemeId",
             model: "dataElementGroupSet",
             defaultFilter: "code:eq:GL_DETHEME_DEGROUPSET",
         },
         {
+            name: "indicatorGroupSetThemeId",
+            model: "indicatorGroupSet",
+            defaultFilter: "name:eq:Theme",
+        },
+        {
             name: "dataElementGroupSetOriginId",
             model: "dataElementGroupSet",
             defaultFilter: "code:eq:GL_DEORIGIN_DEGROUPSET",
+        },
+        {
+            name: "indicatorGroupSetOriginId",
+            model: "indicatorGroupSet",
+            defaultFilter: "name:eq:Indicator Origin",
+        },
+        {
+            name: "dataElementGroupSetStatusId",
+            model: "dataElementGroupSet",
+            defaultFilter: "code:eq:GL_DESTATUS_DEGROUPSET",
+        },
+        {
+            name: "indicatorGroupSetStatusId",
+            model: "indicatorGroupSet",
+            defaultFilter: "name:eq:Status",
         },
         {
             name: "attributeGroupId",

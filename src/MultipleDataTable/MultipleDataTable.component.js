@@ -114,9 +114,10 @@ const MultipleDataTable = React.createClass({
                         dataSource={dataRowsSource}
                         columns={this.state.columns.map(c => c.name)}
                         hideActionsIcon={this.props.hideRowsActionsIcon}
-                        isActive={this.isRowActive(dataRowsSource)}                        
+                        isActive={this.isRowActive(dataRowsSource)}
                         itemClicked={this.handleRowClick}
-                        primaryClick={this.handlePrimaryClick}                                                                     
+                        primaryClick={this.handlePrimaryClick}
+                        style={dataRowsSource._style}
                     />
                 );
             });

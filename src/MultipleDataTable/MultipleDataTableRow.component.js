@@ -43,7 +43,8 @@ const MultipleDataTableRow = React.createClass({
         isOdd: React.PropTypes.bool,
         hideActionsIcon: React.PropTypes.bool,
         itemClicked: React.PropTypes.func.isRequired,
-        primaryClick: React.PropTypes.func.isRequired    
+        primaryClick: React.PropTypes.func.isRequired,
+        style: React.PropTypes.object,
     },
 
     mixins: [Translate],
@@ -115,7 +116,7 @@ const MultipleDataTableRow = React.createClass({
             );
         });
         return (
-            <div className={classList}>
+            <div className={classList} style={this.props.style}>
                 {columns}
                 <div className={'data-table__rows__row__column'} style={{width: '1%'}}>
                     {this.props.hideActionsIcon ? null : 
