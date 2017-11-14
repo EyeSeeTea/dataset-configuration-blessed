@@ -216,7 +216,7 @@ const getOutputSection = (opts) => {
 const getOutcomeSection = (opts) => {
     const {d2, config, degRelations, igRelations, indicatorsByGroupName, coreCompetency} = opts;
     const sectionName = coreCompetency.name + " Outcomes";
-    const indicators = indicatorsByGroupName[coreCompetency.name] || {};
+    const indicators = indicatorsByGroupName[coreCompetency.name] || [];
     const getIndicatorInfo = (indicator, dataElements) => {
         const dataElement = dataElements[0];
         const dataElementGroupSets = _(dataElements)
