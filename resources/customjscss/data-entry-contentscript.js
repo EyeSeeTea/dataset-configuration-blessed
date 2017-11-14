@@ -18,6 +18,7 @@
 
 // Underscore.js
 var _ = window._.noConflict();
+window.underscore = _;
 
 _.mixin({
     transpose: function(list) {
@@ -107,10 +108,9 @@ var processGroupedTab = function(tabsByTheme, sectionName) {
                     hasThemeHeader ? getThemeHeader(themeNameTitle, subsectionKey) : $("<span/>"),
                     $("<div/>").attr("id", subsectionKey).addClass("panel-collapse in").append(
                         _.map(tabsByGroup, (elementsInGroup, groupName) => {
-                            var showGroupTitle = _.size(tabsByGroup) > 0 && groupName !== emptyField;
 
-                            return $("<div/>").append(
-                                showGroupTitle ? $("<h4/>").css({display: 'none'}).text(groupName) : $("<span/>"),
+                            return $("<div/>", {class: "group"}).append(
+                                groupName !== emptyField ? $("<h4/>").css({display: 'none'}).text(groupName) : $("<span/>"),
                                 $("<div/>").append(_.map(elementsInGroup, (tab) => {
                                     return getTabContents(tab).html();
                                 }))
@@ -198,7 +198,7 @@ var hideGreyedColumnsAndSplit = function() {
         }).compact().value();
 
         var data = {
-            group: table.parents("li").find("h4").text(),
+            group: table.parents("div.group").find("h4").text(),
             categories: categories,
             cocs: cocs,
             rows: rows,
@@ -302,10 +302,17 @@ var renumerateInputFields = function() {
     $("#contentDiv .entryfield").each((i, input) => $(input).attr("tabindex", lastIndex + i + 1));
 };
 
+var prettyGroups = function() {
+    _($(".group").get()).each(group => $(group).find(".nrcinfoheader:not(:first)").text(""));
+    _($(".group").get()).each(group => $(group).find(".indicatorArea:not(:last)").remove());
+    $(".nrcdataheader").filter((i, header) => $(header).text() === "Value").hide();
+};
+
 var applyChangesToForm = function() {
     groupSubsections();
     hideGreyedColumnsAndSplit();
     renumerateInputFields();
+    prettyGroups();
     fixActionsBox();
 };
 

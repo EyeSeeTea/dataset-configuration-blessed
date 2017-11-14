@@ -100,7 +100,7 @@ border-color: #fff;
 }
 
 .indicatorArea {
-    margin-top: -50px;
+    margin-top: 0px;
     margin-bottom: 5px;
     border-top: none;
 }
@@ -308,7 +308,6 @@ background-color: grey;
     width: 70px;
     height: 18px;
     padding: 2px;
-    background-color: #CCC;
 }
 
 #contentDiv tr:hover {
@@ -412,6 +411,15 @@ background-color: grey;
 
 #contentDiv .panel-heading.collapsed .accordion-toggle:after {
     content: "\f078";
+}
+
+#contentDiv .cent {
+  display: none;
+}
+
+#contentDiv .sectionTable {
+  margin-bottom: 0px !important;
+  margin-top: 5px;
 }
 
 /* From light_blue.css */
