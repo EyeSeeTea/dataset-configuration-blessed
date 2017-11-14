@@ -272,7 +272,7 @@ const getDataElementsByIndicator = (d2, indicators) => {
     const filtersForIndicator = indicators.map(indicator => {
         const fromNumerator = getDeIdsFromFormula(indicator.numerator).map(id => ["id", id]);
         const fromDenominator = getDeIdsFromFormula(indicator.denominator).map(id => ["id", id]);
-        const fromComments = [["code", indicator.code + "-C"]];
+        const fromComments = indicator.code ? [["code", indicator.code + "-C"]] : [];
         return {indicator, filters: _.flatten([fromNumerator, fromDenominator, fromComments])};
     });
     const getMapping = (dataElements) => {
