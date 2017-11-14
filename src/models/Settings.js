@@ -59,6 +59,21 @@ export default class Settings {
             defaultFilter: "code:eq:GL_DEORIGIN_DEGROUPSET",
         },
         {
+            name: "indicatorGroupSetOriginId",
+            model: "indicatorGroupSet",
+            defaultFilter: "name:eq:Indicator Origin",
+        },
+        {
+            name: "dataElementGroupSetStatusId",
+            model: "dataElementGroupSet",
+            defaultFilter: "code:eq:GL_DESTATUS_DEGROUPSET",
+        },
+        {
+            name: "indicatorGroupSetStatusId",
+            model: "indicatorGroupSet",
+            defaultFilter: "name:eq:Status",
+        },
+        {
             name: "attributeGroupId",
             model: "attribute",
             defaultFilter: "code:eq:DE_IND_GROUP",
