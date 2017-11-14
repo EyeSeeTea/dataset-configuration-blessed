@@ -99,6 +99,16 @@ border-color: #fff;
 
 }
 
+.indicatorArea {
+    margin-top: 0px;
+    margin-bottom: 5px;
+    border-top: none;
+}
+
+.indicatorArea td {
+    width: 100% !important;
+    text-align: left !important;
+}
 
 .entryfield,
 .indicator
@@ -401,6 +411,15 @@ background-color: grey;
 
 #contentDiv .panel-heading.collapsed .accordion-toggle:after {
     content: "\f078";
+}
+
+#contentDiv .cent {
+  display: none;
+}
+
+#contentDiv .sectionTable {
+  margin-bottom: 0px !important;
+  margin-top: 5px;
 }
 
 /* From light_blue.css */
