@@ -49,6 +49,11 @@ export default class Settings {
             defaultFilter: "code:eq:GL_MAND_DEGROUP",
         },
         {
+            name: "indicatorGroupGlobalIndicatorMandatoryId",
+            model: "indicatorGroup",
+            defaultFilter: "name:eq:Global Indicators (Mandatory)",
+        },
+        {
             name: "dataElementGroupSetThemeId",
             model: "dataElementGroupSet",
             defaultFilter: "code:eq:GL_DETHEME_DEGROUPSET",

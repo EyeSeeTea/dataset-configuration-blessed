@@ -232,7 +232,7 @@ const getOutcomeSection = (opts) => {
         const origin = indicatorGroupSets[config.indicatorGroupSetOriginId];
         const theme = indicatorGroupSets[config.indicatorGroupSetThemeId];
         const group = _(indicator.attributeValues).find(av => av.attribute.id === config.attributeGroupId);
-        const mandatoryIndicatorId = config.dataElementGroupGlobalIndicatorMandatoryId;
+        const mandatoryIndicatorId = config.indicatorGroupGlobalIndicatorMandatoryId;
         const igSetStatus = indicatorGroupSets[config.indicatorGroupSetStatusId];
 
         return {
