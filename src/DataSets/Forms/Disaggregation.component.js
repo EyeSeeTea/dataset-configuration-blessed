@@ -64,21 +64,26 @@ const Disaggregation = React.createClass({
     },
 
     _renderForm() {
+        const d2 = this.context.d2;
         const {dataSetElements} = this.props.store.dataset;
         const {categoryCombos, filter} = this.state;
         const isSubstring = (s1, s2) => _.includes(s1.toLowerCase(), s2.toLowerCase());
         const filteredDataSetElements = dataSetElements
             .filter(dse => !filter || isSubstring(dse.dataElement.displayName, filter));
+        const canEdit = d2.currentUser.canCreate(d2.models.categoryCombos);
 
         return (
             <div>
+                {canEdit ? null : <p><b>{this.getTranslation("cannot_disaggregate")}</b></p>}
+
                 <SearchBoxWrapper onChange={this._onSearchChange} />
 
                 <DataSetElementCategoryComboSelectionDialog
                     dataSetElements={filteredDataSetElements}
                     categoryCombos={categoryCombos}
                     onCategoryComboSelected={this._onCategoryComboSelected}
-                    d2={this.context.d2}
+                    d2={d2}
+                    canEdit={canEdit}
                 />
             </div>
         );
