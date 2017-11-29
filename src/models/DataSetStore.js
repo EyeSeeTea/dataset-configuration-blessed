@@ -1,5 +1,5 @@
 import fp from 'lodash/fp';
-import _ from 'lodash';
+import _ from '../utils/lodash-mixins';
 import { generateUid } from 'd2/lib/uid';
 import moment from 'moment';
 import { getOwnedPropertyJSON } from 'd2/lib/model/helpers/json';
@@ -8,12 +8,17 @@ import {getCategoryCombos,
         collectionToArray,
         getAsyncUniqueValidator,
         sendMessage,
-        setSharings,
         getUserGroups,
         mapPromise,
         getOrgUnitsForLevel,
         getCountryCode,
         getSharing,
+        buildSharing,
+        deepMerge,
+        buildSharingFromUserGroupNames,
+        postMetadata,
+        getUids,
+        update,
        } from '../utils/Dhis2Helpers';
 import * as Section from './Section';
 
@@ -27,12 +32,6 @@ const extractErrorMessagesFromResponse = compose(
     map('objectReports'),
     get('typeReports')
 );
-
-const update = (obj1, obj2) => {
-    const obj1c = obj1;
-    _(obj2).each((value, key) => { obj1c[key] = value; });
-    return obj1c;
-};
 
 class Factory {
     constructor(d2, config) {
@@ -162,7 +161,9 @@ class Factory {
         return Promise.all(promises).then(([project, coreCompetencies, sharingCountries]) => ({
             project,
             coreCompetencies,
+            initialSections: collectionToArray(dataset.sections),
             initialCoreCompetencies: coreCompetencies,
+            processedCoreCompetencies: coreCompetencies,
             dataInputStartDate: _(dataset.dataInputPeriods).map("openingDate").compact().min(),
             dataInputEndDate: _(dataset.dataInputPeriods).map("closingDate").compact().max(),
             sections: collectionToArray(dataset.sections),
@@ -229,7 +230,7 @@ export default class DataSetStore {
         this.associations.countries = this.getSharingCountries();
 
         if (project) {
-            const newDataset = dataset.clone();
+            const newDataset = dataset;
             const newAssociations = _.clone(associations);
             const getOrgUnitIds = (ds) => ds.organisationUnits.toArray().map(ou => ou.id);
 
@@ -243,7 +244,7 @@ export default class DataSetStore {
             newDataset.organisationUnits = project.organisationUnits;
             return {dataset: newDataset, associations: newAssociations};
         } else {
-            const newDataset = dataset.clone();
+            const newDataset = dataset;
             const newAssociations = _.clone(associations);
 
             newDataset.name = "";
@@ -304,193 +305,113 @@ export default class DataSetStore {
         this.updateLinkedFields(fieldPath, oldValue);
     }
 
-    updateModelSections(stateSections) {
-        const {sections, dataSetElements, indicators, errors} =
-            Section.getDataSetInfo(this.d2, this.config, _.values(stateSections));
-
-        const prevSections = this.associations.sections;
-        const sectionsByName =_(sections).keyBy("name").value();
-        const prevSectionsByName =_(prevSections).keyBy("name").value();
-        const allNames = _(sections).concat(prevSections).map("name").uniq().value();
-
-        const mergedSections = allNames.map(name => {
-            const section = sectionsByName[name];
-            if (section) {
-                // Keep id/href/greyedFields for existing sections
-                const prevSection = prevSectionsByName[name] || {};
-                update(section, _.pick(prevSection, ["id", "href", "greyedFields"]));
-                return section;
-            } else {
-                // Section has no DE/indicators in this new configuration
-                const section = prevSectionsByName[name];
-                section.dataElements.clear();
-                section.indicators.clear();
-                return section;
-            }
-        });
-
-        // Don't override dataSetElements (disaggregation)
-        const newDataSetElements =
-            _.keyBy(dataSetElements, dse => dse.dataElement.id);
-        const prevDataSetElements =
-            _.keyBy(this.dataset.dataSetElements || [], dse => dse.dataElement.id);
-        const mergedDataSetElements = _(fp.merge(newDataSetElements, prevDataSetElements))
-            .at(_.keys(newDataSetElements))
-            .value();
-
-        update(this.associations, {sections: mergedSections});
-        update(this.dataset, {dataSetElements: mergedDataSetElements, indicators});
-        return errors;
+    processDatasetSections(dataset, stateSections) {
+        this.associations.processedCoreCompetencies = this.associations.coreCompetencies;
+        return Section.processDatasetSections(this.d2, this.config, dataset, stateSections);
     }
 
     setGreyedFields(greyedFieldsForSections) {
-        if (this.associations.sections.length !== greyedFieldsForSections.length) {
+        const sections = collectionToArray(this.dataset.sections);
+
+        if (sections.length !== greyedFieldsForSections.length) {
             throw new Error("setGreyedFields: invalid input array length")
         }
-        _(this.associations.sections)
+        _(sections)
             .zip(greyedFieldsForSections)
             .each(([section, greyedFields]) => update(section, {greyedFields}));
-    }
-
-    getCountryCodes(orgUnits) {
-        const {countries} = this.associations;
-        return _(countries).map(ou => ou.code ? ou.code.split("_")[0] : null).compact().value();
     }
 
     /* Save */
 
     _getInitialSaving() {
-        return {
-            dataset: this.dataset,
-            warnings: [],
-            sectionsWithPersistedCocs: null,
-            newCategoryCombos: null,
-            href: null,
-       };
+        const {countries, project} = this.associations;
+        const countryCodes = _(countries)
+            .map(ou => ou.code ? ou.code.split("_")[0] : null)
+            .compact()
+            .value();
+        const userGroups$ = this.d2.models.userGroups.list({paging: false, fields: "id,name"});
+        const project$ = project ? this.d2.models.categoryOption.get(project.id) : Promise.resolve(null);
+        const categoryCombos$ = getCategoryCombos(this.d2);
+
+        return Promise.all([userGroups$, project$, categoryCombos$]).then(([userGroups, project, categoryCombos]) => {
+            return {
+                dataset: this.dataset,
+                warnings: [],
+                project: project,
+                countryCodes: countryCodes,
+                userGroups: userGroups.toArray(),
+                metadata: {},
+                categoryCombos: categoryCombos,
+            };
+        });
     }
 
     _processDisaggregation(saving) {
         const {dataset} = saving;
-        const categoryCombos = _(dataset.dataSetElements)
-            .map(dse => dse.categoryCombo)
-            .uniqBy(categoryCombo => categoryCombo.id)
-            .value();
-        const items$ = mapPromise(categoryCombos, categoryCombo => {
-            if (categoryCombo.id.startsWith("new-")) {
-                const newCategoryCombo = update(categoryCombo.clone(), {id: null});
-                return newCategoryCombo.save()
-                    .then(res => ({oldCc: categoryCombo, newCc: newCategoryCombo}));
-            } else {
-                return Promise.resolve({oldCc: categoryCombo, newCc: null});
-            }
-        });
+        const dataSetElements = collectionToArray(dataset.dataSetElements);
+        const removeUnusedGreyedFields = (sections, newCategoryCombos) => {
+            const categoryComboOptionsByCCId = _(collectionToArray(saving.categoryCombos))
+                .concat(newCategoryCombos)
+                .map(cc => [cc.id, cc.categoryOptionCombos.toArray().map(coc => coc.id)])
+                .fromPairs()
+                .value();
 
-        return items$.then(items => {
-            return getCategoryCombos(this.d2).then(finalCategoryCombos => {
-                const finalCocsById = _.keyBy(finalCategoryCombos.toArray(), "id");
-                const cocsById = _(dataset.dataSetElements)
-                    .map(dse => [dse.categoryCombo.id, dse.categoryCombo.categoryOptionCombos])
-                    .fromPairs()
-                    .value();
+            const allowedGreyedFieldKeys = new Set(_(dataSetElements).flatMap(dse =>
+                _([dse.dataElement.id])
+                    .cartesianProduct(categoryComboOptionsByCCId[dse.categoryCombo.id])
+                    .map(([dataElementId, cocId]) => dataElementId + "." + cocId)
+                    .value()
+            ).value());
 
-                const sortByCategoryOptions = cocs => {
-                    return _(collectionToArray(cocs))
-                        .orderBy(coc =>
-                            _(collectionToArray(coc.categoryOptions)).map("id").orderBy().join("."))
-                        .value();
-                };
-                const relation = _(items)
-                    .filter(({oldCc, newCc}) => newCc)
-                    .flatMap(({oldCc, newCc}) =>
-                        _.zip(
-                            sortByCategoryOptions(cocsById[oldCc.id]).map(coc => coc.id),
-                            sortByCategoryOptions(finalCocsById[newCc.id].categoryOptionCombos),
-                        )
-                    )
-                    .fromPairs()
-                    .value();
-
-                const sectionsWithPersistedCocs = this.associations.sections.map(section => {
-                    const persistedGreyedFields = section.greyedFields.map(field =>
-                        update(_.clone(field), {categoryOptionCombo: {
-                            id: (relation[field.categoryOptionCombo.id] || field.categoryOptionCombo).id,
-                        }})
-                    );
-                    return update(section, {greyedFields: persistedGreyedFields});
+            return collectionToArray(sections).map(section => {
+                const allowedGreyedFields = section.greyedFields.filter(greyedField => {
+                    const key = greyedField.dataElement.id  + "." + greyedField.categoryOptionCombo.id;
+                    return allowedGreyedFieldKeys.has(key);
                 });
-
-                const newCategoryCombos = items.map(({oldCc, newCc}) => newCc).filter(cc => cc);
-                const categoryCombosRelation = _(items)
-                    .map(({oldCc, newCc}) => [oldCc.id, newCc || oldCc])
-                    .fromPairs().value();
-
-                const dataSetElementsWithPersistedCc = dataset.dataSetElements.map(dse =>
-                    update(_.clone(dse), {categoryCombo: {id: categoryCombosRelation[dse.categoryCombo.id].id}})
-                );
-                const newDataset = update(dataset.clone(),
-                    {dataSetElements: dataSetElementsWithPersistedCc});
-                
-                return update(saving, {
-                    sectionsWithPersistedCocs,
-                    newCategoryCombos,
-                    dataset: newDataset,
-                });
+                section.greyedFields = allowedGreyedFields;
+                return section;
             });
-        })
+        };
+
+        const newCategoryCombos = _(dataSetElements)
+            .map(dse => dse.categoryCombo)
+            .uniqBy(cc => cc.id)
+            .filter(cc => cc.dirty)
+            .map(cc => this._addSharingToCategoryCombo(saving, cc))
+            .value();
+        const newCategoryComboOptions = _(newCategoryCombos)
+            .flatMap(cc => cc.categoryOptionCombos.toArray())
+            .value();
+
+        dataset.sections = removeUnusedGreyedFields(dataset.sections, newCategoryCombos);
+
+        return this._addMetadataOp(saving, {create_and_update: {
+            categoryCombos: newCategoryCombos,
+            categoryOptionCombos: newCategoryComboOptions,
+        }});
+    }
+
+    _setDatasetId(saving) {
+        const {dataset} = saving;
+        const datasetId = dataset.id || generateUid();
+        return _.imerge(saving, {dataset: update(dataset, {id: datasetId})});
     }
 
     _saveDataset(saving) {
         const {dataset} = saving;
-        const d2 = this.d2;
-        const api = d2.Api.getApi();
+        // Cleanup dataSetElements to avoid "circular references" error on POST
+        const datasetPayload = getOwnedPropertyJSON(dataset);
+        const newDataSetElements = dataset.dataSetElements.map(dataSetElement => ({
+            dataSet: {id: dataset.id},
+            dataElement: {id: dataSetElement.dataElement.id},
+            categoryCombo: {id: dataSetElement.categoryCombo.id},
+        }));
+        datasetPayload.dataSetElements = newDataSetElements;
 
-        return new Promise(async (complete, error) => {
-            // maintenance-app uses a custom function to save the dataset as it needs to do
-            // some processing  not allowed by dataset.save(). The code in this method is copied
-            // from maintenance-app/src/EditModel/objectActions.js
-            const dataSetPayload = getOwnedPropertyJSON(dataset);
-
-            if (!dataSetPayload.id) {
-                const dataSetId = await api.get('system/uid', { limit: 1 }).then(({ codes }) => codes[0]);
-                dataSetPayload.id = dataSetId;
-            }
-
-            const dataSetElements = Array
-                .from(dataset.dataSetElements ? dataset.dataSetElements.values() : [])
-                .map(({ dataSet, dataElement, ...other }) => {
-                    return {
-                        dataSet: { ...dataSet, id: dataSet.id || dataSetPayload.id },
-                        ...other,
-                        dataElement: {
-                            id: dataElement.id,
-                        }
-                    }
-                });
-
-            dataSetPayload.dataSetElements = dataSetElements;
-
-            const metadataPayload = {
-                dataSets: [dataSetPayload],
-            };
-
-            try {
-                const response = await api.post('metadata', metadataPayload);
-
-                if (response.status === 'OK') {
-                    dataset.id = dataSetPayload.id;
-                    complete(saving);
-                } else {
-                    const errorMessages = extractErrorMessagesFromResponse(response);
-
-                    error(head(errorMessages) || 'Unknown error!');
-                }
-            } catch (err) {
-                error(err);
-            }
-        });
+        return this._addMetadataOp(saving, {create_and_update: {dataSets: [datasetPayload]}});
     }
 
-    _setCode(saving) {
+    _setDatasetCode(saving) {
         const {dataset, warnings} = saving;
         const {project} = this.associations;
         const projectCode = project ? project.code : null;
@@ -500,145 +421,155 @@ export default class DataSetStore {
             const codeValidator = getAsyncUniqueValidator(this.d2.models.dataSet, "code");
             return codeValidator(datasetCode)
                 .then(() =>
-                    update(saving, {dataset: update(dataset.clone(), {code: datasetCode})}))
+                    _.imerge(saving, {dataset: update(dataset, {code: datasetCode})}))
                 .catch(err =>
-                    update(saving, {warnings: warnings.concat(["Dataset code already used: " + datasetCode])}));
+                    _.imerge(saving, {warnings: warnings.concat(["Dataset code already used: " + datasetCode])}));
         } else {
             return Promise.resolve(saving);
         }
     }
 
-    _setCategoryCombosSharing(saving) {
+    _addSharingToCategoryCombo(saving, categoryCombo) {
+        const userGroupSharingByName = _(saving.countryCodes)
+            .map(countryCode => [countryCode + "_Users", {access: "r-------"}])
+            .fromPairs()
+            .value();
+        const sharing = buildSharingFromUserGroupNames({}, saving.userGroups, userGroupSharingByName);
+        return update(categoryCombo, sharing.object);
+    }
+
+    _addDataSetToUserRoles(saving) {
         const {dataset, warnings} = saving;
-        const categoryCombos = dataset.dataSetElements
-            .map(dse => this.d2.models.categoryCombo.create({id: dse.categoryCombo.id}));
-        const userGroupAccessByName = _(this.getCountryCodes())
-            .flatMap(countryCode =>
-                _.compact([
-                    countryCode ? [countryCode + "_Users", "r-------"] : null,
-                ])
-            )
+        const {coreCompetencies} = this.associations;
+        const getUserRoleName = (coreCompetency, countryCode) => {
+            const key = coreCompetency.name.toLocaleLowerCase().replace(/\s+/g, '');
+            return `${countryCode}__dataset_` + key;
+        }
+        const getAssociatedUserRoles = (userRoleNames) => {
+            const filter = "name:in:[" + userRoleNames.join(",") + "]";
+            return d2.models.userRoles.list({paging: false, filter})
+                .then(collection => collection.toArray())
+                .then(userRoles => ({
+                    existing: userRoles,
+                    not_found: userRoleNames.filter(name => !_(userRoles).find(ur => ur.name === name)),
+                }));
+        };
+        const addDataset = (userRole) => userRole.dataSets.set(dataset.id, dataset) && userRole;
+        const checkUserRolesExistence = (userRolesInfo) => {
+            const {existing, not_found} = userRolesInfo;
+            const msgs = not_found.map(name => "User role not found: " + name);
+            const savingWithWarnings = _.imerge(saving, {warnings: warnings.concat(msgs)});
+            return {saving: savingWithWarnings, userRoles: existing};
+        };
+        const userRoleNamesForCoreCompetencies = _(coreCompetencies)
+            .cartesianProduct(saving.countryCodes)
+            .map(([coreCompetency, countryCode]) => getUserRoleName(coreCompetency, countryCode))
             .value();
 
-        return setSharings(this.d2, categoryCombos, userGroupAccessByName)
-            .then(() => saving);
+        return getAssociatedUserRoles(userRoleNamesForCoreCompetencies)
+            .then(checkUserRolesExistence)
+            .then(({saving, userRoles}) =>
+                this._addMetadataOp(saving, {create_and_update: {userRoles: userRoles.map(addDataset)}}));
     }
 
-    _addDataSetToUserRole(saving) {
-        const {dataset, warnings} = saving;
-
-        return mapPromise(this.getCountryCodes(), countryCode => {
-            const addUserRole = (coreCompetency) => {
-                // userRoleName example: AF__dataset_campmanagement, AF__dataset_icla
-                const key = coreCompetency.name.toLocaleLowerCase().replace(/\s+/g, '');
-                const userRoleName = `${countryCode}__dataset_` + key;
-                
-                return this.d2.models.userRoles
-                    .list({filter: "name:eq:" + userRoleName})
-                    .then(collection => collection.toArray()[0])
-                    .then(userRole => {
-                        if (userRole) {
-                            userRole.dataSets.set(dataset.id, dataset);
-                            userRole.dirty = true;
-                            return userRole.save().then(() => null);
-                        } else {
-                            const msg = "User role not found: " + userRoleName
-                            return Promise.resolve(msg);
-                        }
-                    })
-            }
-
-            return mapPromise(this.associations.coreCompetencies, addUserRole);
-        }).then(msgs => update(saving, {warnings: warnings.concat(_.compact(_.flatten(msgs)))}));
-    }
-
-    _shareWithGroups(saving) {
+    _addSharingToDataset(saving) {
         const {dataset} = saving;
-
-        const userGroupAccessByName = _(this.getCountryCodes())
-            .flatMap(countryCode =>
-                _.compact([
-                    countryCode ? [countryCode + "_Users", "r-------"] : null,
-                    countryCode ? [countryCode + "_Administrators", "rw------"] : null,
-                ])
-            )
-            .push(["GL_GlobalAdministrator", "rw------"])
+        const userGroupSharingByName = _(saving.countryCodes)
+            .flatMap(countryCode => [
+                [countryCode + "_Users", {access: "r-------"}],
+                [countryCode + "_Administrators", {access: "rw------"}],
+            ])
+            .fromPairs()
+            .set("GL_GlobalAdministrator", {access: "rw------"})
             .value();
 
-        return setSharings(this.d2, [dataset], userGroupAccessByName).then(() => saving);
+        const sharing = buildSharingFromUserGroupNames({}, saving.userGroups, userGroupSharingByName);
+        const datasetWithSharing = update(dataset, sharing.object);
+        return _.imerge(saving, {dataset: datasetWithSharing});
+
+    }
+
+    _processSections(saving) {
+        const {dataset} = saving;
+        const {coreCompetencies, initialCoreCompetencies, processedCoreCompetencies} = this.associations;
+        const sectionsProcessed = _.isEqual(
+            new Set(processedCoreCompetencies.map(cc => cc.id)),
+            new Set(coreCompetencies.map(cc => cc.id)),
+        );
+
+        if (sectionsProcessed) {
+            return Promise.resolve(saving);
+        } else {
+            return Section.getSections(this.d2, this.config,
+                    dataset, initialCoreCompetencies, coreCompetencies).then(sectionsArray => {
+                const sections = _.keyBy(sectionsArray, "name");
+                const {errors, dataset: newDataset} = this.processDatasetSections(dataset, sections);
+
+                return _(errors).isEmpty() ? _.imerge(saving, {dataset: newDataset}) :
+                    Promise.reject("Cannot get sections. Go to sections step for more details");
+            });
+        }
     }
 
     _saveSections(saving) {
-        const {dataset, sectionsWithPersistedCocs} = saving;
+        const {dataset} = saving;
+        const {initialSections} = this.associations;
+        const sections = collectionToArray(dataset.sections);
+
         const datasetId = dataset.id;
-        const sectionsToSave = _(sectionsWithPersistedCocs)
+        const sectionsToSave = _(sections)
             .filter(section => section.dataElements.size > 0 || section.indicators.size > 0)
             .sortBy(section => section.name)
             .map(section => update(section, {dataSet: {id: datasetId}}))
             .value();
-        const sectionsToDelete = dataset.sections.toArray()
-            .filter(existingSection => !_.includes(_.map(sectionsToSave, "id"), existingSection.id));
-        const actions = _.concat(
-            _.map(sectionsToSave, section => ["save", section]),
-            _.map(sectionsToDelete, section => ["delete", section])
-        );
-        return mapPromise(actions, ([method, section]) => section[method]()).then(() => saving);
+        const sectionsToSaveIds = sectionsToSave.map(section => section.id);
+        const sectionsToDelete = initialSections
+            .filter(existingSection => existingSection.id && !_.includes(sectionsToSaveIds, existingSection.id));
+
+        // Metadata API for sections delete returns 500 (see https://jira.dhis2.org/browse/DHIS2-2541),
+        // so we will use metada only to create/update sections. Delete sections using non-batch d2 methods.
+        return Promise.all(sectionsToDelete.map(section => section.delete()))
+            .then(() => this._addMetadataOp(saving, {create_and_update: {sections: sectionsToSave}}));
     }
 
-    _getDatasetLink(saving) {
-        return this.d2.models.dataSets.get(saving.dataset.id)
-            .then(datasetDB => update(saving, {href: datasetDB.href}));
+    _addMetadataOp(saving, metadata) {
+        return deepMerge(saving, {metadata: metadata});
     }
 
     _addOrgUnitsToProject(saving) {
-        const {dataset} = saving;
-        const {project} = this.associations;
+        const {dataset, project} = saving;
 
         if (project) {
-            return this.d2.models.categoryOption.get(project.id).then(project => {
-                _(dataset.organisationUnits.toArray())
-                    .each(datasetOu => project.organisationUnits.set(datasetOu.id, datasetOu));
-                project.dirty = true;
-                return project.save().then(() => saving);
-            });
+            _(dataset.organisationUnits.toArray()).each(datasetOu =>
+                project.organisationUnits.set(datasetOu.id, datasetOu)
+            );
+            const op = {create_and_update: {categoryOptions: [project]}};
+            return Promise.resolve(this._addMetadataOp(saving, op));
         } else {
             return Promise.resolve(saving);
         }
     }
 
     _sendNotificationMessages(saving) {
-        const {dataset, href} = saving;
+        const {dataset, warnings} = saving;
         const d2 = this.d2;
         const userName = this.d2.currentUser.name;
         const op = this.action === "edit" ? "edited" : "created";
-        const saveMsg = {
-            subject: `Dataset ${op}: ${dataset.name}`,
-            body: `New dataset ${op}: ${dataset.name} by ${userName}:\n\n${href}`,
+        const warningsList = warnings.map(s => "- " + s).join("\n");
+        const msg = {
+            subject: `Dataset ${op}: ${dataset.name}` +
+                (_(warnings).isEmpty() ? "" : " (with warnings)"),
+            body: `Dataset ${op}: ${dataset.name} by ${userName}.` +
+                (_(warnings).isEmpty() ? "" : `\n\nWarnings: \n\n${warningsList}`),
         };
-        const warningsList = saving.warnings.map(s => "- " + s).join("\n");
-        const warningMsg = _.isEmpty(saving.warnings) ? null : {
-            subject: `Dataset ${op} with warnings: ${dataset.name}`,
-            body: `New dataset ${op} (${dataset.name} by ${userName}) has some warnings:` +
-                `\n\n${warningsList}\n\n${href}`,
-        };
-
-        const userGroupNames = _(this.getCountryCodes())
-            .flatMap(countryCode =>
-                 _.compact([
-                    countryCode ? countryCode + "_M&EDatasetCompletion" : null,
-                ])
-            )
+        const userGroupNames = _(saving.countryCodes)
+            .map(countryCode => countryCode + "_M&EDatasetCompletion")
             .push("GL_M&E")
             .value();
 
         return getUserGroups(d2, userGroupNames)
             .then(col => col.toArray())
-            .then(userGroups => {
-                return Promise.all(_.compact([
-                    sendMessage(d2, saveMsg.subject, saveMsg.body, userGroups),
-                    warningMsg && sendMessage(d2, warningMsg.subject, warningMsg.body, userGroups),
-                ]));
-            })
+            .then(userGroups => sendMessage(d2, msg.subject, msg.body, userGroups))
             .then(() => saving)
             .catch(err => {
                 // An error sending a notification message is not critical, log and continue
@@ -647,17 +578,22 @@ export default class DataSetStore {
             });
     }
 
+    _runMetadataOps(saving) {
+        return postMetadata(this.d2, saving.metadata).then(() => saving);
+    }
+
     save() {
-        return Promise.resolve(this._getInitialSaving())
-            .then(this._setCode.bind(this))
+        return this._getInitialSaving()
+            .then(this._setDatasetId.bind(this))
+            .then(this._setDatasetCode.bind(this))
+            .then(this._addSharingToDataset.bind(this))
+            .then(this._processSections.bind(this))
             .then(this._processDisaggregation.bind(this))
-            .then(this._saveDataset.bind(this))
-            .then(this._setCategoryCombosSharing.bind(this))
-            .then(this._addDataSetToUserRole.bind(this))
-            .then(this._shareWithGroups.bind(this))
-            .then(this._saveSections.bind(this))
-            .then(this._getDatasetLink.bind(this))
+            .then(this._addDataSetToUserRoles.bind(this))
             .then(this._addOrgUnitsToProject.bind(this))
+            .then(this._saveSections.bind(this))
+            .then(this._saveDataset.bind(this))
+            .then(this._runMetadataOps.bind(this))
             .then(this._sendNotificationMessages.bind(this));
     }
 }

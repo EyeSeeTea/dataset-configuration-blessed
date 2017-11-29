@@ -199,15 +199,15 @@ const Sections = React.createClass({
 
     componentWillReceiveProps(props) {
         if (props.validateOnRender) {
-            const isValid = this._updateModelSections();
+            const isValid = this._processDatasetSections();
             props.formStatus(isValid);
         }
     },
 
     componentWillUnmount() {
         // Save state on back button (forward button saves state in componentWillReceiveProps)
-        if (!this.props.isLoading && !this.props.validateOnRender) {
-            this._updateModelSections();
+        if (!this.props.validateOnRender) {
+            this._processDatasetSections();
         }
     },
 
@@ -226,9 +226,9 @@ const Sections = React.createClass({
         const {d2} = this.context;
         const {config} = this.props;
         const {dataset, associations} = this.props.store;
-        const {coreCompetencies, sections, initialCoreCompetencies} = associations;
+        const {coreCompetencies, initialCoreCompetencies} = associations;
 
-        getSections(d2, config, dataset, sections, initialCoreCompetencies, coreCompetencies).then(sectionsArray => {
+        getSections(d2, config, dataset, initialCoreCompetencies, coreCompetencies).then(sectionsArray => {
             const sections = _.keyBy(sectionsArray, "name");
             const sectionNames = sectionsArray.map(section => section.name);
 
@@ -241,23 +241,16 @@ const Sections = React.createClass({
         });
     },
 
-    _updateModelSections() {
-        const getErrorMessage = (errors, maxMessages = 10) => {
-            const errorsLimited = _.take(errors, maxMessages);
-            const diff = errors.length - errorsLimited.length;
-            const items = [
-                [this.getTranslation("validation_error")],
-                errorsLimited.map(s => "- " + s),
-                diff > 0 ? [this.getTranslation("more_errors", {n: diff})] : [],
-            ];
-            return _(items).flatten().join("\n");
+    _processDatasetSections() {
+        const {store} = this.props;
+        if (!this.state.sections) {
+            return true;
+        } else {
+            const {errors, dataset} = store.processDatasetSections(store.dataset, this.state.sections);
+            store.dataset = dataset;
+            this.setState({errors: errors});
+            return _(errors).isEmpty();
         }
-        const errors = this.props.store.updateModelSections(this.state.sections);
-        const isValid = _(errors).isEmpty();
-        if (!isValid) {
-            snackActions.show({message: getErrorMessage(errors)});
-        }
-        return isValid;
     },
 
     _setFilterName(searchObserver) {

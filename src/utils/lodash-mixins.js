@@ -1,9 +1,8 @@
 import _ from 'lodash';
 import fp from 'lodash/fp';
 
-// Immutable merge
 function imerge(obj1, obj2) {
-  return Object.assign({}, obj1, obj2);
+  return _.assign({}, obj1, obj2);
 }
 
 function deepMerge(object, source) {
@@ -50,6 +49,7 @@ _.mixin({
     cartesianProduct,
     groupConsecutiveBy,
     transpose,
+    imerge,
 });
 
 export default _;

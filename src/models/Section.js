@@ -1,5 +1,5 @@
 import {generateUid} from 'd2/lib/uid';
-import {collectionToArray} from '../utils/Dhis2Helpers';
+import {update, collectionToArray} from '../utils/Dhis2Helpers';
 import fp from 'lodash/fp';
 
 /* Return an array of sections containing its data elements and associated indicators. Schema:
@@ -24,7 +24,7 @@ Notes:
     * DataElements can only be used within one section. Since we are getting DataElements from
       indicators, we can have duplicated items that must be removed.
 */
-export const getSections = (d2, config, dataset, d2Sections, initialCoreCompetencies, coreCompetencies) => {
+export const getSections = (d2, config, dataset, initialCoreCompetencies, coreCompetencies) => {
     const data$ = [
         getDataElementGroupRelations(d2),
         getIndicatorGroupRelations(d2),
@@ -39,7 +39,9 @@ export const getSections = (d2, config, dataset, d2Sections, initialCoreCompeten
                 indicatorsByGroupName, dataElementsByCCId,
             };
             return [getOutputSection(opts), getOutcomeSection(opts)];
-		})).then(sections => updateSectionsFromD2Sections(sections, d2Sections, initialCoreCompetencies));
+		})).then(sections =>
+            updateSectionsFromD2Sections(sections, collectionToArray(dataset.sections), initialCoreCompetencies)
+        );
 	});
 };
 
@@ -99,6 +101,46 @@ export const getItemStatus = (item) => {
         return "unknown";
     }
 };
+
+export const processDatasetSections = (d2, config, dataset, stateSections) => {
+    const {sections, dataSetElements, indicators, errors} =
+        getDataSetInfo(d2, config, _.values(stateSections));
+
+    const prevSections = collectionToArray(dataset.sections);
+    const sectionsByName =_(sections).keyBy("name").value();
+    const prevSectionsByName =_(prevSections).keyBy("name").value();
+    const allNames = _(sections).concat(prevSections).map("name").uniq().value();
+
+    const mergedSections = allNames.map(name => {
+        const section = sectionsByName[name];
+        if (section) {
+            // Keep id/href/greyedFields for existing sections
+            const prevSection = prevSectionsByName[name] || {};
+            update(section, _.pick(prevSection, ["id", "href", "greyedFields"]));
+            return section;
+        } else {
+            // Section has no DE/indicators in this new configuration
+            const section = prevSectionsByName[name];
+            section.dataElements.clear();
+            section.indicators.clear();
+            return section;
+        }
+    });
+
+    // Don't override dataSetElements (disaggregation)
+    const newDataSetElements = _.keyBy(dataSetElements, dse => dse.dataElement.id);
+    const prevDataSetElements = _.keyBy(dataset.dataSetElements || [], dse => dse.dataElement.id);
+    const mergedDataSetElements = _(fp.merge(newDataSetElements, prevDataSetElements))
+        .at(_.keys(newDataSetElements)).value();
+
+    const newDataset = update(dataset, {
+        sections: mergedSections,
+        dataSetElements: mergedDataSetElements,
+        indicators: indicators,
+    });
+    return {errors, dataset: newDataset};
+}
+
 
 /* Private functions */
 
@@ -381,7 +423,7 @@ const getOutputDataElementsByCoreCompetencyId = (d2, config, coreCompetencies) =
 
 const getIndicatorsByGroupName = (d2, coreCompetencies) => {
     const filters = coreCompetencies.map(cc => ["name", cc.name]);
-    const listOptions = {fields: "id,name,displayName,indicators[*, indicatorGroups[*]]"};
+    const listOptions = {fields: "id,name,displayName,indicators[id,name,displayName,code,numerator,denominator,indicatorGroups[id,name,displayName]]"};
 
     return getFilteredItems(d2.models.indicatorGroups, filters, listOptions)
         .then(indicatorGroups =>
