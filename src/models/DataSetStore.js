@@ -90,7 +90,7 @@ class Factory {
             name: undefined,
             code: undefined,
             description: undefined,
-            expiryDays: 15,
+            expiryDays: parseInt(this.config.expiryDays) || 0,
             openFuturePeriods: 1,
             periodType: "Monthly",
             dataInputPeriods: [],
@@ -163,6 +163,7 @@ class Factory {
             coreCompetencies,
             initialSections: collectionToArray(dataset.sections),
             initialCoreCompetencies: coreCompetencies,
+            processedCoreCompetencies: coreCompetencies,
             dataInputStartDate: _(dataset.dataInputPeriods).map("openingDate").compact().min(),
             dataInputEndDate: _(dataset.dataInputPeriods).map("closingDate").compact().max(),
             sections: collectionToArray(dataset.sections),
@@ -305,6 +306,7 @@ export default class DataSetStore {
     }
 
     processDatasetSections(dataset, stateSections) {
+        this.associations.processedCoreCompetencies = this.associations.coreCompetencies;
         return Section.processDatasetSections(this.d2, this.config, dataset, stateSections);
     }
 
@@ -489,16 +491,24 @@ export default class DataSetStore {
 
     _processSections(saving) {
         const {dataset} = saving;
-        const {coreCompetencies, initialCoreCompetencies} = this.associations;
+        const {coreCompetencies, initialCoreCompetencies, processedCoreCompetencies} = this.associations;
+        const sectionsProcessed = _.isEqual(
+            new Set(processedCoreCompetencies.map(cc => cc.id)),
+            new Set(coreCompetencies.map(cc => cc.id)),
+        );
 
-        return Section.getSections(this.d2, this.config,
-                dataset, initialCoreCompetencies, coreCompetencies).then(sectionsArray => {
-            const sections = _.keyBy(sectionsArray, "name");
-            const {errors, dataset: newDataset} = this.processDatasetSections(dataset, sections);
+        if (sectionsProcessed) {
+            return Promise.resolve(saving);
+        } else {
+            return Section.getSections(this.d2, this.config,
+                    dataset, initialCoreCompetencies, coreCompetencies).then(sectionsArray => {
+                const sections = _.keyBy(sectionsArray, "name");
+                const {errors, dataset: newDataset} = this.processDatasetSections(dataset, sections);
 
-            return _(errors).isEmpty() ? _.imerge(saving, {dataset: newDataset}) :
-                Promise.reject("Cannot get sections. Go to sections step for more details");
-        });
+                return _(errors).isEmpty() ? _.imerge(saving, {dataset: newDataset}) :
+                    Promise.reject("Cannot get sections. Go to sections step for more details");
+            });
+        }
     }
 
     _saveSections(saving) {
