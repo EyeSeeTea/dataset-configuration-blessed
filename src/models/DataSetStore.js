@@ -397,15 +397,16 @@ export default class DataSetStore {
 
     _saveDataset(saving) {
         const {dataset} = saving;
-        // Cleanup dataSetElements to avoid a "circular references" error on POST
+        // Cleanup dataSetElements to avoid "circular references" error on POST
+        const datasetPayload = getOwnedPropertyJSON(dataset);
         const newDataSetElements = dataset.dataSetElements.map(dataSetElement => ({
             dataSet: {id: dataset.id},
             dataElement: {id: dataSetElement.dataElement.id},
             categoryCombo: {id: dataSetElement.categoryCombo.id},
         }));
-        const datasetToSave = update(dataset, {dataSetElements: newDataSetElements});
+        datasetPayload.dataSetElements = newDataSetElements;
 
-        return this._addMetadataOp(saving, {create_and_update: {dataSets: [datasetToSave]}});
+        return this._addMetadataOp(saving, {create_and_update: {dataSets: [datasetPayload]}});
     }
 
     _setDatasetCode(saving) {
