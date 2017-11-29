@@ -68,22 +68,18 @@ class GreyFieldsTable extends React.Component {
                     .keyBy("id")
                     .merge(_.keyBy(persistedCategoryCombos.toArray(), "id"))
                     .value();
-            const categoryCombos = _.values(categoryCombosById);
             const categoryOptionsByCocId =
-                _(categoryCombos)
-                    .flatMap(cc => cc.categoryOptionCombos.toArray()
-                        .map(coc => [coc.id, coc.categoryOptions.toArray()]))
+                _(categoryCombosById)
+                    .values()
+                    .flatMap(cc =>
+                        cc.categoryOptionCombos.toArray().map(coc => [coc.id, coc.categoryOptions.toArray()]))
                     .fromPairs()
                     .value();
+
             // greyedFields: {"dataElementId.categoryOptionComboId": true | false}
             const greyedFields = _(this._sectionsMap(section => section.greyedFields))
-                .map(gf => {
-                    return [gf.dataElement, gf.categoryOptionCombo].map(o => o.id).join(".");
-                })
+                .map(gf => [gf.dataElement, gf.categoryOptionCombo].map(o => o.id).join("."))
                 .map(fieldId => [fieldId, true])
-                .fromPairs().value();
-            const optionCount = _(categoryCombos)
-                .map(cc => [cc.id, cc.categories.toArray().map(c => c.categoryOptions.size)])
                 .fromPairs().value();
             const cocByCategoryKey = _(categoryCombosById)
                 .values()
@@ -96,7 +92,6 @@ class GreyFieldsTable extends React.Component {
                 loaded: true,
                 categoryCombosById,
                 cocByCategoryKey,
-                optionCount,
                 greyedFields,
             });
         });

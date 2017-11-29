@@ -1,6 +1,10 @@
 import _ from 'lodash';
 import fp from 'lodash/fp';
 
+function imerge(obj1, obj2) {
+  return _.assign({}, obj1, obj2);
+}
+
 function deepMerge(object, source) {
     return _.mergeWith(object, source, function(objValue, srcValue) {
         if (_.isObject(objValue) && srcValue) {
@@ -44,6 +48,7 @@ _.mixin({
     cartesianProduct,
     groupConsecutiveBy,
     transpose,
+    imerge,
 });
 
 export default _;
