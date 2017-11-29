@@ -253,7 +253,7 @@ function postMetadata(d2, metadata) {
         const url = `metadata?mergeMode=MERGE&importStrategy=${strategy.toUpperCase()}`;
         return api.post(url, jsonPayload).then(response => {
             if (response.status !== 'OK') {
-                throw new Error("Error saving data: " + JSON.stringify(response));
+                throw new Error("POST metadata error:\n" + JSON.stringify(response, null, 4));
             } else {
                 return response;
             }
@@ -263,7 +263,7 @@ function postMetadata(d2, metadata) {
     // When saving simultaneously a new dataset and its sections, the server responds with a
     // <500 ERROR at index 0> whenever greyedFields are sent. However, perfoming this same call
     // to sections *after* the dataset has been created raises no error, so it seems a dhis2
-    // api bug. We have no option but to make the calls for sections in a separate later call.
+    // bug. We have no option but to make the calls for sections in another, separate call.
     const payloadsWithStrategy = _(metadata).flatMap((payload, strategy) => {
         if (!validStrategies.has(strategy)) {
             console.error("Invalid strategy: " + strategy);

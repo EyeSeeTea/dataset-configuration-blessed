@@ -90,10 +90,7 @@ const Save = React.createClass({
             return (
                 <div className="alert alert-danger">
                     <div>{this.getTranslation("wizard_save_error_message")}</div>
-
-                    <ul>
-                        {errors.map((error, idx) => (<li key={idx}>{error}</li>))}
-                    </ul>
+                    {errors.map((error, idx) => <pre key={idx}>{error}</pre>)}
                 </div>
             );
         }
