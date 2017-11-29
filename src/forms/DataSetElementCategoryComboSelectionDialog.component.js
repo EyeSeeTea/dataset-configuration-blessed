@@ -120,7 +120,7 @@ const createGetCategoryCombosForSelect = (d2, categoryCombos) => {
 };
 
 
-function DataSetElementList({ dataSetElements, categoryCombos, onCategoryComboSelected }, { d2 }) {
+function DataSetElementList({ dataSetElements, categoryCombos, onCategoryComboSelected, canEdit }, { d2 }) {
     const styles = {
         elementListItem: {
             width: '49%',
@@ -146,20 +146,21 @@ function DataSetElementList({ dataSetElements, categoryCombos, onCategoryComboSe
             const categoryOptions = getCategoryOptions(dataElement.categoryCombo);
 
             return (
-                <Row key={id} style={{ alignItems: 'center' }}>
+                <Row key={id} style={{ alignItems: 'center', marginBottom: canEdit ? 0 : 10}} >
                     <div style={styles.elementListItem}>
                         <div>{dataElement.displayName}</div>
                         <div title={categoryOptions} style={styles.originalCategoryCombo}>
                             {dataElement.categoryCombo.displayName}
                         </div>
                     </div>
-                    <div style={styles.elementListItem}>
-                        <CategoryComboSelectField
-                            categoryCombos={categoryCombosForSelect}
-                            categoryCombo={selectedCatCombo}
-                            onChange={(categoryCombo) => onCategoryComboSelected(id, categoryCombo)}
-                        />
-                    </div>
+                    {canEdit ?
+                        <div style={styles.elementListItem}>
+                            <CategoryComboSelectField
+                                categoryCombos={categoryCombosForSelect}
+                                categoryCombo={selectedCatCombo}
+                                onChange={(categoryCombo) => onCategoryComboSelected(id, categoryCombo)}
+                            />
+                        </div> : <div />}
                 </Row>
             )
         });
@@ -188,6 +189,7 @@ export function DataSetElementCategoryComboSelection(props) {
         categoryCombos,
         dataSetElements,
         onCategoryComboSelected,
+        canEdit,
         d2: { i18n }
     } = props;
 
@@ -205,6 +207,7 @@ export function DataSetElementCategoryComboSelection(props) {
                 dataSetElements={Array.from(dataSetElements || [])}
                 categoryCombos={categoryCombos}
                 onCategoryComboSelected={onCategoryComboSelected}
+                canEdit={canEdit}
             />
         </div>
     );
