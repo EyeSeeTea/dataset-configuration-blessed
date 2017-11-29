@@ -20,28 +20,9 @@ import MoreVert from 'material-ui/svg-icons/navigation/more-vert';
 import IconButton from 'material-ui/IconButton/IconButton';
 import PopoverAnimationDefault from 'material-ui/Popover/PopoverAnimationDefault';
 import {getSections, getItemStatus} from '../../models/Section';
-import Card from 'material-ui/Card/Card';
-import CardHeader from 'material-ui/Card/CardHeader';
-import CardText from 'material-ui/Card/CardText';
 import Divider from 'material-ui/Divider/Divider';
+import snackActions from '../../Snackbar/snack.actions';
 import camelCaseToUnderscores from 'd2-utilizr/lib/camelCaseToUnderscores';
-
-const ValidationFeedback = ({errors}) => {
-    if (errors && !_(errors).isEmpty()) {
-        return (
-            <Card>
-                <CardHeader title="Validation error" />
-                <CardText>
-                    <ul>
-                        {errors.map((error, idx) => <li key={idx}>{error}</li>)}
-                    </ul>
-                </CardText>
-            </Card>
-        );
-    } else {
-        return null;
-    }
-};
 
 const FilterSelectField = ({label, value, onChange, items, styles = {}, emptyLabel = ""}) => {
     const defaultItem = {value: null, text: emptyLabel};
@@ -113,7 +94,7 @@ const SectionConfig = React.createClass({
     },
 
     getInitialState() {
-        return {open: false, anchorEl: null, errors: null};
+        return {open: false, anchorEl: null};
     },
 
     render() {
@@ -528,12 +509,7 @@ const Sections = React.createClass({
     },
 
     render() {
-        return this.state.isLoading ? <LinearProgress /> : (
-            <div>
-                {this._renderForm()}
-                <ValidationFeedback errors={this.state.errors} />
-            </div>
-        );
+        return this.state.isLoading ? <LinearProgress /> : this._renderForm();
     },
 });
 

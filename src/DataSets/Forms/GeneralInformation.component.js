@@ -65,6 +65,7 @@ const GeneralInformation = React.createClass({
             FormHelpers.getTextField({
                 name: "dataset.expiryDays",
                 label: this.getTranslation("expiry_days"),
+                help: this.getTranslation("expiry_days_help"),
                 value: dataset.expiryDays,
                 type: "number",
             }),

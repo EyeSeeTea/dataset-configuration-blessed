@@ -44,6 +44,7 @@ function transpose(xss) {
 }
 
 _.mixin({
+    imerge,
     deepMerge,
     cartesianProduct,
     groupConsecutiveBy,
