@@ -528,7 +528,16 @@ export default class DataSetStore {
 
         // Metadata API for sections delete returns 500 (see https://jira.dhis2.org/browse/DHIS2-2541),
         // so we will use metada only to create/update sections. Delete sections using non-batch d2 methods.
-        return Promise.all(sectionsToDelete.map(section => section.delete()))
+        const deleteSections$ = mapPromise(sectionsToDelete, section => {
+            return section.delete().catch(err => {
+                if (err && err.httpStatusCode === 404) {
+                    return Promise.resolve(true);
+                } else {
+                    throw err;
+                }
+            });
+        });
+        return deleteSections$
             .then(() => this._addMetadataOp(saving, {create_and_update: {sections: sectionsToSave}}));
     }
 
