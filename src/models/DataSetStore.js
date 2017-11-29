@@ -105,6 +105,7 @@ class Factory {
             indicators: [],
             dataSetElements: [],
             sections: [],
+            publicAccess: "--------",
         });
     }
 
@@ -480,7 +481,8 @@ export default class DataSetStore {
             .set("GL_GlobalAdministrator", {access: "rw------"})
             .value();
 
-        const sharing = buildSharingFromUserGroupNames({}, saving.userGroups, userGroupSharingByName);
+        const baseSharing = {object: {publicAccess: dataset.publicAccess}};
+        const sharing = buildSharingFromUserGroupNames(baseSharing, saving.userGroups, userGroupSharingByName);
         const datasetWithSharing = update(dataset, sharing.object);
         return _.imerge(saving, {dataset: datasetWithSharing});
 
