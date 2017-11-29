@@ -47,7 +47,7 @@ const SnackBarContainer = React.createClass({
         return (
             <Snackbar
                 style={{ maxWidth: 'auto', zIndex: 5 }}
-                bodyStyle={{ maxWidth: 'auto' }}
+                bodyStyle={{ maxWidth: 'auto', maxHeight: '800px', height: 'auto', lineHeight: '28px', padding: 10, whiteSpace: 'pre-line' }}
                 ref="snackbar"
                 message={this.state.snack.message}
                 action={this.state.snack.action}
