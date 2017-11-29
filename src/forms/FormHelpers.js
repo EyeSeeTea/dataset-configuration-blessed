@@ -6,15 +6,15 @@ import CheckBox from 'd2-ui/lib/form-fields/CheckBox.component';
 import MultiSelect from './MultiSelect.component';
 import DateSelect from './form-fields/date-select';
 
-function getLabel(label, isRequired) {
-    return label + (isRequired ? " (*)" : "");
+function getLabel(label, isRequired, help = null) {
+    return label + (help ? ` (${help})` : "") + (isRequired ? " (*)" : "");
 }
 
-function getTextField({name, label, value = "", isRequired = false, multiLine = false, 
-                       type = "string", validators = [], asyncValidators = []}) {
+function getTextField({name, label, value = "", isRequired = false, multiLine = false,
+                       type = "string", help = null, validators = [], asyncValidators = []}) {
     return {
         name: name,
-        value: (value || "").toString(),
+        value: value !== null && value !== undefined ? value.toString() : "",
         component: TextField,
         validators: validators,
         asyncValidators: asyncValidators,
@@ -23,10 +23,11 @@ function getTextField({name, label, value = "", isRequired = false, multiLine = 
             multiLine: multiLine,
             style: {width: "100%"},
             changeEvent: "onBlur",
-            floatingLabelText: getLabel(label, isRequired),
+            floatingLabelText: getLabel(label, isRequired, help),
         },
     };
 }
+
 
 function getSelectField({name, label, options, value = undefined, isRequired = false}) {
     return {
