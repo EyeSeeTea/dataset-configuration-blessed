@@ -1,6 +1,11 @@
 import _ from 'lodash';
 import fp from 'lodash/fp';
 
+// Immutable merge
+function imerge(obj1, obj2) {
+  return Object.assign({}, obj1, obj2);
+}
+
 function deepMerge(object, source) {
     return _.mergeWith(object, source, function(objValue, srcValue) {
         if (_.isObject(objValue) && srcValue) {
@@ -40,6 +45,7 @@ function transpose(xss) {
 }
 
 _.mixin({
+    imerge,
     deepMerge,
     cartesianProduct,
     groupConsecutiveBy,

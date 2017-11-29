@@ -91,7 +91,7 @@ class Factory {
             name: undefined,
             code: undefined,
             description: undefined,
-            expiryDays: 15,
+            expiryDays: parseInt(this.config.expiryDays) || 0,
             openFuturePeriods: 1,
             periodType: "Monthly",
             dataInputPeriods: [],
