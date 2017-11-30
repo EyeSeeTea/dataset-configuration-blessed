@@ -20,28 +20,9 @@ import MoreVert from 'material-ui/svg-icons/navigation/more-vert';
 import IconButton from 'material-ui/IconButton/IconButton';
 import PopoverAnimationDefault from 'material-ui/Popover/PopoverAnimationDefault';
 import {getSections, getItemStatus} from '../../models/Section';
-import Card from 'material-ui/Card/Card';
-import CardHeader from 'material-ui/Card/CardHeader';
-import CardText from 'material-ui/Card/CardText';
 import Divider from 'material-ui/Divider/Divider';
+import snackActions from '../../Snackbar/snack.actions';
 import camelCaseToUnderscores from 'd2-utilizr/lib/camelCaseToUnderscores';
-
-const ValidationFeedback = ({errors}) => {
-    if (errors && !_(errors).isEmpty()) {
-        return (
-            <Card>
-                <CardHeader title="Validation error" />
-                <CardText>
-                    <ul>
-                        {errors.map((error, idx) => <li key={idx}>{error}</li>)}
-                    </ul>
-                </CardText>
-            </Card>
-        );
-    } else {
-        return null;
-    }
-};
 
 const FilterSelectField = ({label, value, onChange, items, styles = {}, emptyLabel = ""}) => {
     const defaultItem = {value: null, text: emptyLabel};
@@ -113,7 +94,7 @@ const SectionConfig = React.createClass({
     },
 
     getInitialState() {
-        return {open: false, anchorEl: null, errors: null};
+        return {open: false, anchorEl: null};
     },
 
     render() {
@@ -218,15 +199,15 @@ const Sections = React.createClass({
 
     componentWillReceiveProps(props) {
         if (props.validateOnRender) {
-            const isValid = this._updateModelSections();
+            const isValid = this._processDatasetSections();
             props.formStatus(isValid);
         }
     },
 
     componentWillUnmount() {
         // Save state on back button (forward button saves state in componentWillReceiveProps)
-        if (!this.props.isLoading && !this.props.validateOnRender) {
-            this._updateModelSections();
+        if (!this.props.validateOnRender) {
+            this._processDatasetSections();
         }
     },
 
@@ -245,9 +226,9 @@ const Sections = React.createClass({
         const {d2} = this.context;
         const {config} = this.props;
         const {dataset, associations} = this.props.store;
-        const {coreCompetencies, sections, initialCoreCompetencies} = associations;
+        const {coreCompetencies, initialCoreCompetencies} = associations;
 
-        getSections(d2, config, dataset, sections, initialCoreCompetencies, coreCompetencies).then(sectionsArray => {
+        getSections(d2, config, dataset, initialCoreCompetencies, coreCompetencies).then(sectionsArray => {
             const sections = _.keyBy(sectionsArray, "name");
             const sectionNames = sectionsArray.map(section => section.name);
 
@@ -260,10 +241,16 @@ const Sections = React.createClass({
         });
     },
 
-    _updateModelSections() {
-        const errors = this.props.store.updateModelSections(this.state.sections);
-        this.setState({errors: errors});
-        return _(errors).isEmpty();
+    _processDatasetSections() {
+        const {store} = this.props;
+        if (!this.state.sections) {
+            return true;
+        } else {
+            const {errors, dataset} = store.processDatasetSections(store.dataset, this.state.sections);
+            store.dataset = dataset;
+            this.setState({errors: errors});
+            return _(errors).isEmpty();
+        }
     },
 
     _setFilterName(searchObserver) {
@@ -522,12 +509,7 @@ const Sections = React.createClass({
     },
 
     render() {
-        return this.state.isLoading ? <LinearProgress /> : (
-            <div>
-                {this._renderForm()}
-                <ValidationFeedback errors={this.state.errors} />
-            </div>
-        );
+        return this.state.isLoading ? <LinearProgress /> : this._renderForm();
     },
 });
 

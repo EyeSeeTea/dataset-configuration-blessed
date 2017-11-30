@@ -88,23 +88,21 @@ const DataSets = React.createClass({
         const d2 = this.context.d2;
         this.getDataSets();
         
-        this.registerDisposable(detailsStore.subscribe(detailsObject => {
-            this.setState({ detailsObject });
-        }));
+        this.registerDisposable(detailsStore.subscribe(detailsObject => this.setState({detailsObject})));
+        this.registerDisposable(deleteStore.subscribe(deleteObjects => this.getDataSets()));
+        this.registerDisposable(this.subscribeToModelStore(sharingStore, "sharing"));
+        this.registerDisposable(this.subscribeToModelStore(orgUnitsStore, "orgUnits"));
+    },
 
-        this.registerDisposable(deleteStore.subscribe(deleteObjects => {
-            this.getDataSets();
-        }));
-
-        this.registerDisposable(orgUnitsStore.subscribe(datasets => {
-            const d2Datasets = datasets.map(dataset => d2.models.dataSets.create(dataset));
-            this.setState({orgUnits: {models: d2Datasets}});
-        }));
-
-        this.registerDisposable(sharingStore.subscribe(datasets => {
-            const d2Datasets = datasets.map(dataset => d2.models.dataSets.create(dataset));
-            this.setState({sharing: {models: d2Datasets}});
-        }));
+    subscribeToModelStore(store, modelName) {
+        return store.subscribe(datasets => {
+            if (datasets) {
+                const d2Datasets = datasets.map(dataset => d2.models.dataSets.create(dataset));
+                this.setState({[modelName]: {models: d2Datasets}});
+            } else {
+                this.setState({[modelName]: null});
+            }
+        });
     },
 
     getDataSets() {
@@ -255,7 +253,7 @@ const DataSets = React.createClass({
                 {this.state.orgUnits ? <OrgUnitsDialog
                      objects={this.state.orgUnits.models}
                      open={true}
-                     onRequestClose={() => this.setState({orgUnits: null})}
+                     onRequestClose={listActions.hideOrgUnitsBox}
                      contentStyle={{width: '1150px', maxWidth: 'none'}}
                      bodyStyle={{minHeight: '440px', maxHeight: '600px'}}
                  /> : null }
@@ -263,7 +261,7 @@ const DataSets = React.createClass({
                 {this.state.sharing ? <SharingDialog
                     objectsToShare={this.state.sharing.models}
                     open={true}
-                    onRequestClose={() => this.setState({sharing: null})}
+                    onRequestClose={listActions.hideSharingBox}
                     bodyStyle={{minHeight: '400px'}}
                 /> : null }
 

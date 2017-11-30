@@ -3,7 +3,7 @@ import Translate from 'd2-ui/lib/i18n/Translate.mixin';
 import ObserverRegistry from '../../utils/ObserverRegistry.mixin';
 import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
 import DataSetElementCategoryComboSelectionDialog from '../../forms/DataSetElementCategoryComboSelectionDialog.component';
-import {getCategoryCombos, getCustomCategoryCombo} from '../../utils/Dhis2Helpers';
+import {getCategoryCombos, getDisaggregationCategoryCombo} from '../../utils/Dhis2Helpers';
 import SearchBox from '../../SearchBox/SearchBox.component';
 
 const SearchBoxWrapper = (props) => {
@@ -54,7 +54,7 @@ const Disaggregation = React.createClass({
         const dataSetElementToUpdate = _(dataSetElements).find(dse => dse.id == dataSetElementId);
         const {dataElement} = dataSetElementToUpdate;
         const customCategoryCombo =
-            getCustomCategoryCombo(this.context.d2, dataElement, this.state.categoryCombos, categoryCombo);
+            getDisaggregationCategoryCombo(this.context.d2, dataElement, this.state.categoryCombos, categoryCombo);
         dataSetElementToUpdate.categoryCombo = customCategoryCombo;
         this.forceUpdate();
     },
@@ -64,21 +64,26 @@ const Disaggregation = React.createClass({
     },
 
     _renderForm() {
+        const d2 = this.context.d2;
         const {dataSetElements} = this.props.store.dataset;
         const {categoryCombos, filter} = this.state;
         const isSubstring = (s1, s2) => _.includes(s1.toLowerCase(), s2.toLowerCase());
         const filteredDataSetElements = dataSetElements
             .filter(dse => !filter || isSubstring(dse.dataElement.displayName, filter));
+        const canEdit = d2.currentUser.canCreate(d2.models.categoryCombos);
 
         return (
             <div>
+                {canEdit ? null : <p><b>{this.getTranslation("cannot_disaggregate")}</b></p>}
+
                 <SearchBoxWrapper onChange={this._onSearchChange} />
 
                 <DataSetElementCategoryComboSelectionDialog
                     dataSetElements={filteredDataSetElements}
                     categoryCombos={categoryCombos}
                     onCategoryComboSelected={this._onCategoryComboSelected}
-                    d2={this.context.d2}
+                    d2={d2}
+                    canEdit={canEdit}
                 />
             </div>
         );
