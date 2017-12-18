@@ -250,10 +250,15 @@ function postMetadata(d2, metadata) {
         const jsonPayload = _(payload)
             .mapValues(objs => objs.map(obj => obj.modelDefinition ? getOwnedPropertyJSON(obj) : obj))
             .value();
-        const url = `metadata?mergeMode=MERGE&importStrategy=${strategy.toUpperCase()}`;
-        return api.post(url, jsonPayload).then(response => {
+        const path = `metadata?mergeMode=MERGE&importStrategy=${strategy.toUpperCase()}`;
+        return api.post(path, jsonPayload).then(response => {
             if (response.status !== 'OK') {
-                throw new Error("POST metadata error:\n" + JSON.stringify(response, null, 4));
+                const msg = [
+                    `POST ${api.baseUrl}/${path}`,
+                    "Request: " + JSON.stringify(jsonPayload, null, 4),
+                    "Response: " + JSON.stringify(response, null, 4),
+                ].join("\n\n");
+                throw new Error(msg);
             } else {
                 return response;
             }
