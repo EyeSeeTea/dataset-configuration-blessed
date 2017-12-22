@@ -152,14 +152,22 @@ class Factory {
         }
     }
 
+    getUserRolesForCurrentUser() {
+        // Dhis2 has d2.currentUser.getUserRoles(), but the call generates a wrong URL and fails.
+        return this.d2.models.users
+            .get(this.d2.currentUser.id, {fields: "userCredentials[userRoles[id,name]]"})
+            .then(user => user.userCredentials.userRoles);
+    }
+
     getAssociations(dataset, countries) {
         const promises = [
             this.getProject(dataset),
             this.getCoreCompetencies(dataset),
             this.getCountriesFromSharing(dataset, countries),
+            this.getUserRolesForCurrentUser(),
         ];
 
-        return Promise.all(promises).then(([project, coreCompetencies, sharingCountries]) => ({
+        return Promise.all(promises).then(([project, coreCompetencies, sharingCountries, userRoles]) => ({
             project,
             coreCompetencies,
             initialSections: collectionToArray(dataset.sections),
@@ -169,6 +177,7 @@ class Factory {
             dataInputEndDate: _(dataset.dataInputPeriods).map("closingDate").compact().max(),
             sections: collectionToArray(dataset.sections),
             countries: sharingCountries,
+            userRoles,
         }));
     }
 }
@@ -300,6 +309,19 @@ export default class DataSetStore {
         }
     }
 
+    validateUserRoles() {
+        const isAdmin = this.d2.currentUser.authorities.has("ALL");
+        if (isAdmin) {
+            return {valid: true, missing: []};
+        } else {
+            const missingUserRoles = _(this._getRequiredUserRoles())
+                .difference(this.associations.userRoles.map(ur => ur.name))
+                .sortBy()
+                .value();
+            return {valid: _(missingUserRoles).isEmpty(), missing: missingUserRoles};
+        }
+    }
+
     updateField(fieldPath, newValue) {
         const oldValue = fp.get(fieldPath, this);
         _.set(this, fieldPath, newValue);
@@ -322,17 +344,22 @@ export default class DataSetStore {
             .each(([section, greyedFields]) => update(section, {greyedFields}));
     }
 
+    _getRequiredUserRoles() {
+        const {countries, coreCompetencies} = this.associations;
+        return _(coreCompetencies)
+            .cartesianProduct(countries)
+            .map(([coreCompetency, country]) => this._getUserRoleName(coreCompetency, country))
+            .value();
+    }
+
     /* Save */
 
     _getInitialSaving() {
         const {countries, project} = this.associations;
-        const countryCodes = _(countries)
-            .map(ou => ou.code ? ou.code.split("_")[0] : null)
-            .compact()
-            .value();
         const userGroups$ = this.d2.models.userGroups.list({paging: false, fields: "id,name"});
         const project$ = project ? this.d2.models.categoryOption.get(project.id) : Promise.resolve(null);
         const categoryCombos$ = getCategoryCombos(this.d2);
+        const countryCodes = _(countries).map(getCountryCode).compact().value();
 
         return Promise.all([userGroups$, project$, categoryCombos$]).then(([userGroups, project, categoryCombos]) => {
             return {
@@ -439,13 +466,15 @@ export default class DataSetStore {
         return update(categoryCombo, sharing.object);
     }
 
+    _getUserRoleName(coreCompetency, country) {
+        const countryCode = getCountryCode(country);
+        const key = coreCompetency.name.toLocaleLowerCase().replace(/\W+/g, '');
+        return `${countryCode}__dataset_${key}`;
+    }
+
     _addDataSetToUserRoles(saving) {
         const {dataset, warnings} = saving;
         const {coreCompetencies} = this.associations;
-        const getUserRoleName = (coreCompetency, countryCode) => {
-            const key = coreCompetency.name.toLocaleLowerCase().replace(/\s+/g, '');
-            return `${countryCode}__dataset_` + key;
-        }
         const getAssociatedUserRoles = (userRoleNames) => {
             const filter = "name:in:[" + userRoleNames.join(",") + "]";
             return d2.models.userRoles.list({paging: false, filter})
@@ -462,10 +491,7 @@ export default class DataSetStore {
             const savingWithWarnings = _.imerge(saving, {warnings: warnings.concat(msgs)});
             return {saving: savingWithWarnings, userRoles: existing};
         };
-        const userRoleNamesForCoreCompetencies = _(coreCompetencies)
-            .cartesianProduct(saving.countryCodes)
-            .map(([coreCompetency, countryCode]) => getUserRoleName(coreCompetency, countryCode))
-            .value();
+        const userRoleNamesForCoreCompetencies = this._getRequiredUserRoles();
 
         return getAssociatedUserRoles(userRoleNamesForCoreCompetencies)
             .then(checkUserRolesExistence)

@@ -64,9 +64,10 @@ const MultiSelect = React.createClass({
                 <label style={styles.labelStyle}>
                     {label}
                 </label>
-                {(errors || []).map((error, idx) =>
-                    <p key={idx} style={styles.errorStyle}>{error}</p>
-                )}
+
+                <div>
+                    {(errors || []).map((error, idx) => <p key={idx} style={styles.errorStyle}>{error}</p>)}
+                </div>
 
                 <GroupEditor
                     itemStore={this.state.availableStore}

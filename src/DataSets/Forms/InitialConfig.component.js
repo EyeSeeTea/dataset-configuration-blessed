@@ -52,9 +52,16 @@ const InitialConfig = React.createClass({
     componentWillReceiveProps(props) {
         if (props.validateOnRender) {
             const {coreCompetencies} = this.props.store.associations;
+            const {valid: areUserRolesValid, missing: missingUserRoleNames} =
+                this.props.store.validateUserRoles();
             if (_.isEmpty(coreCompetencies)) {
                 props.formStatus(false);
                 const error = this.getTranslation("select_one_core_competency");
+                this.setState({errors: {coreCompetencies: [error]}});
+            } else if (!areUserRolesValid) {
+                props.formStatus(false);
+                const error = this.getTranslation("validation_error_on_user_roles",
+                    {missing: missingUserRoleNames.join(", ")});
                 this.setState({errors: {coreCompetencies: [error]}});
             } else {
                 props.formStatus(true);
