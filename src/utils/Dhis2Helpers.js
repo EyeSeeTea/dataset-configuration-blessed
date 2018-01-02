@@ -32,7 +32,7 @@ function getCategoryCombos(d2) {
 }
 
 function getCountryCode(orgUnit) {
-    return orgUnit ? orgUnit.code.split("_")[0] : null;
+    return orgUnit && orgUnit.code ? orgUnit.code.split("_")[0] : null;
 }
 
 function getOrgUnitsForLevel(d2, levelId) {
