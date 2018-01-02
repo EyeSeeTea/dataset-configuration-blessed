@@ -259,7 +259,7 @@ var buildTable = function(data, renderDataElementInfo) {
                 // id = "row-DE-COC1-COC2-.."
                 var rowTotalId = ["row", row.de.id].concat(getValues(row).map(val => val.coc)).join("-");
                 var rowTotal = $("<input>", {class: "dataelementtotal", type: "text", disabled: "", id: rowTotalId});
-                return $("<tr>").append(
+                return $("<tr>", {class: "derow de-" + row.de.id}).append(
                     $("<td>", {class: "nrcindicatorName"})
                         .html(renderDataElementInfo ? row.de.name : "&nbsp;"),
                     getValues(row).map(val => val.td.clone()),
@@ -308,12 +308,29 @@ var prettyGroups = function() {
     $(".nrcdataheader").filter((i, header) => $(header).text() === "Value").hide();
 };
 
+
+var highlightDataElementRows = function() {
+    var onFocus = function(ev, isActive) {
+        var tr = $(ev.currentTarget);
+        var de_class = tr.attr("class").split(" ").filter(className => className.startsWith("de-"))[0];
+        if (de_class) {
+            var de_id = de_class.split("-")[1];
+            $(".de-" + de_id).toggleClass("active", isActive);
+        }
+    };
+
+    $("tr.derow")
+        .focusin(ev => onFocus(ev, true))
+        .focusout(ev => onFocus(ev, false));
+};
+
 var applyChangesToForm = function() {
     groupSubsections();
     hideGreyedColumnsAndSplit();
     renumerateInputFields();
     prettyGroups();
     fixActionsBox();
+    highlightDataElementRows();
 };
 
 var init = function() {
