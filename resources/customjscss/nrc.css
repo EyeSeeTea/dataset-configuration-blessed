@@ -89,6 +89,7 @@ text-align: center;
 white-space: normal !important;  /*   normal might be better.  break word will break the work up to fit*/
 max-width: 75px;
 background-color: #eaf7fb;
+max-width: 200px;
 
 /*  These colour the header - didn't look very good
 padding: 1px 2px 1px 2px;
@@ -360,6 +361,7 @@ background-color: grey;
     padding-bottom: 2px !important;
     padding-left: 10px;
     padding-right: 10px;
+    word-wrap: break-word;
 }
 
 #contentDiv th.nrctotalheader {
