@@ -205,6 +205,10 @@ export default class DataSetStore {
         return factory.cloneFromDB(datasetId);
     }
 
+    isSharingStepVisible() {
+        return !this.associations.project;
+    }
+
     getDataInputPeriods(startDate, endDate) {
         if (startDate && endDate) {
             const endDate_ = moment(endDate);

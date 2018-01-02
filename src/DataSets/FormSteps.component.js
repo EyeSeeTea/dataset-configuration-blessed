@@ -98,12 +98,13 @@ const DataSetFormSteps = React.createClass({
     },
 
     render() {
-        if (!this.state.store)
+        const {store} = this.state;
+        if (!store)
             return null;
 
         const props = {
-            config: this.state.store.config,
-            store: this.state.store,
+            config: store.config,
+            store: store,
             validateOnRender: !!this.state.stepAfterValidation,
             formStatus: this._formStatus,
         };
@@ -167,6 +168,7 @@ const DataSetFormSteps = React.createClass({
                 title: this.getTranslation("step_sharing"),
                 component: Sharing,
                 actionsBar: ["bottom"],
+                visible: store.isSharingStepVisible(),
                 props: props,
             },
             {
