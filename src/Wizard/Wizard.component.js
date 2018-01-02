@@ -32,27 +32,36 @@ const Wizard = React.createClass({
 
     _onPreviousClicked(ev) {
         ev.preventDefault();
-        const newActive = Math.max(this.props.active - 1, 0);
+        const newActive = _(this._getIndexedVisibleSteps())
+            .map("index").sortBy().reverse().find(idx => idx < this.props.active);
         this.props.onStepChange(newActive);
     },
 
     _onNextClicked(ev) {
         ev.preventDefault();
-        const stepsCount = this.props.steps.length;
-        const newActive = Math.min(this.props.active + 1, stepsCount);
+        const newActive = _(this._getIndexedVisibleSteps())
+            .map("index").sortBy().find(idx => idx > this.props.active);
         this.props.onStepChange(newActive);
     },
 
     render() {
+        const indexedVisibleSteps = this._getIndexedVisibleSteps();
+        if (!indexedVisibleSteps)
+            return;
+
         const currentStep = this.props.steps[this.props.active];
-        const items = this.props.steps.map((step, idx) => (
-            {
+        const items = indexedVisibleSteps
+            .map(({step, index}) => ({
                 "text": step.title,
-                "isActive": idx == this.props.active,
-                "isDone": idx < this.props.doneUntil,
-            }
-        ));
+                "isActive": index === this.props.active,
+                "isDone": index < this.props.doneUntil,
+            }));
         const actionsBar = currentStep.actionsBar || ["bottom"];
+        const firstStepIndex = indexedVisibleSteps[0].index;
+        const lastStepIndex = indexedVisibleSteps[indexedVisibleSteps.length - 1].index;
+        const showPrevious = this.props.active > firstStepIndex;
+        const showNext = this.props.active < lastStepIndex;
+        const buttons = this._renderButtons(currentStep, showPrevious, showNext);
 
         return (
             <div>
@@ -66,7 +75,7 @@ const Wizard = React.createClass({
                     }}/>
 
 
-                {_(actionsBar).includes("top") && this._renderButtons(currentStep)}
+                {_(actionsBar).includes("top") && buttons}
 
                 <Card>
                     <CardText>
@@ -78,34 +87,39 @@ const Wizard = React.createClass({
                     </CardText>
                 </Card>
 
-                {_(actionsBar).includes("bottom") && this._renderButtons(currentStep)}
+                {_(actionsBar).includes("bottom") && buttons}
             </div>
         );
     },
 
-    _renderButtons(step) {
+    _getIndexedVisibleSteps() {
+        return this.props.steps
+            .map((step, index) => ({step, index}))
+            .filter(({step}) => step.visible !== false);
+    },
+
+    _renderButtons(step, showPrevious, showNext) {
         return (
             <Toolbar>
                 <ToolbarGroup>
-                    <RaisedButton 
+                    <RaisedButton
                         label={"← " + this.getTranslation("previous")}
-                        disabled={this.props.active == 0}
+                        disabled={this.props.previousEnabled === false || !showPrevious}
                         onTouchTap={this._onPreviousClicked}
                     />
-                    <RaisedButton 
+                    <RaisedButton
                         label={this.getTranslation("next") + " →"}
-                        disabled={!this.props.nextEnabled || 
-                                  this.props.active >= this.props.steps.length - 1}
+                        disabled={this.props.nextEnabled === false || !showNext}
                         onTouchTap={this._onNextClicked}
                     />
                 </ToolbarGroup>
 
                 <ToolbarGroup>
-                    {this.props.buttons.map(button => 
-                        !button.showFunc || button.showFunc(step) ? 
-                            (<RaisedButton 
-                                key={button.id} 
-                                label={button.label} 
+                    {this.props.buttons.map(button =>
+                        !button.showFunc || button.showFunc(step) ?
+                            (<RaisedButton
+                                key={button.id}
+                                label={button.label}
                                 onTouchTap={button.onClick} />) :
                             null
                     )}
