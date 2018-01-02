@@ -51,7 +51,7 @@ const DataSetFormSteps = React.createClass({
             .then(config => {
                 return getStore(config)
                     .then(store => this.setState({store}))
-                    .catch(err => snackActions.show({route: "/", message: `Cannot edit dataset: ${err}`}));
+                    .catch(err => snackActions.show({route: "/", message: `Cannot edit dataset: ${JSON.stringify(err)}`}));
             })
             .catch(err => {
                 snackActions.show({route: "/", message: `Error: settings not found: ${err}`});
@@ -98,12 +98,13 @@ const DataSetFormSteps = React.createClass({
     },
 
     render() {
-        if (!this.state.store)
+        const {store} = this.state;
+        if (!store)
             return (<LoadingMask />);
 
         const props = {
-            config: this.state.store.config,
-            store: this.state.store,
+            config: store.config,
+            store: store,
             validateOnRender: !!this.state.stepAfterValidation,
             formStatus: this._formStatus,
         };
@@ -167,6 +168,7 @@ const DataSetFormSteps = React.createClass({
                 title: this.getTranslation("step_sharing"),
                 component: Sharing,
                 actionsBar: ["bottom"],
+                visible: store.isSharingStepVisible(),
                 props: props,
             },
             {
