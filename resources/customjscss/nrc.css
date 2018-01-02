@@ -311,7 +311,11 @@ background-color: grey;
 }
 
 #contentDiv tr:hover {
-    background-color: #e5e5e5
+    background-color: #e5e5e5;
+}
+
+#contentDiv tr.active {
+    background-color: #e5f5e5;
 }
 
 #contentDiv th {
