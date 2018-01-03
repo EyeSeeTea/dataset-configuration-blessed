@@ -259,9 +259,9 @@ var buildTable = function(data, renderDataElementInfo) {
                 // id = "row-DE-COC1-COC2-.."
                 var rowTotalId = ["row", row.de.id].concat(getValues(row).map(val => val.coc)).join("-");
                 var rowTotal = $("<input>", {class: "dataelementtotal", type: "text", disabled: "", id: rowTotalId});
-                return $("<tr>", {class: "derow de-" + row.de.id}).append(
+                return $("<tr>", {class: ["derow", "de-" + row.de.id, renderDataElementInfo ? "" : " secondary"].join(" ")}).append(
                     $("<td>", {class: "nrcindicatorName"})
-                        .html(renderDataElementInfo ? row.de.name : "&nbsp;"),
+                        .css("opacity", renderDataElementInfo ? 1 : 0).html(row.de.name),
                     getValues(row).map(val => val.td.clone()),
                     data.showRowTotals ? $("<td>").append(rowTotal) : null
                 );
@@ -310,18 +310,23 @@ var prettyGroups = function() {
 
 
 var highlightDataElementRows = function() {
-    var onFocus = function(ev, isActive) {
+    var setClass = function(ev, className, isActive) {
         var tr = $(ev.currentTarget);
-        var de_class = tr.attr("class").split(" ").filter(className => className.startsWith("de-"))[0];
+        var de_class = (tr.attr("class") || "").split(" ").filter(cl => cl.startsWith("de-"))[0];
         if (de_class) {
-            var de_id = de_class.split("-")[1];
-            $(".de-" + de_id).toggleClass("active", isActive);
+            var deId = de_class.split("-")[1];
+            var el = $(".de-" + deId);
+            el.toggleClass(className, isActive);
+            var opacity = isActive ? 1 : 0;
+            tr.find(".nrcindicatorName").clearQueue().delay(500).animate({opacity: opacity}, 100);
         }
     };
 
-    $("tr.derow")
-        .focusin(ev => onFocus(ev, true))
-        .focusout(ev => onFocus(ev, false));
+    $("tr.derow.secondary")
+        .mouseover(ev => setClass(ev, "hover", true))
+        .mouseout(ev => setClass(ev, "hover", false))
+        .focusin(ev => setClass(ev, "focus", true))
+        .focusout(ev => setClass(ev, "focus", false));
 };
 
 var applyChangesToForm = function() {

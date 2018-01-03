@@ -311,11 +311,11 @@ background-color: grey;
     padding: 2px;
 }
 
-#contentDiv tr:hover {
+#contentDiv tr.hover {
     background-color: #e5e5e5;
 }
 
-#contentDiv tr.active {
+#contentDiv tr.focus {
     background-color: #e5f5e5;
 }
 
@@ -334,6 +334,10 @@ background-color: grey;
     text-align: left;
     white-space: normal;
     max-width: 33%;
+}
+
+#contentDiv tr.secondary td.nrcindicatorName {
+  font-style: italic;
 }
 
 #contentDiv td.lastinrow {
