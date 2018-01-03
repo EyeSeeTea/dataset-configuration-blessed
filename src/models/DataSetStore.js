@@ -348,6 +348,10 @@ export default class DataSetStore {
             .each(([section, greyedFields]) => update(section, {greyedFields}));
     }
 
+    hasSections() {
+        return collectionToArray(this.dataset.sections).length > 0;
+    }
+
     _getRequiredUserRoles() {
         const {countries, coreCompetencies} = this.associations;
         return _(coreCompetencies)
