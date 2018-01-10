@@ -6,6 +6,7 @@ import periodTypes from '../../config/periodTypes';
 import DataInputPeriods from '../../forms/DataInputPeriods.component';
 import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
 import FormHelpers from '../../forms/FormHelpers';
+import Settings from '../../models/Settings';
 
 const GeneralInformation = React.createClass({
     mixins: [Translate],
@@ -18,7 +19,8 @@ const GeneralInformation = React.createClass({
     },
 
     getInitialState() {
-        return {isLoading: true};
+        const settings = new Settings(this.context.d2);
+        return {isLoading: true, currentUserHasAdminRole: settings.currentUserHasAdminRole()};
     },
 
     componentDidMount() {
@@ -62,13 +64,13 @@ const GeneralInformation = React.createClass({
                 multiLine: true,
             }),
 
-            FormHelpers.getTextField({
+            this.state.currentUserHasAdminRole ? FormHelpers.getTextField({
                 name: "dataset.expiryDays",
                 label: this.getTranslation("expiry_days"),
                 help: this.getTranslation("expiry_days_help"),
                 value: dataset.expiryDays,
                 type: "number",
-            }),
+            }) : null,
 
             FormHelpers.getTextField({
                 name: "dataset.openFuturePeriods",
@@ -108,9 +110,9 @@ const GeneralInformation = React.createClass({
         ];
 
         return (
-            <FormBuilder 
-                fields={fields} 
-                onUpdateField={this._onUpdateField} 
+            <FormBuilder
+                fields={_.compact(fields)}
+                onUpdateField={this._onUpdateField}
                 onUpdateFormStatus={this._onUpdateFormStatus}
                 validateOnRender={this.props.validateOnRender}
             />
