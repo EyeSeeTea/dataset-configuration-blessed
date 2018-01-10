@@ -19,7 +19,7 @@ const GeneralInformation = React.createClass({
     },
 
     getInitialState() {
-        const settings = new Settings(d2);
+        const settings = new Settings(this.context.d2);
         return {isLoading: true, currentUserHasAdminRole: settings.currentUserHasAdminRole()};
     },
 
