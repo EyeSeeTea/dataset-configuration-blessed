@@ -293,11 +293,9 @@ export default class DataSetStore {
 
         switch (fieldPath) {
             case "associations.project":
-                const {dataset: newDataset, associations: newAssociations} =
-                    this.getDataFromProject(dataset, associations);
-                if (!oldValue ||
-                      !newAssociations.project ||
-                      confirm(this.getTranslation("confirm_project_updates"))) {
+                if (!oldValue || confirm(this.getTranslation("confirm_project_updates"))) {
+                    const {dataset: newDataset, associations: newAssociations} =
+                        this.getDataFromProject(dataset, associations);
                     this.dataset = newDataset;
                     this.associations = newAssociations;
                 }
