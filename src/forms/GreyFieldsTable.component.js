@@ -166,7 +166,7 @@ class GreyFieldsTable extends React.Component {
                 const cocs = consecutiveProducts
                     .map(cos => getKey(categoryCombo, cos))
                     .map(key => this.state.cocByCategoryKey[key]);
-                return {label: consecutiveProducts[0][idx].displayName, cocs: cocs}
+                return {label: consecutiveProducts[0][idx].displayName, cocs: _.compact(cocs)}
             })
             .value();
         });
