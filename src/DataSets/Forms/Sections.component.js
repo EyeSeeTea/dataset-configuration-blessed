@@ -255,7 +255,8 @@ const Sections = React.createClass({
             return _(items).flatten().join("\n");
         }
         if (!this.state.sections) {
-            return true;
+            // Component did not mount, but if the dataset has sections, the user may go to the next step
+            return store.hasSections();
         } else {
             const {errors, dataset} = store.processDatasetSections(store.dataset, this.state.sections);
             store.dataset = dataset;
