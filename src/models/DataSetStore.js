@@ -186,6 +186,7 @@ export default class DataSetStore {
     constructor(action, d2, config, countries, dataset, associations) {
         this.action = action;
         this.d2 = d2;
+        this.api = d2.Api.getApi();
         this.config = config;
         this.countriesByCode = _.keyBy(countries, getCountryCode);
         this.countriesById = _.keyBy(countries, "id");
@@ -476,6 +477,10 @@ export default class DataSetStore {
         return `${countryCode}__dataset_${key}`;
     }
 
+    _addWarnings(saving, msgs) {
+        return _.imerge(saving, {warnings: saving.warnings.concat(msgs)});
+    }
+
     _addDataSetToUserRoles(saving) {
         const {dataset, warnings} = saving;
         const {coreCompetencies} = this.associations;
@@ -483,24 +488,24 @@ export default class DataSetStore {
             const filter = "name:in:[" + userRoleNames.join(",") + "]";
             return d2.models.userRoles.list({paging: false, filter})
                 .then(collection => collection.toArray())
-                .then(userRoles => ({
-                    existing: userRoles,
-                    not_found: userRoleNames.filter(name => !_(userRoles).find(ur => ur.name === name)),
-                }));
+                .then(userRoles => _(userRoles).keyBy("name").value())
+                .then(userRolesByName =>
+                    _(userRoleNames).map(name => [name, null]).fromPairs().imerge(userRolesByName));
         };
-        const addDataset = (userRole) => userRole.dataSets.set(dataset.id, dataset) && userRole;
-        const checkUserRolesExistence = (userRolesInfo) => {
-            const {existing, not_found} = userRolesInfo;
-            const msgs = not_found.map(name => "User role not found: " + name);
-            const savingWithWarnings = _.imerge(saving, {warnings: warnings.concat(msgs)});
-            return {saving: savingWithWarnings, userRoles: existing};
+        const addDataset = (userRolesByName) => {
+            const warnings$ = mapPromise(userRolesByName.toPairs(), ([name, userRole]) => {
+                if (userRole) {
+                    return this.api.post(`/userRoles/${userRole.id}/dataSets`, {additions: [{id: dataset.id}]})
+                        .catch(err => `Error adding dataset to userRole ${name}: ${JSON.stringify(err)}`);
+                } else {
+                    return Promise.resolve(`User role does no exist: ${name}`);
+                }
+            });
+            return warnings$.then(warnings => this._addWarnings(saving, _.compact(warnings)));
         };
         const userRoleNamesForCoreCompetencies = this._getRequiredUserRoles();
 
-        return getAssociatedUserRoles(userRoleNamesForCoreCompetencies)
-            .then(checkUserRolesExistence)
-            .then(({saving, userRoles}) =>
-                this._addMetadataOp(saving, {create_and_update: {userRoles: userRoles.map(addDataset)}}));
+        return getAssociatedUserRoles(userRoleNamesForCoreCompetencies).then(addDataset);
     }
 
     _addSharingToDataset(saving) {
@@ -579,13 +584,13 @@ export default class DataSetStore {
 
     _addOrgUnitsToProject(saving) {
         const {dataset, project} = saving;
+        const orgUnits = collectionToArray(dataset.organisationUnits);
 
-        if (project) {
-            _(dataset.organisationUnits.toArray()).each(datasetOu =>
-                project.organisationUnits.set(datasetOu.id, datasetOu)
-            );
-            const op = {create_and_update: {categoryOptions: [project]}};
-            return Promise.resolve(this._addMetadataOp(saving, op));
+        if (project && !_(orgUnits).isEmpty()) {
+            const payload = {additions: orgUnits.map(ou => ({id: ou.id}))};
+            return this.api.post(`/categoryOptions/${project.id}/organisationUnits`, payload)
+                .then(() => saving)
+                .catch(err => this._addWarnings(saving, [`Error adding orgUnits to project ${project.displayName}: ${JSON.stringify(err)}`]));
         } else {
             return Promise.resolve(saving);
         }
@@ -630,11 +635,11 @@ export default class DataSetStore {
             .then(this._addSharingToDataset.bind(this))
             .then(this._processSections.bind(this))
             .then(this._processDisaggregation.bind(this))
-            .then(this._addDataSetToUserRoles.bind(this))
-            .then(this._addOrgUnitsToProject.bind(this))
             .then(this._saveSections.bind(this))
             .then(this._saveDataset.bind(this))
             .then(this._runMetadataOps.bind(this))
+            .then(this._addOrgUnitsToProject.bind(this))
+            .then(this._addDataSetToUserRoles.bind(this))
             .then(this._sendNotificationMessages.bind(this));
     }
 }
