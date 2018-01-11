@@ -311,12 +311,19 @@ background-color: grey;
     padding: 2px;
 }
 
-#contentDiv tr:hover {
-    background-color: #e5e5e5;
+#contentDiv tr.derow {
+    background-color: #FFF;
+    transition: background-color 500ms;
 }
 
-#contentDiv tr.active {
+#contentDiv tr.focus {
     background-color: #e5f5e5;
+    transition: background-color 500ms;
+}
+
+#contentDiv tr.hover {
+    background-color: #e5e5e5;
+    transition: background-color 500ms;
 }
 
 #contentDiv th {
@@ -334,6 +341,10 @@ background-color: grey;
     text-align: left;
     white-space: normal;
     max-width: 33%;
+}
+
+#contentDiv tr.secondary td.nrcindicatorName {
+  font-style: italic;
 }
 
 #contentDiv td.lastinrow {
