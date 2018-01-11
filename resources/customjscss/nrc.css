@@ -311,12 +311,19 @@ background-color: grey;
     padding: 2px;
 }
 
-#contentDiv tr.hover {
-    background-color: #e5e5e5;
+#contentDiv tr.derow {
+    background-color: #FFF;
+    transition: background-color 500ms;
 }
 
 #contentDiv tr.focus {
     background-color: #e5f5e5;
+    transition: background-color 500ms;
+}
+
+#contentDiv tr.hover {
+    background-color: #e5e5e5;
+    transition: background-color 500ms;
 }
 
 #contentDiv th {
