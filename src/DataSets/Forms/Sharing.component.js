@@ -25,6 +25,7 @@ const Sharing = React.createClass({
     componentWillReceiveProps(props) {
         if (props.validateOnRender) {
             const {countries} = this.props.store.associations;
+            
             if (_.isEmpty(countries)) {
                 props.formStatus(false);
                 const error = this.getTranslation("select_at_least_one_country");

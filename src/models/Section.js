@@ -231,6 +231,8 @@ const getOutputSection = (opts) => {
             .find(av => av.attribute.id === config.attributeGroupId)
         const mandatoryIndicatorId = config.dataElementGroupGlobalIndicatorMandatoryId;
         const degSetStatus = groupSets[config.dataElementGroupSetStatusId];
+        const status = degSetStatus ? degSetStatus.name : null;
+        const statusKey = getItemStatus({status});
 
         return {
             type: "dataElement",
@@ -242,9 +244,9 @@ const getOutputSection = (opts) => {
             theme: theme ? theme.name : null,
             group: group ? group.value : null,
             categoryCombo: dataElement.categoryCombo,
-            selected: degSetOrigin ? degSetOrigin.id === mandatoryIndicatorId : false,
+            selected: degSetOrigin && degSetOrigin.id === mandatoryIndicatorId && statusKey === "active",
             origin: degSetOrigin ? degSetOrigin.name : null,
-            status: degSetStatus ? degSetStatus.name : null,
+            status: status,
             disaggregation: dataElement.categoryCombo.name !== "default" ? dataElement.categoryCombo.name : "None",
         };
     };
@@ -276,6 +278,8 @@ const getOutcomeSection = (opts) => {
         const group = _(indicator.attributeValues).find(av => av.attribute.id === config.attributeGroupId);
         const mandatoryIndicatorId = config.indicatorGroupGlobalIndicatorMandatoryId;
         const igSetStatus = indicatorGroupSets[config.indicatorGroupSetStatusId];
+        const status = igSetStatus ? igSetStatus.name : null;
+        const statusKey = getItemStatus({status});
 
         return {
             type: "indicator",
@@ -288,9 +292,9 @@ const getOutcomeSection = (opts) => {
             theme: theme ? theme.name : null,
             group: group ? group.value : null,
             categoryCombo: null,
-            selected: origin ? origin.id === mandatoryIndicatorId : false,
+            selected: origin && origin.id === mandatoryIndicatorId && statusKey === "active",
             origin: origin ? origin.name : null,
-            status: igSetStatus ? igSetStatus.name : null,
+            status: status,
             disaggregation: null,
         };
     };

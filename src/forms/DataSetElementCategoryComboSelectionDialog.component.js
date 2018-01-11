@@ -31,12 +31,11 @@ const enhance = compose(
 );
 
 const getCategoryOptions = (categoryCombo) => {
-    if (categoryCombo.isDefault) {
+    if (!categoryCombo || categoryCombo.isDefault) {
         return "";
     } else {
-        return !categoryCombo ? null : collectionToArray(categoryCombo.categories)
-            .map(category =>
-                collectionToArray(category.categoryOptions).map(co => co.displayName).join(" - "))
+        return collectionToArray(categoryCombo.categories)
+            .map(category => collectionToArray(category.categoryOptions).map(co => co.displayName).join(" - "))
             .join(" / ");
     }
 }
@@ -122,37 +121,28 @@ const createGetCategoryCombosForSelect = (d2, categoryCombos) => {
 
 function DataSetElementList({ dataSetElements, categoryCombos, onCategoryComboSelected, canEdit }, { d2 }) {
     const styles = {
-        elementListItem: {
-            width: '49%',
-        },
-
-        noDataElementMessage: {
-            paddingTop: '2rem',
-        },
-
-        originalCategoryCombo: {
-            color: '#CCC',
-            fontSize: '1rem',
-            fontWeight: '300',
-        },
+        elementListItem: {width: '49%'},
+        noDataElementMessage: {paddingTop: '2rem'},
+        originalCategoryCombo: {color: '#CCC', fontSize: '1rem', fontWeight: '300'},
     };
-
     const getCategoryCombosForSelect = createGetCategoryCombosForSelect(d2, categoryCombos);
+    const categoryCombosById = _.keyBy(categoryCombos, "id");
 
     const dataSetElementsRows = dataSetElements
         .map(({ categoryCombo = {}, dataElement = {}, id }) => {
             const selectedCatCombo = (categoryCombo.source || categoryCombo);
             const categoryCombosForSelect = getCategoryCombosForSelect(dataElement.categoryCombo, selectedCatCombo);
-            const categoryOptions = getCategoryOptions(dataElement.categoryCombo);
+            const categoryOptions = getCategoryOptions(categoryCombosById[dataElement.categoryCombo.id]);
 
             return (
                 <Row key={id} style={{ alignItems: 'center', marginBottom: canEdit ? 0 : 10}} >
                     <div style={styles.elementListItem}>
                         <div>{dataElement.displayName}</div>
-                        <div title={categoryOptions} style={styles.originalCategoryCombo}>
+                        <span title={categoryOptions} style={styles.originalCategoryCombo}>
                             {dataElement.categoryCombo.displayName}
-                        </div>
+                        </span>
                     </div>
+
                     {canEdit ?
                         <div style={styles.elementListItem}>
                             <CategoryComboSelectField
@@ -160,7 +150,8 @@ function DataSetElementList({ dataSetElements, categoryCombos, onCategoryComboSe
                                 categoryCombo={selectedCatCombo}
                                 onChange={(categoryCombo) => onCategoryComboSelected(id, categoryCombo)}
                             />
-                        </div> : <div />}
+                        </div> : <div />
+                    }
                 </Row>
             )
         });
@@ -171,13 +162,13 @@ function DataSetElementList({ dataSetElements, categoryCombos, onCategoryComboSe
                 {d2.i18n.getTranslation('select_a_data_element_before_applying_an_override')}
             </div>
         );
+    } else {
+        return (
+            <Column>
+                {dataSetElementsRows}
+            </Column>
+        );
     }
-
-    return (
-        <Column>
-            {dataSetElementsRows}
-        </Column>
-    );
 }
 
 DataSetElementList.contextTypes = {

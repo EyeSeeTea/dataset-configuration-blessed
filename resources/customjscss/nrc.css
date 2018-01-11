@@ -89,6 +89,7 @@ text-align: center;
 white-space: normal !important;  /*   normal might be better.  break word will break the work up to fit*/
 max-width: 75px;
 background-color: #eaf7fb;
+max-width: 200px;
 
 /*  These colour the header - didn't look very good
 padding: 1px 2px 1px 2px;
@@ -310,8 +311,19 @@ background-color: grey;
     padding: 2px;
 }
 
-#contentDiv tr:hover {
-    background-color: #e5e5e5
+#contentDiv tr.derow {
+    background-color: #FFF;
+    transition: background-color 500ms;
+}
+
+#contentDiv tr.focus {
+    background-color: #e5f5e5;
+    transition: background-color 500ms;
+}
+
+#contentDiv tr.hover {
+    background-color: #e5e5e5;
+    transition: background-color 500ms;
 }
 
 #contentDiv th {
@@ -329,6 +341,10 @@ background-color: grey;
     text-align: left;
     white-space: normal;
     max-width: 33%;
+}
+
+#contentDiv tr.secondary td.nrcindicatorName {
+  font-style: italic;
 }
 
 #contentDiv td.lastinrow {
@@ -356,6 +372,7 @@ background-color: grey;
     padding-bottom: 2px !important;
     padding-left: 10px;
     padding-right: 10px;
+    word-wrap: break-word;
 }
 
 #contentDiv th.nrctotalheader {
