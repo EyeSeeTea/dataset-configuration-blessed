@@ -259,9 +259,9 @@ var buildTable = function(data, renderDataElementInfo) {
                 // id = "row-DE-COC1-COC2-.."
                 var rowTotalId = ["row", row.de.id].concat(getValues(row).map(val => val.coc)).join("-");
                 var rowTotal = $("<input>", {class: "dataelementtotal", type: "text", disabled: "", id: rowTotalId});
-                return $("<tr>").append(
+                return $("<tr>", {class: ["derow", "de-" + row.de.id, renderDataElementInfo ? "primary" : "secondary"].join(" ")}).append(
                     $("<td>", {class: "nrcindicatorName"})
-                        .html(renderDataElementInfo ? row.de.name : "&nbsp;"),
+                        .css("opacity", renderDataElementInfo ? 1 : 0).html(row.de.name),
                     getValues(row).map(val => val.td.clone()),
                     data.showRowTotals ? $("<td>").append(rowTotal) : null
                 );
@@ -305,7 +305,29 @@ var renumerateInputFields = function() {
 var prettyGroups = function() {
     _($(".group").get()).each(group => $(group).find(".nrcinfoheader:not(:first)").text(""));
     _($(".group").get()).each(group => $(group).find(".indicatorArea:not(:last)").remove());
-    $(".nrcdataheader").filter((i, header) => $(header).text() === "Value").hide();
+};
+
+
+var highlightDataElementRows = function() {
+    var setClass = function(ev, className, isActive) {
+        var tr = $(ev.currentTarget);
+        var de_class = (tr.attr("class") || "").split(" ").filter(cl => cl.startsWith("de-"))[0];
+        if (de_class) {
+            var deId = de_class.split("-")[1];
+            var el = $(".de-" + deId);
+            el.toggleClass(className, isActive);
+            if (tr.hasClass("secondary")) {
+                var opacity = isActive ? 1 : 0;
+                tr.find(".nrcindicatorName").clearQueue().delay(500).animate({opacity: opacity}, 100);
+            }
+        }
+    };
+
+    $("tr.derow")
+        .mouseover(ev => setClass(ev, "hover", true))
+        .mouseout(ev => setClass(ev, "hover", false))
+        .focusin(ev => setClass(ev, "focus", true))
+        .focusout(ev => setClass(ev, "focus", false));
 };
 
 var applyChangesToForm = function() {
@@ -314,6 +336,7 @@ var applyChangesToForm = function() {
     renumerateInputFields();
     prettyGroups();
     fixActionsBox();
+    highlightDataElementRows();
 };
 
 var init = function() {

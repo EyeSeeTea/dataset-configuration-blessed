@@ -2,7 +2,6 @@ import React from 'react';
 import Translate from 'd2-ui/lib/i18n/Translate.mixin';
 import Wizard from '../Wizard/Wizard.component';
 import { goToRoute } from '../router';
-
 import InitialConfig from './Forms/InitialConfig.component';
 import GeneralInformation from './Forms/GeneralInformation.component';
 import OrganisationUnit from './Forms/OrganisationUnit.component';
@@ -12,6 +11,7 @@ import Sharing from './Forms/Sharing.component';
 import GreyFields from './Forms/GreyFields.component';
 import Save from './Forms/Save.component';
 import snackActions from '../Snackbar/snack.actions';
+import LoadingMask from '../LoadingMask/LoadingMask.component';
 
 import DataSetStore from '../models/DataSetStore';
 import Settings from '../models/Settings';
@@ -98,12 +98,13 @@ const DataSetFormSteps = React.createClass({
     },
 
     render() {
-        if (!this.state.store)
-            return null;
+        const {store} = this.state;
+        if (!store)
+            return (<LoadingMask />);
 
         const props = {
-            config: this.state.store.config,
-            store: this.state.store,
+            config: store.config,
+            store: store,
             validateOnRender: !!this.state.stepAfterValidation,
             formStatus: this._formStatus,
         };
@@ -167,6 +168,7 @@ const DataSetFormSteps = React.createClass({
                 title: this.getTranslation("step_sharing"),
                 component: Sharing,
                 actionsBar: ["bottom"],
+                visible: store.isSharingStepVisible(),
                 props: props,
             },
             {
