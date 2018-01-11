@@ -305,7 +305,6 @@ var renumerateInputFields = function() {
 var prettyGroups = function() {
     _($(".group").get()).each(group => $(group).find(".nrcinfoheader:not(:first)").text(""));
     _($(".group").get()).each(group => $(group).find(".indicatorArea:not(:last)").remove());
-    $(".nrcdataheader").filter((i, header) => $(header).text() === "Value").hide();
 };
 
 
