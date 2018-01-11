@@ -496,7 +496,7 @@ export default class DataSetStore {
                     return this.api.post(`/userRoles/${userRole.id}/dataSets`, {additions: [{id: dataset.id}]})
                         .catch(err => `Error adding dataset to userRole ${name}: ${JSON.stringify(err)}`);
                 } else {
-                    return Promise.resolve(`User role does no exist: ${name}`);
+                    return Promise.resolve(`This user cannot update the user role: ${name}`);
                 }
             });
             return warnings$.then(warnings => this._addWarnings(saving, _.compact(warnings)));
