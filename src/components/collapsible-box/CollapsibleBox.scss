@@ -8,11 +8,11 @@
 }
 
 .collapsible-box.close {
-  width: 50px;
+  flex: 0 0 50px;
 }
 
 .collapsible-box.open {
-  width: auto;
+  flex: 0 0 250px;
 }
 
 .collapsible-box.close .content {

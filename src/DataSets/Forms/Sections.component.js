@@ -72,7 +72,6 @@ const SectionsSidebar = (props) => {
     return (
         <CollapsibleBox
             open={open}
-            styles={{wrapper: {open: {width: width + 75}}}}
             onToggle={onCollapsibleToggle}
         >
             <Sidebar
@@ -183,8 +182,8 @@ const ThemeTabs = ({title, items, allLabel, onSelected, visible = true}) => {
     };
 
     return (
-        <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-            {title && <Chip style={{marginRight: 10}}>{title}</Chip>}
+        <div style={{justifyContent: 'center', alignItems: 'center'}}>
+            {title && <Chip style={{marginRight: 10, marginBottom: 5}}>{title}</Chip>}
             {renderTabs(items)}
         </div>
     );
@@ -461,7 +460,7 @@ const Sections = React.createClass({
                     onCollapsibleToggle={isOpen => this.setState({sidebarOpen: isOpen})}
                 />
 
-                <div style={{width: '100%'}}>
+                <div style={{flex: 1, width: '0'}}>
                     <ThemeTabs
                         title={sidebarOpen ? null : currentSection.name}
                         visible={this._sectionsVisible()}
