@@ -430,10 +430,6 @@ background-color: grey;
     content: "\f078";
 }
 
-#contentDiv .cent {
-  display: none;
-}
-
 #contentDiv .sectionTable {
   margin-bottom: 0px !important;
   margin-top: 5px;
