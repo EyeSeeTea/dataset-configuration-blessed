@@ -261,7 +261,7 @@ var buildTable = function(data, renderDataElementInfo) {
                 var rowTotal = $("<input>", {class: "dataelementtotal", type: "text", disabled: "", id: rowTotalId});
                 return $("<tr>", {class: ["derow", "de-" + row.de.id, renderDataElementInfo ? "primary" : "secondary"].join(" ")}).append(
                     $("<td>", {class: "nrcindicatorName"})
-                        .css("opacity", renderDataElementInfo ? 1 : 0).html(row.de.name),
+                        .css("opacity", renderDataElementInfo ? 1 : 0).html(row.de.td.html()),
                     getValues(row).map(val => val.td.clone()),
                     data.showRowTotals ? $("<td>").append(rowTotal) : null
                 );
