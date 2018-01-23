@@ -228,7 +228,9 @@ const getOutputSection = (opts) => {
         const degSetOrigin = groupSets[config.dataElementGroupSetOriginId];
         const theme = groupSets[config.dataElementGroupSetThemeId];
         const group = _(dataElement.attributeValues)
-            .find(av => av.attribute.id === config.attributeGroupId)
+            .find(av => av.attribute.id === config.attributeGroupId);
+        const attributes = _(dataElement.attributeValues)
+            .map(av => [av.attribute.id, av.value]).fromPairs().value();
         const mandatoryIndicatorId = config.dataElementGroupGlobalIndicatorMandatoryId;
         const degSetStatus = groupSets[config.dataElementGroupSetStatusId];
         const status = degSetStatus ? degSetStatus.name : null;
@@ -247,12 +249,13 @@ const getOutputSection = (opts) => {
             selected: degSetOrigin && degSetOrigin.id === mandatoryIndicatorId && statusKey === "active",
             origin: degSetOrigin ? degSetOrigin.name : null,
             status: status,
+            hidden: attributes[config.hideInDataSetAppAttributeId] === "true",
             disaggregation: dataElement.categoryCombo.name !== "default" ? dataElement.categoryCombo.name : "None",
         };
     };
     const indexedDataElementsInfo = _(dataElements)
         .map(getDataElementInfo)
-        .filter(item => getItemStatus(item) !== "inactive")
+        .filter(item => getItemStatus(item) !== "inactive" && !item.hidden)
         .keyBy("id")
         .value();
 
@@ -276,6 +279,8 @@ const getOutcomeSection = (opts) => {
         const origin = indicatorGroupSets[config.indicatorGroupSetOriginId];
         const theme = indicatorGroupSets[config.indicatorGroupSetThemeId];
         const group = _(indicator.attributeValues).find(av => av.attribute.id === config.attributeGroupId);
+        const attributes = _(indicator.attributeValues)
+            .map(av => [av.attribute.id, av.value]).fromPairs().value();
         const mandatoryIndicatorId = config.indicatorGroupGlobalIndicatorMandatoryId;
         const igSetStatus = indicatorGroupSets[config.indicatorGroupSetStatusId];
         const status = igSetStatus ? igSetStatus.name : null;
@@ -296,6 +301,7 @@ const getOutcomeSection = (opts) => {
             origin: origin ? origin.name : null,
             status: status,
             disaggregation: null,
+            hidden: attributes[config.hideInDataSetAppAttributeId] === "true",
         };
     };
 
@@ -303,7 +309,7 @@ const getOutcomeSection = (opts) => {
         const indexedIndicatorsInfo = _(indicators)
             .filter(indicator => !_(dataElementsByIndicator[indicator.id]).isEmpty())
             .map(indicator => getIndicatorInfo(indicator, dataElementsByIndicator[indicator.id]))
-            .filter(item => getItemStatus(item) !== "inactive")
+            .filter(item => getItemStatus(item) !== "inactive" && !item.hidden)
             .keyBy("id")
             .value();
 
@@ -427,9 +433,14 @@ const getOutputDataElementsByCoreCompetencyId = (d2, config, coreCompetencies) =
 
 const getIndicatorsByGroupName = (d2, coreCompetencies) => {
     const filters = coreCompetencies.map(cc => ["name", cc.name]);
-    const listOptions = {fields: "id,name,displayName,indicators[id,name,displayName,code,numerator,denominator,indicatorGroups[id,name,displayName]]"};
+    const fields = [
+        "id",
+        "name",
+        "displayName",
+        "indicators[id,name,displayName,code,numerator,denominator,indicatorGroups[id,name,displayName],attributeValues[value,attribute]]",
+    ].join(",");
 
-    return getFilteredItems(d2.models.indicatorGroups, filters, listOptions)
+    return getFilteredItems(d2.models.indicatorGroups, filters, {fields})
         .then(indicatorGroups =>
             _(indicatorGroups)
                 .map(indGroup => [indGroup.name, indGroup.indicators.toArray()])
