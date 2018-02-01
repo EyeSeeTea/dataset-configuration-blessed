@@ -1,6 +1,7 @@
 import {generateUid} from 'd2/lib/uid';
 import {update, collectionToArray} from '../utils/Dhis2Helpers';
 import fp from 'lodash/fp';
+import {getOwnedPropertyJSON} from 'd2/lib/model/helpers/json';
 
 /* Return an array of sections containing its data elements and associated indicators. Schema:
 
@@ -204,18 +205,8 @@ const getD2Sections = (d2, section) => {
             greyedFields: [],
         });
     };
-    const sectionName = (item) => {
-        let values;
-        if (item.type === "dataElement") {
-            values = [section.name, item.theme, item.group];
-        } else { // Indicator. When group is not present, use the indicator code itself to group
-            const group = item.group || item.code;
-            values = [section.name, item.theme, group];
-        }
-        return values.join(sectionSep).replace(new RegExp(sectionSep + "*$"), '');
-    }
 
-    return _(section.items).values().filter("selected").groupBy(sectionName).map(getD2Section).value();
+    return _(section.items).values().filter("selected").groupBy("name").map(getD2Section).value();
 };
 
 const getOutputSection = (opts) => {
@@ -240,6 +231,7 @@ const getOutputSection = (opts) => {
             code: dataElement.code,
             name: dataElement.name,
             displayName: dataElement.name,
+            description: dataElement.description,
             coreCompetency: sectionName,
             theme: theme ? theme.name : null,
             group: group ? group.value : null,
@@ -258,11 +250,12 @@ const getOutputSection = (opts) => {
 
     return {
         type: "output",
+        id: coreCompetency.id + "-output",
         name: sectionName,
         showRowTotals: false,
         showColumnTotals: false,
         items: indexedDataElementsInfo,
-        coreCompetency,
+        coreCompetency: getOwnedPropertyJSON(coreCompetency),
     };
 };
 
@@ -283,14 +276,15 @@ const getOutcomeSection = (opts) => {
 
         return {
             type: "indicator",
-            dataElements: dataElements,
+            dataElements: dataElements.map(getOwnedPropertyJSON),
             id: indicator.id,
             code: indicator.code,
             name: indicator.name,
             displayName: indicator.name,
+            description: indicator.description,
             coreCompetency: sectionName,
             theme: theme ? theme.name : null,
-            group: group ? group.value : null,
+            group: group ? group.value : indicator.code,
             categoryCombo: null,
             selected: origin && origin.id === mandatoryIndicatorId && statusKey === "active",
             origin: origin ? origin.name : null,
@@ -309,11 +303,12 @@ const getOutcomeSection = (opts) => {
 
         return {
             type: "outcome",
+            id: coreCompetency.id + "-outcome",
             name: sectionName,
             showRowTotals: false,
             showColumnTotals: false,
             items: indexedIndicatorsInfo,
-            coreCompetency,
+            coreCompetency: getOwnedPropertyJSON(coreCompetency),
         };
     });
 };
@@ -407,6 +402,7 @@ const getDataElements = (d2, dataElementFilters) => {
         "id",
         "name",
         "code",
+        "description",
         "categoryCombo[id,name,displayName,categoryOptionCombos[id,displayName,categoryOptions[id,displayName]]," +
             "categories[id,name,displayName,categoryOptions[id,displayName]]]",
         "dataElementGroups[id,name,displayName]",
