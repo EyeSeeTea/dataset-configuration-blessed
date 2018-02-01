@@ -5,23 +5,30 @@ import _ from '../utils/lodash-mixins';
 const a = (obj) => obj.toArray ? obj.toArray() : obj;
 const _a = (...args) => _(a(...args));
 
-const map = (obj) => ({
+class Map {
+  constructor(obj) {
+    this.obj = obj;
+  }
+
   keys() {
-    return Object.keys(obj);
-  },
+    return Object.keys(this.obj);
+  }
 
   get(key) {
-    if (obj[key] !== undefined)
-      return obj[key];
-    else
-      throw new Error("[post-custom-form] Unknown key: " +
-        JSON.stringify(key) + " on object key with keys: " + JSON.stringify(Object.keys(obj), null, 4) + "\n");
-  },
+    if (this.obj[key] !== undefined) {
+      return this.obj[key];
+    } else {
+      const keys = JSON.stringify(Object.keys(this.obj), null, 4);
+      throw new Error(`[post-custom-form] No key ${JSON.stringify(key)} in object with keys: ${keys}`);
+    }
+  }
 
   getOr(key, defaultValue) {
-    return obj[key] !== undefined ? obj[key] : defaultValue;
-  },
-});
+    return this.obj[key] !== undefined ? this.obj[key] : defaultValue;
+  }
+}
+
+const map = obj => new Map(obj);
 
 const createViewDataElement = (de) => ({
   id: de.id,
@@ -73,7 +80,7 @@ const getHeaders = (categories, visibleOptionCombos) => {
     _a(visibleOptionCombos)
       .map(coc => _a(coc.categoryOptions).sortBy(co => indexes[co.id]).value())
       .groupConsecutiveBy(cos => _a(cos).map(co => co.id).take(catIndex + 1).value())
-      .map(group => ({colSpan: group.length, name: group[0][catIndex] ? group[0][catIndex].displayName : "not-found"}))
+      .map(group =>({colSpan: group.length, name: group[0][catIndex] ? group[0][catIndex].displayName : "not-found"}))
       .value());
 };
 
@@ -87,7 +94,7 @@ const getGreyedFields = (dataset) =>
 const getRowTotalId = (dataElement, optionCombos) =>
   ["row", dataElement.id, ...a(optionCombos).map(coc => coc.id)].join("-");
 
-const getContext = (dataset, sections, allCategoryCombos) => {
+const getContext = (d2, dataset, sections, allCategoryCombos) => {
   const categoryComboByDataElementId = _a(dataset.dataSetElements)
     .map(dse => [dse.dataElement.id, dse.categoryCombo]).fromPairs().value();
   const categoryCombosId = _a(dataset.dataSetElements).map(dse => dse.categoryCombo.id).uniq().value();
@@ -110,7 +117,7 @@ const getContext = (dataset, sections, allCategoryCombos) => {
       getRowTotalId,
     },
     i18n: {
-      getString: (key) => key,
+      getString: (...args) => d2.i18n.getTranslation(...args),
     },
     encoder: {
       htmlEncode: htmlencode.htmlEncode,
@@ -131,11 +138,18 @@ const getContext = (dataset, sections, allCategoryCombos) => {
   };
 };
 
-const get = (dataset, sections, categoryCombos, data) => {
-  const context = getContext(dataset, sections, categoryCombos);
+const get = (d2, dataset, sections, categoryCombos, data) => {
+  const context = getContext(d2, dataset, sections, categoryCombos);
   const htmlForm = velocity.render(data.template, context, {}, {env: "development"});
-  const htmlFormWithJsCss = `<style>${data.css}</style><script>${data.js}</script>${htmlForm}`;
-  return htmlFormWithJsCss.replace("__customFormStandalone__", "false");
+  return `
+    <style>
+      ${data.css}
+    </style>
+    <script>
+      ${data.js}
+    </script>
+    ${htmlForm}
+  `;
 };
 
-exports.get = get;
+export default get;

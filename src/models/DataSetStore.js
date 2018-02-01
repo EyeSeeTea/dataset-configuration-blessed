@@ -21,7 +21,7 @@ import {getCategoryCombos,
         update,
        } from '../utils/Dhis2Helpers';
 import * as Section from './Section';
-import CustomForm from './CustomForm';
+import getCustomForm from './CustomForm';
 import customFormTemplate from '!!raw-loader!./custom-form-resources/sectionForm.vm';
 import customFormJs from '!!raw-loader!./custom-form-resources/script.js';
 import customFormCss from '!!raw-loader!./custom-form-resources/style.css';
@@ -230,7 +230,7 @@ export default class DataSetStore {
         const api = this.d2.Api.getApi();
 
         return categoryCombos$.then(categoryCombos => {
-            const htmlCode = CustomForm.get(dataset, richSections, categoryCombos, data);
+            const htmlCode = getCustomForm(this.d2, dataset, richSections, categoryCombos, data);
             const payload = {style: "NORMAL", htmlCode};
             return api.post(['dataSets', dataset.id, 'form'].join('/'), payload).then(() => saving);
         });
