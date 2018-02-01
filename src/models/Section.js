@@ -56,7 +56,7 @@ export const getSections = (d2, config, dataset, initialCoreCompetencies, coreCo
     }
 */
 export const getDataSetInfo = (d2, config, sections) => {
-    const d2Sections = _(sections).flatMap(section => getD2Sections(d2, section))
+    const d2Sections = _(sections).flatMap(section => getD2Section(d2, section))
         .map((d2s, index) => _.set(d2s, "sortOrder", index)).value();
     const dataElements = _(d2Sections).flatMap(d2s => d2s.dataElements.toArray()).value();
     const indicators = _(d2Sections).flatMap(d2s => d2s.indicators.toArray()).value();
@@ -185,28 +185,25 @@ const updateSectionsFromD2Sections = (sections, d2Sections, initialCoreCompetenc
     return sections.map(updateSection);
 };
 
-const getD2Sections = (d2, section) => {
-    const getD2Section = (items, d2SectionName) => {
-        const dataElements = _(items)
-            .flatMap(item => item.type === "dataElement" ? [item] : item.dataElements)
-            .map(de => ({id: de.id, name: de.name, categoryCombo: de.categoryCombo}))
-            .uniqBy("id").value();
-        const indicators = _(items).flatMap(item => item.type === "indicator" ? [item] : [])
-            .map(ind => ({id: ind.id, name: ind.name}))
-            .uniqBy("id").value();
+const getD2Section = (d2, section) => {
+    const items = _(section.items).values().filter("selected");
+    const dataElements = _(items)
+        .flatMap(item => item.type === "dataElement" ? [item] : item.dataElements)
+        .map(de => ({id: de.id, name: de.name, categoryCombo: de.categoryCombo}))
+        .uniqBy("id").value();
+    const indicators = _(items).flatMap(item => item.type === "indicator" ? [item] : [])
+        .map(ind => ({id: ind.id, name: ind.name}))
+        .uniqBy("id").value();
 
-        return d2.models.sections.create({
-            name: d2SectionName,
-            displayName: d2SectionName,
-            showRowTotals: section.showRowTotals,
-            showColumnTotals: section.showColumnTotals,
-            dataElements: dataElements,
-            indicators: indicators,
-            greyedFields: [],
-        });
-    };
-
-    return _(section.items).values().filter("selected").groupBy("name").map(getD2Section).value();
+    return d2.models.sections.create({
+        name: section.name,
+        displayName: section.name,
+        showRowTotals: section.showRowTotals,
+        showColumnTotals: section.showColumnTotals,
+        dataElements: dataElements,
+        indicators: indicators,
+        greyedFields: [],
+    });
 };
 
 const getOutputSection = (opts) => {
