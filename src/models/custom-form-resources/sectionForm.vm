@@ -9,9 +9,15 @@
                     #else
                         #set( $mark = 1 )
                     #end
+
                     <tr>
-                        <td #if( $mark == 1 )class="alt"#else class="reg"#end><span>$indicator.displayName</span></td>
-                        <td><input id="indicator${indicator.id}" indicatorid="${indicator.id}" name="indicator" type="text" class="indicator"></td>
+                        <td #if( $mark == 1 )class="alt"#else class="reg"#end>
+                            <span>$indicator.displayName</span>
+                        </td>
+
+                        <td>
+                            <input id="indicator${indicator.id}" indicatorid="${indicator.id}" name="indicator" type="text" class="indicator">
+                        </td>
                     </tr>
                 #end
             </table>
@@ -146,23 +152,28 @@
                     #end
                 </tr>
             #end
+
             #if($section.showColumnTotals && $dataElements.size() > 1)
                 #if( $mark == 1 )
                     #set( $mark = 0 )
                 #else
                     #set( $mark = 1 )
                 #end
+
                 <tr>
                     <td #if( $mark == 1 )class="alt nrcindicatorName"#else class="reg nrcindicatorName"#end>
                         ${i18n.getString( "total" )}
                     </td>
+
                     #set( $columnTotalIds = "col" )
+
                     #foreach( $optionCombo in $optionCombos )
                         #set( $columnTotalIds = "${columnTotalIds}-$optionCombo.id" )
                         <td>
                             <input class="dataelementtotal" type="text" id="col-${optionCombo.id}" disabled>
                         </td>
                     #end
+
                     #if( $needRowColumnTotal )
                         <td>
                             <input class="dataelementtotal" type="text" id="$columnTotalIds" disabled>
@@ -183,7 +194,7 @@
         #set( $themes = $groupedItems.get( $section.id ) )
 
         #foreach( $theme in $themes.keys() )
-            #set( $identifier = "theme-" + $velocityCount )
+            #set( $identifier = "theme-" + $section.id + "-" + $velocityCount )
 
             <ul class="list-unstyled">
                 <li class="panel panel-default">

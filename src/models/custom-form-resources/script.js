@@ -225,11 +225,6 @@ var init = function() {
     loadCss("../dhis-web-commons/bootstrap/css/bootstrap.min.css");
 };
 
-$(function() {
-    init();
-    if (__customFormStandalone__) {
-        $(document).trigger("dhis2.de.event.formLoaded");
-    }
-});
+$(init);
 
 })();
