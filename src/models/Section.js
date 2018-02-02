@@ -186,7 +186,7 @@ const updateSectionsFromD2Sections = (sections, d2Sections, initialCoreCompetenc
 };
 
 const getD2Section = (d2, section) => {
-    const items = _(section.items).values().filter("selected");
+    const items = _(section.items).values().filter("selected").value();
     const dataElements = _(items)
         .flatMap(item => item.type === "dataElement" ? [item] : item.dataElements)
         .map(de => ({id: de.id, name: de.name, categoryCombo: de.categoryCombo}))
@@ -400,6 +400,7 @@ const getDataElements = (d2, dataElementFilters) => {
         "name",
         "code",
         "description",
+        "valueType",
         "categoryCombo[id,name,displayName,categoryOptionCombos[id,displayName,categoryOptions[id,displayName]]," +
             "categories[id,name,displayName,categoryOptions[id,displayName]]]",
         "dataElementGroups[id,name,displayName]",
