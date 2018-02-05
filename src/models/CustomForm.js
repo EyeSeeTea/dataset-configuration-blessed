@@ -11,7 +11,7 @@ class Map {
   }
 
   keys() {
-    return Object.keys(this.obj);
+    return Object.keys(this.obj).sort();
   }
 
   get(key) {
