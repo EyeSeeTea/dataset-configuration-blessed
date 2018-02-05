@@ -253,6 +253,7 @@ const Sections = React.createClass({
             ];
             return _(items).flatten().join("\n");
         }
+
         if (!this.state.sections) {
             // Component did not mount, but if the dataset has sections, the user may go to the next step
             return store.hasSections();
@@ -315,7 +316,7 @@ const Sections = React.createClass({
     _selectRows(visibleItems, selectedHeaderChecked) {
         const newState = visibleItems.reduce(
             (state, item) => {
-                const path = ["sections", item.coreCompetency, "items", item.id, "selected"];
+                const path = ["sections", item.sectionName, "items", item.id, "selected"];
                 return fp.set(path, selectedHeaderChecked, state);
             },
             this.state);
@@ -323,7 +324,7 @@ const Sections = React.createClass({
     },
 
     _onSelectedToggled(item) {
-        const path = ["sections", item.coreCompetency, "items", item.id, "selected"];
+        const path = ["sections", item.sectionName, "items", item.id, "selected"];
         const oldValue = fp.get(path, this.state);
         this.setState(fp.set(path, !oldValue, this.state));
     },

@@ -56,8 +56,10 @@ export const getSections = (d2, config, dataset, initialCoreCompetencies, coreCo
     }
 */
 export const getDataSetInfo = (d2, config, sections) => {
-    const d2Sections = _(sections).flatMap(section => getD2Section(d2, section))
-        .map((d2s, index) => _.set(d2s, "sortOrder", index)).value();
+    const d2Sections = _(sections)
+        .map(section => getD2Section(d2, section))
+        .map((d2s, index) => _.set(d2s, "sortOrder", index))
+        .value();
     const dataElements = _(d2Sections).flatMap(d2s => d2s.dataElements.toArray()).value();
     const indicators = _(d2Sections).flatMap(d2s => d2s.indicators.toArray()).value();
     const dataSetElements = dataElements.map(dataElement => ({
@@ -71,7 +73,7 @@ export const getDataSetInfo = (d2, config, sections) => {
         },
     }));
     const dataElementsById = _(dataElements).keyBy("id").value();
-    const errors = _(dataElements)
+    const dataElementErrors = _(dataElements)
         .map("id").countBy().map((count, deId) => count > 1 ? deId : null).compact()
         .map(repeatedId => {
             const deName = dataElementsById[repeatedId].name;
@@ -81,11 +83,20 @@ export const getDataSetInfo = (d2, config, sections) => {
             return `Data element '${deName}' is used in multiple sections: ${invalidSections.join(', ')}`;
         })
         .value();
+    const emptyCoreCompetenciesErrors = _(sections)
+        .groupBy(section => section.coreCompetency.name)
+        .toPairs()
+        .filter(([coreCompetencyName, sectionsForCC]) =>
+            !_(sectionsForCC).flatMap(section => _.values(section.items)).some("selected"))
+        .map(([coreCompetencyName, sectionsForCC]) =>
+            `Core competency has no selected dataElement/indicators: ${coreCompetencyName}`)
+        .value();
 
+    const errors = _.concat(dataElementErrors, emptyCoreCompetenciesErrors);
     return {sections: d2Sections, dataSetElements, indicators, errors};
 };
 
-/* Return status key of item (dataElement or indicator). 
+/* Return status key of item (dataElement or indicator).
 
     Values: "unknown" | "active" | "inactive" | "phased-out"
 */
@@ -229,7 +240,8 @@ const getOutputSection = (opts) => {
             name: dataElement.name,
             displayName: dataElement.name,
             description: dataElement.description,
-            coreCompetency: sectionName,
+            sectionName: sectionName,
+            coreCompetency: coreCompetency,
             theme: theme ? theme.name : null,
             group: group ? group.value : null,
             categoryCombo: dataElement.categoryCombo,
@@ -279,7 +291,8 @@ const getOutcomeSection = (opts) => {
             name: indicator.name,
             displayName: indicator.name,
             description: indicator.description,
-            coreCompetency: sectionName,
+            sectionName: sectionName,
+            coreCompetency: coreCompetency,
             theme: theme ? theme.name : null,
             group: group ? group.value : indicator.code,
             categoryCombo: null,
