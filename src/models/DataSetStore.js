@@ -638,19 +638,24 @@ export default class DataSetStore {
         return postMetadata(this.d2, saving.metadata).then(() => saving);
     }
 
+    _processSave(methods) {
+        return methods.reduce((accPromise, method) => accPromise.then(method.bind(this)), this._getInitialSaving());
+    }
+
     save() {
-        return this._getInitialSaving()
-            .then(this._setDatasetId.bind(this))
-            .then(this._setDatasetCode.bind(this))
-            .then(this._addSharingToDataset.bind(this))
-            .then(this._processSections.bind(this))
-            .then(this._processDisaggregation.bind(this))
-            .then(this._saveSections.bind(this))
-            .then(this._saveDataset.bind(this))
-            .then(this._runMetadataOps.bind(this))
-            .then(this._addOrgUnitsToProject.bind(this))
-            .then(this._addDataSetToUserRoles.bind(this))
-            .then(this._saveCustomForm.bind(this))
-            .then(this._sendNotificationMessages.bind(this));
+        return this._processSave([
+            this._setDatasetId,
+            this._setDatasetCode,
+            this._addSharingToDataset,
+            this._processSections,
+            this._processDisaggregation,
+            this._saveSections,
+            this._saveDataset,
+            this._runMetadataOps,
+            this._addOrgUnitsToProject,
+            this._addDataSetToUserRoles,
+            this._saveCustomForm,
+            this._sendNotificationMessages,
+        ]);
     }
 }
