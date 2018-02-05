@@ -94,7 +94,8 @@ const getGreyedFields = (dataset) =>
 const getRowTotalId = (dataElement, optionCombos) =>
   ["row", dataElement.id, ...a(optionCombos).map(coc => coc.id)].join("-");
 
-const getContext = (d2, dataset, sections, allCategoryCombos) => {
+const getContext = (d2, dataset, richSections, allCategoryCombos) => {
+  const sections = richSections.filter(richSection => _(richSection.items).values().some("selected"));
   const categoryComboByDataElementId = _a(dataset.dataSetElements)
     .map(dse => [dse.dataElement.id, dse.categoryCombo]).fromPairs().value();
   const categoryCombosId = _a(dataset.dataSetElements).map(dse => dse.categoryCombo.id).uniq().value();
