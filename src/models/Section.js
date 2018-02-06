@@ -153,6 +153,13 @@ export const processDatasetSections = (d2, config, dataset, stateSections) => {
     return {errors, dataset: newDataset};
 }
 
+export const sectionSelectedItemsCount = (sections) => {
+    return _(sections)
+        .flatMap((section, sectionName) => _.values(section.items))
+        .filter(item => item.selected)
+        .flatMap(item => item.type === "dataElement" ? 1 : (item.dataElements.length + 1))
+        .sum();
+};
 
 /* Private functions */
 
