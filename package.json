@@ -68,6 +68,7 @@
     "react-dom": "^15.4.0",
     "react-steps": "^0.0.5",
     "react-tap-event-plugin": "^2.0.1",
+    "request-promise": "^4.2.2",
     "rx": "^4.1.0",
     "sass-loader": "^3.2.0",
     "sinon": "^1.17.3",
