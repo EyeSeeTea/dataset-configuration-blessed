@@ -58,6 +58,7 @@ const SettingsDialog = React.createClass({
                 "indicatorGroupSetOriginId",
                 "dataElementGroupSetStatusId",
                 "indicatorGroupSetStatusId",
+                "hideInDataSetAppAttributeId",
             ],
         },
     },
