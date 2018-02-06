@@ -43,6 +43,15 @@ function transpose(xss) {
   return _.zip(...xss);
 }
 
+function groupByKeys(objs, keys, thruFn = _.identity) {
+  if (_(keys).isEmpty()) {
+    return objs;
+  } else {
+    return _(objs).groupBy(keys[0]).map((vs, k) => [k, _.groupByKeys(vs, keys.slice(1), thruFn)])
+      .fromPairs().thru(thruFn).value();
+  }
+}
+
 _.mixin({
     imerge,
     deepMerge,
@@ -50,6 +59,7 @@ _.mixin({
     groupConsecutiveBy,
     transpose,
     imerge,
+    groupByKeys,
 });
 
 export default _;

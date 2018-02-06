@@ -70,9 +70,16 @@ const Save = React.createClass({
         if (saveState === this.saveStates.SHOW || saveState === this.saveStates.SAVING) {
             return (
                 <div style={{fontSize: '1.2em', marginTop: 10}}>
-                    {saveState === "SAVING" ? <LinearProgress /> : null}
-
-                    <div>{this.getTranslation("wizard_presave_message")}</div>
+                    <div>
+                        {saveState === "SAVING" ?
+                            <div>
+                                <LinearProgress />
+                                <p><b>{this.getTranslation("wizard_save_message")}</b></p>
+                            </div>
+                            :
+                            this.getTranslation("wizard_presave_message")
+                        }
+                    </div>
 
                     <ul className="list-group">
                         <ListItem field="name"
