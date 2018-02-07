@@ -387,7 +387,7 @@ const Sections = React.createClass({
     _renderForm() {
         const {sections} = this.state;
         const itemsCount = sectionSelectedItemsCount(sections);
-        const warningItemsCount = 200;
+        const warningItemsCount = 300;
         const style = {
           lineHeight: '40px',
           margin: 20,
