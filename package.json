@@ -27,11 +27,14 @@
   "license": "GPL-3.0",
   "dependencies": {
     "bluebird": "^3.5.0",
-    "jquery": "^2.2.3",
+    "htmlencode": "^0.0.4",
+    "jquery": "^3.3.1",
     "json-loader": "^0.5.4",
+    "raw-loader": "^0.5.1",
     "react-router": "^2.8.1",
     "react-scroll-to-component": "^1.0.2",
-    "susy": "^2.2.12"
+    "susy": "^2.2.12",
+    "velocityjs": "^1.0.0"
   },
   "devDependencies": {
     "babel-core": "^6.7.2",
@@ -68,6 +71,7 @@
     "react-dom": "^15.4.0",
     "react-steps": "^0.0.5",
     "react-tap-event-plugin": "^2.0.1",
+    "request-promise": "^4.2.2",
     "rx": "^4.1.0",
     "sass-loader": "^3.2.0",
     "sinon": "^1.17.3",

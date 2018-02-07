@@ -8,6 +8,7 @@ import LoadingStatus from '../../LoadingStatus/LoadingStatus.component';
 import ObserverRegistry from '../../utils/ObserverRegistry.mixin';
 import Action from 'd2-ui/lib/action/Action';
 import Sidebar from 'd2-ui/lib/sidebar/Sidebar.component';
+import Paper from 'material-ui/Paper/Paper';
 import {Tabs, Tab} from 'material-ui-scrollable-tabs/Tabs';
 import SelectField from 'material-ui/SelectField/SelectField';
 import MenuItem from 'material-ui/MenuItem/MenuItem';
@@ -19,7 +20,7 @@ import Popover from 'material-ui/Popover/Popover';
 import MoreVert from 'material-ui/svg-icons/navigation/more-vert';
 import IconButton from 'material-ui/IconButton/IconButton';
 import PopoverAnimationDefault from 'material-ui/Popover/PopoverAnimationDefault';
-import {getSections, getItemStatus} from '../../models/Section';
+import {getSections, getItemStatus, sectionSelectedItemsCount} from '../../models/Section';
 import Divider from 'material-ui/Divider/Divider';
 import snackActions from '../../Snackbar/snack.actions';
 import camelCaseToUnderscores from 'd2-utilizr/lib/camelCaseToUnderscores';
@@ -253,6 +254,7 @@ const Sections = React.createClass({
             ];
             return _(items).flatten().join("\n");
         }
+
         if (!this.state.sections) {
             // Component did not mount, but if the dataset has sections, the user may go to the next step
             return store.hasSections();
@@ -315,7 +317,7 @@ const Sections = React.createClass({
     _selectRows(visibleItems, selectedHeaderChecked) {
         const newState = visibleItems.reduce(
             (state, item) => {
-                const path = ["sections", item.coreCompetency, "items", item.id, "selected"];
+                const path = ["sections", item.sectionName, "items", item.id, "selected"];
                 return fp.set(path, selectedHeaderChecked, state);
             },
             this.state);
@@ -323,7 +325,7 @@ const Sections = React.createClass({
     },
 
     _onSelectedToggled(item) {
-        const path = ["sections", item.coreCompetency, "items", item.id, "selected"];
+        const path = ["sections", item.sectionName, "items", item.id, "selected"];
         const oldValue = fp.get(path, this.state);
         this.setState(fp.set(path, !oldValue, this.state));
     },
@@ -383,6 +385,32 @@ const Sections = React.createClass({
     },
 
     _renderForm() {
+        const {sections} = this.state;
+        const itemsCount = sectionSelectedItemsCount(sections);
+        const warningItemsCount = 300;
+        const style = {
+          lineHeight: '40px',
+          margin: 20,
+          textAlign: 'center',
+          fontWeight: 'bold',
+          backgroundColor: '#eac5c5',
+        };
+
+        if (itemsCount > warningItemsCount) {
+            return (
+                <div>
+                    <Paper style={style} zDepth={3}>
+                        {this.getTranslation("sections_many_items_selected", {itemsCount, warningItemsCount})}
+                    </Paper>
+                    {this._renderTable()}
+                </div>
+            );
+        } else {
+            return this._renderTable();
+        }
+    },
+
+    _renderTable() {
         const {sidebarOpen, currentSectionName, sections, filters} = this.state;
         const {dataset} = this.props.store;
         const currentSection = this.state.sections[currentSectionName];

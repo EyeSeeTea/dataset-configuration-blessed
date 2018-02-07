@@ -114,6 +114,12 @@ export default class Settings {
             model: "organisationUnitLevel",
             defaultFilter: "name:eq:Country",
         },
+        {
+            name: "hideInDataSetAppAttributeId",
+            type: "d2-object",
+            model: "attributes",
+            defaultFilter: "code:eq:Hide in data set app",
+        },
     ];
 
     constructor(d2) {

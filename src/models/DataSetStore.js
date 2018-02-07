@@ -21,6 +21,10 @@ import {getCategoryCombos,
         update,
        } from '../utils/Dhis2Helpers';
 import * as Section from './Section';
+import getCustomForm from './CustomForm';
+import customFormTemplate from '!!raw-loader!./custom-form-resources/sectionForm.vm';
+import customFormJs from '!!raw-loader!./custom-form-resources/script.js';
+import customFormCss from '!!raw-loader!./custom-form-resources/style.css';
 
 // From maintenance-app/src/EditModel/objectActions.js
 const extractErrorMessagesFromResponse = compose(
@@ -218,6 +222,19 @@ export default class DataSetStore {
     isSharingStepVisible() {
         return !this.associations.project;
     }
+
+    _saveCustomForm(saving) {
+        const {richSections, dataset} = saving;
+        const categoryCombos$ = getCategoryCombos(this.d2);
+        const data = {template: customFormTemplate, css: customFormCss, js: customFormJs};
+        const api = this.d2.Api.getApi();
+
+        return categoryCombos$.then(categoryCombos => {
+            const htmlCode = getCustomForm(this.d2, dataset, richSections, categoryCombos, data);
+            const payload = {style: "NORMAL", htmlCode};
+            return api.post(['dataSets', dataset.id, 'form'].join('/'), payload).then(() => saving);
+        });
+    };
 
     getDataInputPeriods(startDate, endDate) {
         if (startDate && endDate) {
@@ -525,29 +542,20 @@ export default class DataSetStore {
         const sharing = buildSharingFromUserGroupNames(baseSharing, saving.userGroups, userGroupSharingByName);
         const datasetWithSharing = update(dataset, sharing.object);
         return _.imerge(saving, {dataset: datasetWithSharing});
-
     }
 
     _processSections(saving) {
         const {dataset} = saving;
-        const {coreCompetencies, initialCoreCompetencies, processedCoreCompetencies} = this.associations;
-        const sectionsProcessed = _.isEqual(
-            new Set(processedCoreCompetencies.map(cc => cc.id)),
-            new Set(coreCompetencies.map(cc => cc.id)),
-        );
+        const {coreCompetencies, initialCoreCompetencies} = this.associations;
+        return Section.getSections(this.d2, this.config,
+                dataset, initialCoreCompetencies, coreCompetencies).then(sectionsArray => {
+            const sections = _.keyBy(sectionsArray, "name");
+            const {errors, dataset: newDataset} = this.processDatasetSections(dataset, sections);
 
-        if (sectionsProcessed) {
-            return Promise.resolve(saving);
-        } else {
-            return Section.getSections(this.d2, this.config,
-                    dataset, initialCoreCompetencies, coreCompetencies).then(sectionsArray => {
-                const sections = _.keyBy(sectionsArray, "name");
-                const {errors, dataset: newDataset} = this.processDatasetSections(dataset, sections);
-
-                return _(errors).isEmpty() ? _.imerge(saving, {dataset: newDataset}) :
-                    Promise.reject("Cannot get sections. Go to sections step for more details");
-            });
-        }
+            return _(errors).isEmpty() ?
+                _.imerge(saving, {dataset: newDataset, richSections: sectionsArray}) :
+                Promise.reject("Cannot get sections. Go to sections step for more details");
+        });
     }
 
     _saveSections(saving) {
@@ -630,18 +638,24 @@ export default class DataSetStore {
         return postMetadata(this.d2, saving.metadata).then(() => saving);
     }
 
+    _processSave(methods) {
+        return methods.reduce((accPromise, method) => accPromise.then(method.bind(this)), this._getInitialSaving());
+    }
+
     save() {
-        return this._getInitialSaving()
-            .then(this._setDatasetId.bind(this))
-            .then(this._setDatasetCode.bind(this))
-            .then(this._addSharingToDataset.bind(this))
-            .then(this._processSections.bind(this))
-            .then(this._processDisaggregation.bind(this))
-            .then(this._saveSections.bind(this))
-            .then(this._saveDataset.bind(this))
-            .then(this._runMetadataOps.bind(this))
-            .then(this._addOrgUnitsToProject.bind(this))
-            .then(this._addDataSetToUserRoles.bind(this))
-            .then(this._sendNotificationMessages.bind(this));
+        return this._processSave([
+            this._setDatasetId,
+            this._setDatasetCode,
+            this._addSharingToDataset,
+            this._processSections,
+            this._processDisaggregation,
+            this._saveSections,
+            this._saveDataset,
+            this._runMetadataOps,
+            this._addOrgUnitsToProject,
+            this._addDataSetToUserRoles,
+            this._saveCustomForm,
+            this._sendNotificationMessages,
+        ]);
     }
 }

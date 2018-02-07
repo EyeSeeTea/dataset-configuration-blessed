@@ -296,6 +296,18 @@ function getUids(d2, length) {
     }
 }
 
+function collectionString(d2, objects, field, maxShown) {
+    const array = collectionToArray(objects);
+    const base = _(array).take(maxShown).map(field).join(", ");
+
+    if (array.length <= maxShown) {
+        return base;
+    } else {
+        return d2.i18n.getTranslation("this_and_n_others", {this: base, n: array.length - maxShown});
+    }
+}
+
+
 export {
     redirectToLogin,
     getCategoryCombos,
@@ -316,4 +328,5 @@ export {
     getUids,
     deepMerge,
     update,
+    collectionString,
 };
