@@ -4,7 +4,7 @@ import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
 import Card from 'material-ui/Card/Card';
 import CardText from 'material-ui/Card/CardText';
 import snackActions from '../../Snackbar/snack.actions';
-import {collectionToArray} from '../../utils/Dhis2Helpers';
+import {collectionToArray, collectionString} from '../../utils/Dhis2Helpers';
 
 const Save = React.createClass({
     mixins: [Translate],
@@ -53,6 +53,7 @@ const Save = React.createClass({
     },
 
     render() {
+        const {d2} = this.context;
         const {dataset, associations} = this.props.store;
         const {saveState, errors} = this.state;
         const ListItem = ({field, value}) => {
@@ -69,9 +70,16 @@ const Save = React.createClass({
         if (saveState === this.saveStates.SHOW || saveState === this.saveStates.SAVING) {
             return (
                 <div style={{fontSize: '1.2em', marginTop: 10}}>
-                    {saveState === "SAVING" ? <LinearProgress /> : null}
-
-                    <div>{this.getTranslation("wizard_presave_message")}</div>
+                    <div>
+                        {saveState === "SAVING" ?
+                            <div>
+                                <LinearProgress />
+                                <p><b>{this.getTranslation("wizard_save_message")}</b></p>
+                            </div>
+                            :
+                            this.getTranslation("wizard_presave_message")
+                        }
+                    </div>
 
                     <ul className="list-group">
                         <ListItem field="name"
@@ -83,7 +91,7 @@ const Save = React.createClass({
                         <ListItem field="linked_project"
                             value={associations.project && associations.project.name} />
                         <ListItem field="orgunits_settings"
-                            value={collectionToArray(dataset.organisationUnits || []).map(c => c.displayName).join(", ")} />
+                            value={collectionString(d2, dataset.organisationUnits, "displayName", 20)} />
                         <ListItem field="countries"
                             value={(associations.countries || []).map(c => c.displayName).join(", ")} />
                     </ul>
