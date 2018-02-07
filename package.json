@@ -28,7 +28,7 @@
   "dependencies": {
     "bluebird": "^3.5.0",
     "htmlencode": "^0.0.4",
-    "jquery": "^2.2.3",
+    "jquery": "^3.3.1",
     "json-loader": "^0.5.4",
     "raw-loader": "^0.5.1",
     "react-router": "^2.8.1",
