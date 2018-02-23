@@ -55,7 +55,7 @@ class App extends AppWithD2 {
         return (
             <MuiThemeProvider muiTheme={appTheme}>
                 <div>
-                    <HeaderBar />
+                    <HeaderBar showAppTitle="dataset-configuration" styles={{background: '#8c5023'}} />
                     <SinglePanelLayout style={{marginTop: "3.5rem"}}>
                         <MainContent>
                             {this.props.children}
