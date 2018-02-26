@@ -64,6 +64,7 @@ const OrganisationUnit = React.createClass({
                     model={model}
                     value={model.organisationUnits || []}
                     onChange={this._onChange}
+                    filters={{levels: "name:in:[Area,Facility Level]"}}
                 />
             </div>
         );
