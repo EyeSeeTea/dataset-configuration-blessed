@@ -58,6 +58,7 @@ class Factory {
         return this.getDataset(id).then(dataset => {
             dataset.id = undefined;
             dataset._sourceId = id;
+            dataset._sourceName = dataset.name;
             dataset.code = undefined;
             dataset.dataInputPeriods.forEach(dip => { dip.id = generateUid(); });
             dataset.dataSetElements.forEach(dse => {
