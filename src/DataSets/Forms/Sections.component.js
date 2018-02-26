@@ -199,7 +199,7 @@ const Sections = React.createClass({
 
     componentWillReceiveProps(props) {
         if (props.validateOnRender) {
-            const isValid = this._processDatasetSections();
+            const isValid = this._processDatasetSections({showErrors: true});
             props.formStatus(isValid);
         }
     },
@@ -207,7 +207,7 @@ const Sections = React.createClass({
     componentWillUnmount() {
         // Save state on back button (forward button saves state in componentWillReceiveProps)
         if (!this.props.validateOnRender) {
-            this._processDatasetSections();
+            this._processDatasetSections({showErrors: false});
         }
     },
 
@@ -242,7 +242,7 @@ const Sections = React.createClass({
     },
 
 
-    _processDatasetSections() {
+    _processDatasetSections({showErrors}) {
         const {store} = this.props;
         const getErrorMessage = (errors, maxMessages = 10) => {
             const errorsLimited = _.take(errors, maxMessages);
@@ -262,7 +262,7 @@ const Sections = React.createClass({
             const {errors, dataset} = store.processDatasetSections(store.dataset, this.state.sections);
             store.dataset = dataset;
             const isValid = _(errors).isEmpty();
-            if (!isValid) {
+            if (showErrors && !isValid) {
                 snackActions.show({message: getErrorMessage(errors)});
             }
             return isValid;

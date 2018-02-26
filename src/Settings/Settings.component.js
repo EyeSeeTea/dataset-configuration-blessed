@@ -51,7 +51,6 @@ const SettingsDialog = React.createClass({
             ],
             other: [
                 "dataElementGroupOutputId",
-                "dataElementGroupOutcomeId",
                 "dataElementGroupGlobalIndicatorMandatoryId",
                 "indicatorGroupGlobalIndicatorMandatoryId",
                 "dataElementGroupSetOriginId",

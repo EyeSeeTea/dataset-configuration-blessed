@@ -49,12 +49,6 @@ export default class Settings {
             defaultFilter: "code:eq:GL_Output_DEGROUP",
         },
         {
-            name: "dataElementGroupOutcomeId",
-            type: "d2-object",
-            model: "dataElementGroup",
-            defaultFilter: "code:eq:GL_OUTCOME_DEGROUP",
-        },
-        {
             name: "dataElementGroupGlobalIndicatorMandatoryId",
             type: "d2-object",
             model: "dataElementGroup",
