@@ -4,6 +4,7 @@ import deleteStore from './delete.store';
 import orgUnitsStore from './orgUnits.store';
 import sharingStore from './sharing.store';
 import { goToRoute } from '../router';
+import {currentUserHasPermission} from '../utils/Dhis2Helpers';
 import _ from 'lodash';
 
 const setupActions = (actions) => {
@@ -11,12 +12,15 @@ const setupActions = (actions) => {
     const contextActions = Action.createActionsFromNames(actions.map(a => a.name));
     const contextMenuIcons = _(actions).map(a => [a.name, a.icon || a.name]).fromPairs().value();
 
-    const isContextActionAllowed = function(selection, actionName) {
+    const isContextActionAllowed = function(d2, selection, actionName) {
         const action = actionsByName[actionName];
+        const arg = action && !action.multiple && _.isArray(selection) ? selection[0] : selection;
 
-        if (!action || !selection) {
+        if (!action || !selection || selection.length == 0) {
             return false;
         } else if (!action.multiple && selection.length != 1) {
+            return false;
+        } else if (action.isActive && !action.isActive(d2, arg)) {
             return false;
         } else {
             return true;
@@ -33,10 +37,31 @@ const setupActions = (actions) => {
     return {contextActions, contextMenuIcons, isContextActionAllowed};
 };
 
+const canCreate = (d2) =>
+    currentUserHasPermission(d2, d2.models.dataSet, "CREATE_PRIVATE");
+
+const canDelete = (d2, datasets) =>
+    currentUserHasPermission(d2, d2.models.dataSet, "DELETE") &&
+        _(datasets).every(dataset => dataset.access.delete);
+
+const canUpdate = (d2, datasets) => {
+    const publicDatasetsSelected = _(datasets).some(dataset => dataset.publicAccess.match(/^r/));
+    const privateDatasetsSelected = _(datasets).some(dataset => dataset.publicAccess.match(/^-/));
+
+    return (
+        (!privateDatasetsSelected ||
+            currentUserHasPermission(d2, d2.models.dataSet, "CREATE_PRIVATE")) &&
+        (!publicDatasetsSelected ||
+            currentUserHasPermission(d2, d2.models.dataSet, "CREATE_PUBLIC")) &&
+        _(datasets).every(dataset => dataset.access.update)
+    );
+}
+
 const {contextActions, contextMenuIcons, isContextActionAllowed} = setupActions([
     {
         name: 'edit',
         multiple: false,
+        isActive: (d2, dataset) => canUpdate(d2, [dataset]),
         onClick: dataset => goToRoute(`/datasets/edit/${dataset.id}`),
     },
     {
@@ -48,6 +73,7 @@ const {contextActions, contextMenuIcons, isContextActionAllowed} = setupActions(
         name: 'define_associations',
         multiple: true,
         icon: "business",
+        isActive: canUpdate,
         onClick: datasets => orgUnitsStore.setState(datasets),
     },
     {
@@ -59,11 +85,13 @@ const {contextActions, contextMenuIcons, isContextActionAllowed} = setupActions(
         name: 'clone',
         multiple: false,
         icon: "content_copy",
+        isActive: canCreate,
         onClick: dataset => goToRoute(`/datasets/clone/${dataset.id}`),
     },
     {
         name: 'delete',
         multiple: true,
+        isActive: canDelete,
         onClick: datasets => deleteStore.delete(datasets),
     },
 ]);
