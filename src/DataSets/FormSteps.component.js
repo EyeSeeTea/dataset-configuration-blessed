@@ -12,7 +12,7 @@ import GreyFields from './Forms/GreyFields.component';
 import Save from './Forms/Save.component';
 import snackActions from '../Snackbar/snack.actions';
 import LoadingMask from '../LoadingMask/LoadingMask.component';
-
+import Heading from 'd2-ui/lib/headings/Heading.component';
 import DataSetStore from '../models/DataSetStore';
 import Settings from '../models/Settings';
 
@@ -146,28 +146,24 @@ const DataSetFormSteps = React.createClass({
                 id: 'sections',
                 title: this.getTranslation("step_sections"),
                 component: Sections,
-                actionsBar: ["top", "bottom"],
                 props: props,
             },
             {
                 id: 'disaggregation',
                 title: this.getTranslation("step_disaggregation"),
                 component: Disaggregation,
-                actionsBar: ["top", "bottom"],
                 props: props,
             },
             {
                 id: 'grey_fields',
                 title: this.getTranslation("step_grey_fields"),
                 component: GreyFields,
-                actionsBar: ["top", "bottom"],
                 props: props,
             },
             {
                 id: 'sharing',
                 title: this.getTranslation("step_sharing"),
                 component: Sharing,
-                actionsBar: ["bottom"],
                 visible: store.isSharingStepVisible(),
                 props: props,
             },
@@ -180,15 +176,27 @@ const DataSetFormSteps = React.createClass({
             },
         ].filter(step => !step.disabled);
 
+        const {dataset} = this.state.store;
+        const actionTitle = this.getTranslation("action_" + this.props.action, {
+            title: dataset.name || "-",
+            sourceTitle: dataset._sourceName || "-",
+        });
+
         return (
-            <Wizard
-                steps={steps}
-                onFieldsChange={this._onFieldsChange}
-                onStepChange={this._onStepChange}
-                active={this.state.active}
-                doneUntil={this.state.doneUntil}
-                buttons={buttons}
-            />
+            <div>
+                <Heading style={{fontSize: 18}}>
+                    {actionTitle}
+                </Heading>
+
+                <Wizard
+                    steps={steps}
+                    onFieldsChange={this._onFieldsChange}
+                    onStepChange={this._onStepChange}
+                    active={this.state.active}
+                    doneUntil={this.state.doneUntil}
+                    buttons={buttons}
+                />
+            </div>
         );
     },
 });
