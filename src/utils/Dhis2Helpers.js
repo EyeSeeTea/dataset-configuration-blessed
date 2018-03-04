@@ -307,6 +307,13 @@ function collectionString(d2, objects, field, maxShown) {
     }
 }
 
+/* action: "CREATE_PUBLIC" | "CREATE_PRIVATE" | "DELETE" */
+function currentUserHasPermission(d2, model, action) {
+    const authoritiesByType =
+        _(d2.models.dataSets.authorities).map(auth => [auth.type, auth.authorities]).fromPairs().value();
+    return authoritiesByType[action] &&
+        _(authoritiesByType[action]).every(authority => d2.currentUser.authorities.has(authority));
+}
 
 export {
     redirectToLogin,
@@ -329,4 +336,5 @@ export {
     deepMerge,
     update,
     collectionString,
+    currentUserHasPermission,
 };
