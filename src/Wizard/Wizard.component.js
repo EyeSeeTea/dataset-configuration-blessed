@@ -56,7 +56,7 @@ const Wizard = React.createClass({
                 "isActive": index === this.props.active,
                 "isDone": index < this.props.doneUntil,
             }));
-        const actionsBar = currentStep.actionsBar || ["bottom"];
+        const actionsBar = currentStep.actionsBar || ["top", "bottom"];
         const firstStepIndex = indexedVisibleSteps[0].index;
         const lastStepIndex = indexedVisibleSteps[indexedVisibleSteps.length - 1].index;
         const showPrevious = this.props.active > firstStepIndex;

@@ -15,6 +15,7 @@ import Pagination from 'd2-ui/lib/pagination/Pagination.component';
 import OrgUnitsDialog from 'd2-ui/lib/org-unit-dialog/OrgUnitsDialog.component';
 import SharingDialog from 'd2-ui/lib/sharing/SharingDialog.component';
 import '../Pagination/Pagination.scss';
+import snackActions from '../Snackbar/snack.actions';
 
 // import DataTable from 'd2-ui/lib/data-table/DataTable.component';
 import MultipleDataTable from '../MultipleDataTable/MultipleDataTable.component';
@@ -34,6 +35,7 @@ import IconButton from 'material-ui/IconButton';
 import SettingsIcon from 'material-ui/svg-icons/action/settings';
 import Checkbox from 'material-ui/Checkbox/Checkbox';
 import FormHelpers from '../forms/FormHelpers';
+import {currentUserHasPermission} from '../utils/Dhis2Helpers';
 
 const {SimpleCheckBox} = FormHelpers;
 
@@ -53,7 +55,7 @@ const DataSets = React.createClass({
     
     contextTypes: {
         d2: React.PropTypes.object.isRequired,
-    },    
+    },
 
     mixins: [ObserverRegistry, Translate],
 
@@ -111,7 +113,7 @@ const DataSets = React.createClass({
         const filteredDataSets =
             searchValue ? allDataSets.filter().on('displayName').ilike(searchValue) : allDataSets;
         const order = sorting ? sorting.join(":") : undefined;
-        const fields = "id,name,displayName,shortName,created,lastUpdated,publicAccess,user"
+        const fields = "id,name,displayName,shortName,created,lastUpdated,publicAccess,user,access"
 
         filteredDataSets.list({order, fields}).then(da => {
             this.setState({
@@ -247,6 +249,9 @@ const DataSets = React.createClass({
             </div>
         );
 
+        const {d2} = this.context;
+        const userCanCreateDataSets = currentUserHasPermission(d2, d2.models.dataSet, "CREATE_PRIVATE");
+
         return (
             <div>
                 <SettingsDialog open={this.state.settingsOpen} onRequestClose={this.closeSettings} />
@@ -262,6 +267,7 @@ const DataSets = React.createClass({
                     objectsToShare={this.state.sharing.models}
                     open={true}
                     onRequestClose={listActions.hideSharingBox}
+                    onError={err => snackActions.show({message: err && err.message || 'Error'})}
                     bodyStyle={{minHeight: '400px'}}
                 /> : null }
 
@@ -287,7 +293,7 @@ const DataSets = React.createClass({
                             contextMenuActions={contextActions}
                             contextMenuIcons={contextMenuIcons}
                             primaryAction={contextActions.details}
-                            isContextActionAllowed={isContextActionAllowed}
+                            isContextActionAllowed={(...args) => isContextActionAllowed(d2, ...args)}
                             activeRows={activeRows}
                             onActiveRowsChange={this.onActiveRowsChange}
                             isMultipleSelectionAllowed={true}
@@ -301,10 +307,11 @@ const DataSets = React.createClass({
                                 detailsObject={this.state.detailsObject}
                                 onClose={listActions.hideDetailsBox}
                             />
-                        : null}                    
+                        : null}
                 </div>
-                <ListActionBar route="datasets/add" />
-            </div>            
+
+                {userCanCreateDataSets && <ListActionBar route="datasets/add" />}
+            </div>
         );
     },
 });

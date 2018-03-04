@@ -64,26 +64,26 @@ const GeneralInformation = React.createClass({
                 multiLine: true,
             }),
 
-            this.state.currentUserHasAdminRole ? FormHelpers.getTextField({
+            this.state.currentUserHasAdminRole && FormHelpers.getTextField({
                 name: "dataset.expiryDays",
                 label: this.getTranslation("expiry_days"),
                 help: this.getTranslation("expiry_days_help"),
                 value: dataset.expiryDays,
                 type: "number",
-            }) : null,
+            }),
 
-            FormHelpers.getTextField({
+            this.state.currentUserHasAdminRole && FormHelpers.getTextField({
                 name: "dataset.openFuturePeriods",
                 label: this.getTranslation("open_future_periods"),
                 value: dataset.openFuturePeriods,
                 type: "number",
             }),
 
-            FormHelpers.getSelectField({
-                name: "dataset.periodType", 
+            this.state.currentUserHasAdminRole && FormHelpers.getSelectField({
+                name: "dataset.periodType",
                 label: this.getTranslation("period_type"),
                 isRequired: true,
-                options: periodTypes.map(pt => ({text: pt, value: pt})), 
+                options: periodTypes.map(pt => ({text: pt, value: pt})),
                 value: dataset.periodType,
             }),
 

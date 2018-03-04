@@ -58,6 +58,7 @@ class Factory {
         return this.getDataset(id).then(dataset => {
             dataset.id = undefined;
             dataset._sourceId = id;
+            dataset._sourceName = dataset.name;
             dataset.code = undefined;
             dataset.dataInputPeriods.forEach(dip => { dip.id = generateUid(); });
             dataset.dataSetElements.forEach(dse => {
@@ -150,7 +151,12 @@ class Factory {
             const getCode = userGroupAccess => userGroupAccess.displayName.split("_")[0];
             return getSharing(this.d2, _dataset)
                 .then(sharing => _(sharing.object.userGroupAccesses).map(getCode).uniq().value())
-                .then(sharingCountryCodes => _(countriesByCode).at(sharingCountryCodes).compact().value());
+                .then(sharingCountryCodes => _(countriesByCode).at(sharingCountryCodes).compact().value())
+                .catch(err => {
+                    console.error("Cannot get sharing for dataset, default to empty countries", err);
+                    return [];
+                });
+
         } else {
             return Promise.resolve([]);
         }
