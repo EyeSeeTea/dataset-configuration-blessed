@@ -1,0 +1,13 @@
+export default {
+  token: atob("MDMyNDJmYzZiMGM1YTQ4NTgyMmU2YjhkM2U4MzM3YjVhMGI5NWZlMg=="),
+  issues: {
+    repository: "EyeSeeTea/dataset-configuration-blessed",
+    title: "User feedback",
+    renderBody: body => ["## dhis2", "", "- Username: " + d2.currentUser.username, body].join("\n"),
+  },
+  snapshots: {
+    repository: "EyeSeeTeaBotTest/snapshots",
+    branch: "master",
+  },
+  feedbackOptions: {},
+};
