@@ -13,6 +13,7 @@ import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import appTheme from './app.theme';
 import SnackbarContainer from '../Snackbar/SnackbarContainer.component';
 import SessionDialog from '../SessionDialog/SessionDialog.component';
+import feedbackOptions from '../config/feedback';
 
 const HeaderBar = withStateFrom(headerBarStore$, HeaderBarComponent);
 
@@ -27,25 +28,7 @@ class App extends AppWithD2 {
     }
 
     setupFeedback() {
-        $.feedbackGithub({
-          token: atob("OTZhMzE0MTlmNTgzNTdmYWI5NWVjODBiNTZhNDNjOWExODY4YjQyOQ=="),
-          issues: {
-            repository: "EyeSeeTea/dataset-configuration-blessed",
-            title: "User feedback",
-            renderBody: (body) => {
-                return [
-                    "## dhis2\n",
-                    "- Username: " + d2.currentUser.username,
-                    body,
-                ].join("\n");
-            },
-          },
-          snapshots: {
-            repository: "EyeSeeTeaBotTest/snapshots",
-            branch: "master",
-          },
-          feedback: {},
-        });
+        $.feedbackGithub(feedbackOptions);
     }
 
     render() {
@@ -56,6 +39,7 @@ class App extends AppWithD2 {
             <MuiThemeProvider muiTheme={appTheme}>
                 <div>
                     <HeaderBar showAppTitle="dataset-configuration" styles={{background: '#3c3c3c'}} />
+
                     <SinglePanelLayout style={{marginTop: "3.5rem"}}>
                         <MainContent>
                             {this.props.children}
@@ -63,6 +47,7 @@ class App extends AppWithD2 {
                     </SinglePanelLayout>
 
                     <SnackbarContainer />
+
                     <SessionDialog />
                 </div>
             </MuiThemeProvider>
