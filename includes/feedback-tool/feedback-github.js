@@ -1,15 +1,51 @@
+/*
+Github module for https://github.com/eisnerd/feedback-tool
+
+You need a personal token that will be used both as a reporter user and to upload screenshot
+images. Steps:
+
+  - Create a specific github user.
+  - Create a project (i.e.) snapshots to store images.
+  - Create a personal token:
+    - User -> Settings -> Developer Settings -> Personal access tokens -> Generate new token
+    - Description: Upload screenshots for feedback.js
+    - Select scopes: repo -> public_repo.
+    - Generate token.
+
+This token should be kept secret, outside of any public repository. If that's too much of a
+hassle, it should be encoded somehow in the source. That's not secure (anyone could take
+it and upload files to our snapshot repo), but at least you won't get it automatically
+revoked by github.
+
+Usage:
+
+  $.feedbackGithub({
+    token: "PERSONAL_TOKEN",
+    issues: {
+      repository: "ORG/PROJECT_WHERE_ISSUES_WILL_BE_CREATED",
+      title: "User feedback",
+      renderBody: body => ["## Some report", "", body].join("\n"),
+    },
+    snapshots: {
+      repository: "ORG2/PROJECT_WHERE_SNAPSHOTS_WILL_BE_UPLOADED_TO",
+      branch: "master",
+    },
+    feedbackOptions: {},
+  });
+*/
+
 class FeedBackToolGithub {
   constructor(options) {
     this.token = options.token;
     this.issues = options.issues;
     this.snapshots = options.snapshots;
-    this.feedback = options.feedback;
+    this.feedbackOptions = options.feedbackOptions;
   }
   
   init() {
     $.feedback(Object.assign({}, {
       postFunction: this._sendReport.bind(this),
-    }, this.feedback));
+    }, this.feedbackOptions));
   }
   
   _setAuthHeader(xhr) {
@@ -23,14 +59,14 @@ class FeedBackToolGithub {
      
     this._uploadFile("screenshot-" + uid + ".png", imgBase64)
       .then(url => this._postIssue(data, url))
-      .then(data.success, data.error); 
+      .then(data.success, data.error);
   }
 
   _uploadFile(filename, contents) {
     const payload = {
       "message": "feedback.js snapshot",
       "branch": this.snapshots.branch,
-      "content": contents,    
+      "content": contents,
     };
     
     return $.ajax({
@@ -59,7 +95,7 @@ class FeedBackToolGithub {
     ].join("\n")
     const payload = {
       "title": this.issues.title,
-      "body": this.issues.renderBody ? this.issues.renderBody(body) : body, 
+      "body": this.issues.renderBody ? this.issues.renderBody(body) : body,
     };
     
     return $.ajax({
@@ -73,7 +109,7 @@ class FeedBackToolGithub {
 }
 
 $.feedbackGithub = function(options) {
-  const feedback = new FeedBackToolGithub(options);
-  feedback.init();
-  return feedback;
+  const feedBackToolGithub = new FeedBackToolGithub(options);
+  feedBackToolGithub.init();
+  return feedBackToolGithub;
 }
