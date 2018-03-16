@@ -37,7 +37,7 @@ const FilterSelectField = ({label, value, onChange, items, styles = {}, emptyLab
             onChange={(event, index, value) => onChange(value)}
         >
             {allItems.map((item, idx) =>
-                <MenuItem key={idx} value={item.value} primaryText={<span>item.text</span>} />)
+                <MenuItem key={idx} value={item.value} primaryText={<span>{item.text}</span>} />)
             }
         </SelectField>
     );
