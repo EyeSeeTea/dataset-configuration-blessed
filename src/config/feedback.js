@@ -1,7 +1,7 @@
 export default {
   token: atob("MDMyNDJmYzZiMGM1YTQ4NTgyMmU2YjhkM2U4MzM3YjVhMGI5NWZlMg=="),
   createIssue: false,
-  sendToDhis2UserGroups: ["GL_GlobalAdministrator"],
+  sendToDhis2UserGroups: ["GL_GlobalAdministrator", "GL_LocalindicatorAdmin"],
   issues: {
     repository: "EyeSeeTea/dataset-configuration-blessed",
     title: "[dataset-configuration] User feedback",
