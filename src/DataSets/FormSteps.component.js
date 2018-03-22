@@ -129,36 +129,42 @@ const DataSetFormSteps = React.createClass({
                 title: this.getTranslation("step_initial_configuration"),
                 component: InitialConfig,
                 props: props,
+                help: 'placeholder for initialConfig help',
             },
             {
                 id: 'generalInformation',
                 title: this.getTranslation("step_general_information"),
                 component: GeneralInformation,
                 props: props,
+                help: 'placeholder for generalInformation help',
             },
             {
                 id: 'organisationUnit',
                 title: this.getTranslation("organisation_unit"),
                 component: OrganisationUnit,
                 props: props,
+                help: 'placeholder for organisationUnit help',
             },
             {
                 id: 'sections',
                 title: this.getTranslation("step_sections"),
                 component: Sections,
                 props: props,
+                help: 'placeholder for sections help',
             },
             {
                 id: 'disaggregation',
                 title: this.getTranslation("step_disaggregation"),
                 component: Disaggregation,
                 props: props,
+                help: 'placeholder for disaggregation help',
             },
             {
                 id: 'grey_fields',
                 title: this.getTranslation("step_grey_fields"),
                 component: GreyFields,
                 props: props,
+                help: 'placeholder for grey help',
             },
             {
                 id: 'sharing',
@@ -166,6 +172,7 @@ const DataSetFormSteps = React.createClass({
                 component: Sharing,
                 visible: store.isSharingStepVisible(),
                 props: props,
+                help: 'placeholder for sharing help',
             },
             {
                 id: 'save',
@@ -173,6 +180,7 @@ const DataSetFormSteps = React.createClass({
                 component: Save,
                 props: _.merge(props,
                     {saving: this.state.saving, afterSave: this._afterSave}),
+                help: 'placeholder for save help',
             },
         ].filter(step => !step.disabled);
 

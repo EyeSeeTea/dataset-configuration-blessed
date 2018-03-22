@@ -5,6 +5,10 @@ import ToolbarGroup from 'material-ui/Toolbar/ToolbarGroup';
 import RaisedButton from 'material-ui/RaisedButton/RaisedButton';
 import Card from 'material-ui/Card/Card';
 import CardText from 'material-ui/Card/CardText';
+import IconButton from 'material-ui/IconButton';
+import HelpOutlineIcon from 'material-ui/svg-icons/action/help-outline';
+import Dialog from 'material-ui/Dialog/Dialog';
+import FlatButton from 'material-ui/FlatButton/FlatButton';
 import Steps from 'react-steps';
 
 const Wizard = React.createClass({
@@ -12,7 +16,6 @@ const Wizard = React.createClass({
 
     propTypes: {
         fields: React.PropTypes.arrayOf(React.PropTypes.object),
-        buttons: React.PropTypes.arrayOf(React.PropTypes.object),
         onFieldsChange: React.PropTypes.func,
     },
 
@@ -27,6 +30,7 @@ const Wizard = React.createClass({
 
     getInitialState() {
         return {
+            helpOpen: false,
         };
     },
 
@@ -42,6 +46,14 @@ const Wizard = React.createClass({
         const newActive = _(this._getIndexedVisibleSteps())
             .map("index").sortBy().find(idx => idx > this.props.active);
         this.props.onStepChange(newActive);
+    },
+
+    _openHelp() {
+        this.setState({helpOpen: true});
+    },
+
+    _closeHelp() {
+        this.setState({helpOpen: false});
     },
 
     render() {
@@ -61,10 +73,23 @@ const Wizard = React.createClass({
         const lastStepIndex = indexedVisibleSteps[indexedVisibleSteps.length - 1].index;
         const showPrevious = this.props.active > firstStepIndex;
         const showNext = this.props.active < lastStepIndex;
-        const buttons = this._renderButtons(currentStep, showPrevious, showNext);
+        const actions = [
+            <FlatButton
+                label={this.getTranslation('close')}
+                onClick={this._closeHelp}
+            />,
+        ];
 
         return (
             <div>
+                <Dialog
+                    title={this.getTranslation('help')}
+                    actions={actions}
+                    open={this.state.helpOpen}
+                    onRequestClose={this._closeHelp}
+                >
+                {currentStep.help}
+                </Dialog>
                 <Steps 
                     items={items} 
                     type="point" 
@@ -75,7 +100,7 @@ const Wizard = React.createClass({
                     }}/>
 
 
-                {_(actionsBar).includes("top") && buttons}
+                {_(actionsBar).includes("top") && this._renderButtons(currentStep, showPrevious, showNext, true)}
 
                 <Card>
                     <CardText>
@@ -87,7 +112,7 @@ const Wizard = React.createClass({
                     </CardText>
                 </Card>
 
-                {_(actionsBar).includes("bottom") && buttons}
+                {_(actionsBar).includes("top") && this._renderButtons(currentStep, showPrevious, showNext, false)}
             </div>
         );
     },
@@ -98,7 +123,13 @@ const Wizard = React.createClass({
             .filter(({step}) => step.visible !== false);
     },
 
-    _renderButtons(step, showPrevious, showNext) {
+    _renderButtons(step, showPrevious, showNext, showHelp) {
+        const help = (
+            <IconButton tooltip={this.getTranslation("help")} onClick={this._openHelp}>
+                <HelpOutlineIcon />
+            </IconButton>
+        );
+
         return (
             <Toolbar>
                 <ToolbarGroup>
@@ -124,6 +155,7 @@ const Wizard = React.createClass({
                             null
                     )}
                 </ToolbarGroup>
+                {showHelp && help}
             </Toolbar>
         );
     },
