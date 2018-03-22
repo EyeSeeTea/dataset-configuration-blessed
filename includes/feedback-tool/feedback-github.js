@@ -99,7 +99,7 @@ class FeedBackToolGithub {
       "",
       info.note,
       "",
-      "![]( " + screenshotUrl + " )",
+      "![See screenshot here]( " + screenshotUrl + " )",
     ].join("\n");
 
     return {
