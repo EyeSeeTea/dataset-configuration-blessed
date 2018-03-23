@@ -259,7 +259,7 @@ const DataSets = React.createClass({
         const actions = [
             <FlatButton
                 label={this.getTranslation('close')}
-                onClick={this.closeLogs}
+                onClick={listActions.hideLogs}
             />,
         ];
 
