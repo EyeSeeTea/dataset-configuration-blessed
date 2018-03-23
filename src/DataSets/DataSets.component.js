@@ -24,6 +24,7 @@ import DetailsBoxWithScroll from './DetailsBoxWithScroll.component';
 import listActions from './list.actions';
 import { contextActions, contextMenuIcons, isContextActionAllowed } from './context.actions';
 import detailsStore from './details.store';
+import logsStore from './logs.store';
 import deleteStore from './delete.store';
 import orgUnitsStore from './orgUnits.store';
 import sharingStore from './sharing.store';
@@ -34,6 +35,8 @@ import SettingsDialog from '../Settings/Settings.component';
 import IconButton from 'material-ui/IconButton';
 import SettingsIcon from 'material-ui/svg-icons/action/settings';
 import Checkbox from 'material-ui/Checkbox/Checkbox';
+import Dialog from 'material-ui/Dialog/Dialog';
+import FlatButton from 'material-ui/FlatButton/FlatButton';
 import FormHelpers from '../forms/FormHelpers';
 import {currentUserHasPermission} from '../utils/Dhis2Helpers';
 
@@ -52,7 +55,7 @@ const DataSets = React.createClass({
     propTypes: {
         name: React.PropTypes.string
     },
-    
+
     contextTypes: {
         d2: React.PropTypes.object.isRequired,
     },
@@ -89,11 +92,12 @@ const DataSets = React.createClass({
     componentDidMount() {
         const d2 = this.context.d2;
         this.getDataSets();
-        
+
         this.registerDisposable(detailsStore.subscribe(detailsObject => this.setState({detailsObject})));
         this.registerDisposable(deleteStore.subscribe(deleteObjects => this.getDataSets()));
         this.registerDisposable(this.subscribeToModelStore(sharingStore, "sharing"));
         this.registerDisposable(this.subscribeToModelStore(orgUnitsStore, "orgUnits"));
+        this.registerDisposable(logsStore.subscribe(logsObject => this.setState({logsObject})));
     },
 
     subscribeToModelStore(store, modelName) {
@@ -123,7 +127,7 @@ const DataSets = React.createClass({
             });
         });
     },
-    
+
     searchListByName(searchObserver) {
 
         //bind key search listener
@@ -252,6 +256,13 @@ const DataSets = React.createClass({
         const {d2} = this.context;
         const userCanCreateDataSets = currentUserHasPermission(d2, d2.models.dataSet, "CREATE_PRIVATE");
 
+        const actions = [
+            <FlatButton
+                label={this.getTranslation('close')}
+                onClick={this.closeLogs}
+            />,
+        ];
+
         return (
             <div>
                 <SettingsDialog open={this.state.settingsOpen} onRequestClose={this.closeSettings} />
@@ -308,6 +319,17 @@ const DataSets = React.createClass({
                                 onClose={listActions.hideDetailsBox}
                             />
                         : null}
+                    {
+                         this.state.logsObject ? (
+                             <Dialog
+                                 title={this.getTranslation('logs')}
+                                 actions={actions}
+                                 open={true}
+                                 onRequestClose={listActions.hideLogs}
+                              >
+                              Holaaaa
+                              </Dialog>)
+                        : null}
                 </div>
 
                 {userCanCreateDataSets && <ListActionBar route="datasets/add" />}
@@ -317,4 +339,3 @@ const DataSets = React.createClass({
 });
 
 export default DataSets;
-

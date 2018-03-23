@@ -2,6 +2,7 @@ import Action from 'd2-ui/lib/action/Action';
 import detailsStore from './details.store';
 import deleteStore from './delete.store';
 import orgUnitsStore from './orgUnits.store';
+import logsStore from './logs.store';
 import sharingStore from './sharing.store';
 import { goToRoute } from '../router';
 import {currentUserHasPermission} from '../utils/Dhis2Helpers';
@@ -93,6 +94,12 @@ const {contextActions, contextMenuIcons, isContextActionAllowed} = setupActions(
         multiple: true,
         isActive: canDelete,
         onClick: datasets => deleteStore.delete(datasets),
+    },
+    {
+        name: 'logs',
+        multiple: true,
+        icon: "list",
+        onClick: datasets => logsStore.setState(datasets),
     },
 ]);
 

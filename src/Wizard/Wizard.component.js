@@ -18,7 +18,7 @@ const Wizard = React.createClass({
 
     getDefaultProps: function() {
         return {
-            onFieldsChange: _.identity, 
+            onFieldsChange: _.identity,
             nextEnabled: true,
             active: 0,
             doneUntil: 0,
@@ -65,9 +65,9 @@ const Wizard = React.createClass({
 
         return (
             <div>
-                <Steps 
-                    items={items} 
-                    type="point" 
+                <Steps
+                    items={items}
+                    type="point"
                     styles={{
                         main: {fontFamily: 'Roboto, sans-serif', fontSize: '1.2em'},
                         doneItemNumber: {background: "#3162C5"},
@@ -79,10 +79,10 @@ const Wizard = React.createClass({
 
                 <Card>
                     <CardText>
-                        <currentStep.component 
-                            onFieldsChange={(...args) => 
-                                this.props.onFieldsChange(currentStep.id, ...args)} 
-                            {...currentStep.props} 
+                        <currentStep.component
+                            onFieldsChange={(...args) =>
+                                this.props.onFieldsChange(currentStep.id, ...args)}
+                            {...currentStep.props}
                         />
                     </CardText>
                 </Card>
