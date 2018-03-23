@@ -272,7 +272,7 @@ export default class DataSetStore {
             const newAssociations = _.clone(associations);
             const getOrgUnitIds = (ds) => ds.organisationUnits.toArray().map(ou => ou.id);
 
-            newDataset.name = project.name ? project.name : "";
+            newDataset.name = project.name ? `${project.name} DataSet` : "";
             newAssociations.dataInputStartDate =
                 project.startDate ? new Date(project.startDate) : undefined;
             newAssociations.dataInputEndDate =
