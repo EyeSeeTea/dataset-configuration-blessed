@@ -16,12 +16,13 @@ const Wizard = React.createClass({
 
     propTypes: {
         fields: React.PropTypes.arrayOf(React.PropTypes.object),
+        buttons: React.PropTypes.arrayOf(React.PropTypes.object),
         onFieldsChange: React.PropTypes.func,
     },
 
     getDefaultProps: function() {
         return {
-            onFieldsChange: _.identity, 
+            onFieldsChange: _.identity,
             nextEnabled: true,
             active: 0,
             doneUntil: 0,
@@ -88,11 +89,11 @@ const Wizard = React.createClass({
                     open={this.state.helpOpen}
                     onRequestClose={this._closeHelp}
                 >
-                {currentStep.help}
+                    {currentStep.help}
                 </Dialog>
-                <Steps 
-                    items={items} 
-                    type="point" 
+                <Steps
+                    items={items}
+                    type="point"
                     styles={{
                         main: {fontFamily: 'Roboto, sans-serif', fontSize: '1.2em'},
                         doneItemNumber: {background: "#3162C5"},
@@ -100,14 +101,14 @@ const Wizard = React.createClass({
                     }}/>
 
 
-                {_(actionsBar).includes("top") && this._renderButtons(currentStep, showPrevious, showNext, true)}
+                {_(actionsBar).includes("top") && this._renderButtons(currentStep, showPrevious, showNext, currentStep.help != '')}
 
                 <Card>
                     <CardText>
-                        <currentStep.component 
-                            onFieldsChange={(...args) => 
-                                this.props.onFieldsChange(currentStep.id, ...args)} 
-                            {...currentStep.props} 
+                        <currentStep.component
+                            onFieldsChange={(...args) =>
+                                this.props.onFieldsChange(currentStep.id, ...args)}
+                            {...currentStep.props}
                         />
                     </CardText>
                 </Card>
@@ -124,10 +125,12 @@ const Wizard = React.createClass({
     },
 
     _renderButtons(step, showPrevious, showNext, showHelp) {
-        const help = (
+        const renderHelp = () => (
+            <ToolbarGroup>
             <IconButton tooltip={this.getTranslation("help")} onClick={this._openHelp}>
                 <HelpOutlineIcon />
             </IconButton>
+            </ToolbarGroup>
         );
 
         return (
@@ -155,7 +158,7 @@ const Wizard = React.createClass({
                             null
                     )}
                 </ToolbarGroup>
-                {showHelp && help}
+                {showHelp && renderHelp()}
             </Toolbar>
         );
     },
