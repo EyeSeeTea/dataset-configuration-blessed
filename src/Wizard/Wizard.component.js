@@ -126,37 +126,39 @@ const Wizard = React.createClass({
 
     _renderButtons(step, showPrevious, showNext, showHelp) {
         const renderHelp = () => (
-            <ToolbarGroup>
-            <IconButton tooltip={this.getTranslation("help")} onClick={this._openHelp}>
-                <HelpOutlineIcon />
-            </IconButton>
+            <ToolbarGroup lastChild={true}>
+                <IconButton tooltip={this.getTranslation("help")} onClick={this._openHelp}>
+                    <HelpOutlineIcon />
+                </IconButton>
             </ToolbarGroup>
         );
 
         return (
             <Toolbar>
-                <ToolbarGroup>
-                    <RaisedButton
-                        label={"← " + this.getTranslation("previous")}
-                        disabled={this.props.previousEnabled === false || !showPrevious}
-                        onTouchTap={this._onPreviousClicked}
-                    />
-                    <RaisedButton
-                        label={this.getTranslation("next") + " →"}
-                        disabled={this.props.nextEnabled === false || !showNext}
-                        onTouchTap={this._onNextClicked}
-                    />
-                </ToolbarGroup>
+                <ToolbarGroup style={{flexGrow: 3}}>
+                    <ToolbarGroup>
+                        <RaisedButton
+                            label={"← " + this.getTranslation("previous")}
+                            disabled={this.props.previousEnabled === false || !showPrevious}
+                            onTouchTap={this._onPreviousClicked}
+                        />
+                        <RaisedButton
+                            label={this.getTranslation("next") + " →"}
+                            disabled={this.props.nextEnabled === false || !showNext}
+                            onTouchTap={this._onNextClicked}
+                        />
+                    </ToolbarGroup>
 
-                <ToolbarGroup>
-                    {this.props.buttons.map(button =>
-                        !button.showFunc || button.showFunc(step) ?
-                            (<RaisedButton
-                                key={button.id}
-                                label={button.label}
-                                onTouchTap={button.onClick} />) :
-                            null
-                    )}
+                    <ToolbarGroup>
+                        {this.props.buttons.map(button =>
+                            !button.showFunc || button.showFunc(step) ?
+                                (<RaisedButton
+                                    key={button.id}
+                                    label={button.label}
+                                    onTouchTap={button.onClick} />) :
+                                null
+                        )}
+                    </ToolbarGroup>
                 </ToolbarGroup>
                 {showHelp && renderHelp()}
             </Toolbar>
