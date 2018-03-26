@@ -34,6 +34,9 @@ import SettingsDialog from '../Settings/Settings.component';
 import IconButton from 'material-ui/IconButton';
 import SettingsIcon from 'material-ui/svg-icons/action/settings';
 import Checkbox from 'material-ui/Checkbox/Checkbox';
+import Dialog from 'material-ui/Dialog/Dialog';
+import FlatButton from 'material-ui/FlatButton/FlatButton';
+import HelpOutlineIcon from 'material-ui/svg-icons/action/help-outline';
 import FormHelpers from '../forms/FormHelpers';
 import {currentUserHasPermission} from '../utils/Dhis2Helpers';
 
@@ -82,6 +85,7 @@ const DataSets = React.createClass({
             sorting: null,
             searchValue: null,
             orgUnits: null,
+            helpOpen: false,
         }
     },
 
@@ -173,6 +177,14 @@ const DataSets = React.createClass({
         this.setState({sorting}, this.getDataSets);
     },
 
+    _openHelp() {
+        this.setState({helpOpen: true});
+    },
+
+    _closeHelp() {
+        this.setState({helpOpen: false});
+    },
+
     render() {
         const currentlyShown = calculatePageValue(this.state.pager);
 
@@ -252,8 +264,31 @@ const DataSets = React.createClass({
         const {d2} = this.context;
         const userCanCreateDataSets = currentUserHasPermission(d2, d2.models.dataSet, "CREATE_PRIVATE");
 
+        const helpActions = [
+            <FlatButton
+                label={this.getTranslation('close')}
+                onClick={this._closeHelp}
+            />,
+        ];
+
+        const renderHelp = () => (
+            <div style={{float: 'right'}}>
+                <IconButton tooltip={this.getTranslation("help")} onClick={this._openHelp}>
+                    <HelpOutlineIcon />
+                </IconButton>
+            </div>
+        );
+
         return (
             <div>
+                <Dialog
+                    title={this.getTranslation('help')}
+                    actions={helpActions}
+                    open={this.state.helpOpen}
+                    onRequestClose={this._closeHelp}
+                >
+                    {this.getTranslation('help_landingPage')}
+                </Dialog>
                 <SettingsDialog open={this.state.settingsOpen} onRequestClose={this.closeSettings} />
                 {this.state.orgUnits ? <OrgUnitsDialog
                      objects={this.state.orgUnits.models}
@@ -275,6 +310,7 @@ const DataSets = React.createClass({
                     <div style={{ float: 'left', width: '75%' }}>
                         <SearchBox searchObserverHandler={this.searchListByName}/>
                     </div>
+                    {this.getTranslation('help_landingPage') != '' && renderHelp()}
                     {this.state.currentUserHasAdminRole && renderSettingsButton()}
                     <div>
                         <Pagination {...paginationProps} />
