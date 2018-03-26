@@ -287,7 +287,7 @@ const DataSets = React.createClass({
                     open={this.state.helpOpen}
                     onRequestClose={this._closeHelp}
                 >
-                    {this.getTranslation('help_landingPage')}
+                    {this.getTranslation("help_landing_page")}
                 </Dialog>
                 <SettingsDialog open={this.state.settingsOpen} onRequestClose={this.closeSettings} />
                 {this.state.orgUnits ? <OrgUnitsDialog
@@ -310,7 +310,7 @@ const DataSets = React.createClass({
                     <div style={{ float: 'left', width: '75%' }}>
                         <SearchBox searchObserverHandler={this.searchListByName}/>
                     </div>
-                    {this.getTranslation('help_landingPage') != '' && renderHelp()}
+                    {this.getTranslation("help_landing_page") != '' && renderHelp()}
                     {this.state.currentUserHasAdminRole && renderSettingsButton()}
                     <div>
                         <Pagination {...paginationProps} />
