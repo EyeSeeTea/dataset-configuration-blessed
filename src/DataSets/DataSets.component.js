@@ -55,7 +55,7 @@ const DataSets = React.createClass({
     propTypes: {
         name: React.PropTypes.string
     },
-    
+
     contextTypes: {
         d2: React.PropTypes.object.isRequired,
     },
@@ -93,7 +93,7 @@ const DataSets = React.createClass({
     componentDidMount() {
         const d2 = this.context.d2;
         this.getDataSets();
-        
+
         this.registerDisposable(detailsStore.subscribe(detailsObject => this.setState({detailsObject})));
         this.registerDisposable(deleteStore.subscribe(deleteObjects => this.getDataSets()));
         this.registerDisposable(this.subscribeToModelStore(sharingStore, "sharing"));
@@ -127,7 +127,7 @@ const DataSets = React.createClass({
             });
         });
     },
-    
+
     searchListByName(searchObserver) {
 
         //bind key search listener
@@ -353,4 +353,3 @@ const DataSets = React.createClass({
 });
 
 export default DataSets;
-
