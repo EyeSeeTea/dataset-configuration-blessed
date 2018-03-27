@@ -12,7 +12,8 @@ const GreyFields = React.createClass({
     },
 
     componentWillReceiveProps(props) {
-        props.formStatus(true);
+        if (props.validateOnRender)
+            props.formStatus(true);
     },
 
     _save(greyedFields) {
