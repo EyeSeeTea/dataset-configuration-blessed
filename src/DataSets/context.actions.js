@@ -1,3 +1,4 @@
+import { getInstance as getD2 } from 'd2/lib/d2';
 import Action from 'd2-ui/lib/action/Action';
 import detailsStore from './details.store';
 import deleteStore from './delete.store';
@@ -58,24 +59,47 @@ const canUpdate = (d2, datasets) => {
     );
 }
 
+function logNRun(actionName, f) {
+    // Return a function that, when called with a dataset, logs the
+    // actionName and some info related to the dataset, and then calls
+    // f(dataset)
+    async function log(actionName, dataset) {
+        const d2 = await getD2();
+        const store = await d2.dataStore.get('dataset-configuration');
+        const logs = await store.get('logs').catch(() => []);
+        logs.push({date: Date(),
+                   action: actionName,
+                   user: {displayName: d2.currentUser.name,
+                          username: d2.currentUser.username,
+                          id: d2.currentUser.id},
+                   dataset: {displayName: dataset.name,
+                             id: dataset.id}});
+        store.set('logs', logs);
+    }
+    return (dataset) => {
+        log(actionName, dataset);
+        f(dataset);
+    }
+}
+
 const {contextActions, contextMenuIcons, isContextActionAllowed} = setupActions([
     {
         name: 'edit',
         multiple: false,
         isActive: (d2, dataset) => canUpdate(d2, [dataset]),
-        onClick: dataset => goToRoute(`/datasets/edit/${dataset.id}`),
+        onClick: logNRun('edit', dataset => goToRoute(`/datasets/edit/${dataset.id}`)),
     },
     {
         name: 'share',
         multiple: true,
-        onClick: datasets => sharingStore.setState(datasets),
+        onClick: logNRun('share', datasets => sharingStore.setState(datasets)),
     },
     {
         name: 'define_associations',
         multiple: true,
         icon: "business",
         isActive: canUpdate,
-        onClick: datasets => orgUnitsStore.setState(datasets),
+        onClick: logNRun('define associations', datasets => orgUnitsStore.setState(datasets)),
     },
     {
         name: 'details',
@@ -87,13 +111,13 @@ const {contextActions, contextMenuIcons, isContextActionAllowed} = setupActions(
         multiple: false,
         icon: "content_copy",
         isActive: canCreate,
-        onClick: dataset => goToRoute(`/datasets/clone/${dataset.id}`),
+        onClick: logNRun('clone', dataset => goToRoute(`/datasets/clone/${dataset.id}`)),
     },
     {
         name: 'delete',
         multiple: true,
         isActive: canDelete,
-        onClick: datasets => deleteStore.delete(datasets),
+        onClick: logNRun('delete', datasets => deleteStore.delete(datasets)),
     },
     {
         name: 'logs',
