@@ -29,7 +29,7 @@ import deleteStore from './delete.store';
 import orgUnitsStore from './orgUnits.store';
 import sharingStore from './sharing.store';
 import 'd2-ui/scss/DataTable.scss';
-import { prettyPrint } from './log';
+import { LogEntry } from './log';
 
 import Settings from '../models/Settings';
 import SettingsDialog from '../Settings/Settings.component';
@@ -135,7 +135,7 @@ const DataSets = React.createClass({
         this.context.d2.dataStore.get('dataset-configuration').then(store => {
             return store.get('logs').catch(() => []);
         }).then(logs => {
-            this.setState({logs: logs.map(prettyPrint).join('\n')});
+            this.setState({logs: logs.map(LogEntry)});
         });
     },
 

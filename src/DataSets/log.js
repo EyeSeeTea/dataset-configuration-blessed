@@ -1,3 +1,4 @@
+import React from 'react';
 import { getInstance as getD2 } from 'd2/lib/d2';
 
 
@@ -33,11 +34,16 @@ async function log(actionName, status, dataset) {
 }
 
 
-function prettyPrint(log) {
-    // Return a pretty string describing the log entry.
-    return (`Date: ${log.date}\n` +
-            `Action: ${log.action}\n`);
-    // JSON.stringify(logs)});
+// Return a pretty string describing the log entry.
+function LogEntry(props) {
+    return (<div key={props.date}>
+                <b>Date:</b> {props.date} <br />
+                <b>Action:</b> {props.action} <br />
+                <b>Status:</b> {props.status} <br />
+                <b>User:</b> {props.user.displayName} <br />
+                <b>Datasets:</b> {props.datasets.map(ds => ds.displayName)} <br />
+            </div>);
 }
 
-export { log, prettyPrint };
+
+export { log, LogEntry };
