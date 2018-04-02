@@ -32,4 +32,12 @@ async function log(actionName, status, dataset) {
     store.set('logs', logs);
 }
 
-export { log };
+
+function prettyPrint(log) {
+    // Return a pretty string describing the log entry.
+    return (`Date: ${log.date}\n` +
+            `Action: ${log.action}\n`);
+    // JSON.stringify(logs)});
+}
+
+export { log, prettyPrint };
