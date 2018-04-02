@@ -8,6 +8,7 @@ import sharingStore from './sharing.store';
 import { goToRoute } from '../router';
 import {currentUserHasPermission} from '../utils/Dhis2Helpers';
 import _ from 'lodash';
+import { log } from './log';
 
 const setupActions = (actions) => {
     const actionsByName = _.keyBy(actions, "name");
@@ -63,21 +64,8 @@ function logNRun(actionName, f) {
     // Return a function that, when called with a dataset, logs the
     // actionName and some info related to the dataset, and then calls
     // f(dataset)
-    async function log(actionName, dataset) {
-        const d2 = await getD2();
-        const store = await d2.dataStore.get('dataset-configuration');
-        const logs = await store.get('logs').catch(() => []);
-        logs.push({date: Date(),
-                   action: actionName,
-                   user: {displayName: d2.currentUser.name,
-                          username: d2.currentUser.username,
-                          id: d2.currentUser.id},
-                   dataset: {displayName: dataset.name,
-                             id: dataset.id}});
-        store.set('logs', logs);
-    }
     return (dataset) => {
-        log(actionName, dataset);
+        log(actionName, 'started', dataset);
         f(dataset);
     }
 }
