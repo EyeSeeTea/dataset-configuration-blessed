@@ -34,9 +34,9 @@ async function log(actionName, status, dataset) {
 }
 
 
-// Return a pretty string describing the log entry.
+// Simple component to show a log entry.
 function LogEntry(props) {
-    return (<div key={props.date}>
+    return (<div key={props.date} style={{paddingBottom: '10px'}}>
                 <b>Date:</b> {props.date} <br />
                 <b>Action:</b> {props.action} <br />
                 <b>Status:</b> {props.status} <br />
