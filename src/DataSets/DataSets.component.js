@@ -85,6 +85,7 @@ const DataSets = React.createClass({
             sorting: null,
             searchValue: null,
             orgUnits: null,
+            logs: null,
         }
     },
 
@@ -92,6 +93,7 @@ const DataSets = React.createClass({
     componentDidMount() {
         const d2 = this.context.d2;
         this.getDataSets();
+        this.getLogs();
 
         this.registerDisposable(detailsStore.subscribe(detailsObject => this.setState({detailsObject})));
         this.registerDisposable(deleteStore.subscribe(deleteObjects => this.getDataSets()));
@@ -125,6 +127,14 @@ const DataSets = React.createClass({
                 pager: da.pager,
                 dataRows: da.toArray().map(dr => _.merge(dr, {selected: false}))
             });
+        });
+    },
+
+    getLogs() {
+        this.context.d2.dataStore.get('dataset-configuration').then(store => {
+            return store.get('logs').catch(() => []);
+        }).then(logs => {
+            this.setState({logs: JSON.stringify(logs)});
         });
     },
 
@@ -327,7 +337,7 @@ const DataSets = React.createClass({
                                  open={true}
                                  onRequestClose={listActions.hideLogs}
                               >
-                              Holaaaa
+                                 {this.state.logs}
                               </Dialog>)
                         : null}
                 </div>
