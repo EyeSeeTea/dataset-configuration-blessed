@@ -40,7 +40,7 @@ function LogEntry(props) {
                 <b>Date:</b> {props.date} <br />
                 <b>Action:</b> {props.action} <br />
                 <b>Status:</b> {props.status} <br />
-                <b>User:</b> {props.user.displayName} <br />
+                <b>User:</b> {props.user.displayName} ({props.user.username})<br />
                 <b>Datasets:</b> {props.datasets.map(ds => ds.displayName)} <br />
             </div>);
 }
