@@ -100,7 +100,7 @@ const DataSets = React.createClass({
         this.registerDisposable(deleteStore.subscribe(deleteObjects => this.getDataSets()));
         this.registerDisposable(this.subscribeToModelStore(sharingStore, "sharing"));
         this.registerDisposable(this.subscribeToModelStore(orgUnitsStore, "orgUnits"));
-        this.registerDisposable(logsStore.subscribe(logsObject => this.setState({logsObject})));
+        this.registerDisposable(logsStore.subscribe(logsObject => {this.getLogs(); this.setState({logsObject});}));
     },
 
     subscribeToModelStore(store, modelName) {
