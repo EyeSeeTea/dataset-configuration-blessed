@@ -94,13 +94,12 @@ const DataSets = React.createClass({
     componentDidMount() {
         const d2 = this.context.d2;
         this.getDataSets();
-        this.getLogs();
 
         this.registerDisposable(detailsStore.subscribe(detailsObject => this.setState({detailsObject})));
         this.registerDisposable(deleteStore.subscribe(deleteObjects => this.getDataSets()));
         this.registerDisposable(this.subscribeToModelStore(sharingStore, "sharing"));
         this.registerDisposable(this.subscribeToModelStore(orgUnitsStore, "orgUnits"));
-        this.registerDisposable(logsStore.subscribe(logsObject => {this.getLogs(); this.setState({logsObject});}));
+        this.registerDisposable(logsStore.subscribe(datasets => this.getLogs(datasets)));
     },
 
     subscribeToModelStore(store, modelName) {
@@ -131,12 +130,21 @@ const DataSets = React.createClass({
         });
     },
 
-    getLogs() {
-        this.context.d2.dataStore.get('dataset-configuration').then(store => {
-            return store.get('logs').catch(() => []);
-        }).then(logs => {
-            this.setState({logs: logs.map(LogEntry)});
-        });
+    getLogs(datasets) {
+        // Set this.state.logs to the logs that include any of the given datasets.
+        if (datasets === null) {
+            this.setState({logsObject: null});
+        } else {
+            this.context.d2.dataStore.get('dataset-configuration').then(store => {
+                return store.get('logs').catch(() => []);
+            }).then(logs => {
+                const idsSelected = new Set(datasets.map(ds => ds.id));
+                const hasIds = (log) => log.datasets.some(ds => idsSelected.has(ds.id));
+                this.setState({logs: logs.filter(hasIds).map(LogEntry)});
+            });
+            this.setState({logsObject: true});  // could set to datasets, or anything
+            // We just want to change the state of the object so it is redisplayed.
+        }
     },
 
     searchListByName(searchObserver) {
