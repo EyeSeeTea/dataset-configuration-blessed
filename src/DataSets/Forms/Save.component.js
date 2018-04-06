@@ -5,6 +5,7 @@ import Card from 'material-ui/Card/Card';
 import CardText from 'material-ui/Card/CardText';
 import snackActions from '../../Snackbar/snack.actions';
 import {collectionToArray, collectionString} from '../../utils/Dhis2Helpers';
+import { log } from '../log';
 
 const Save = React.createClass({
     mixins: [Translate],
@@ -34,11 +35,15 @@ const Save = React.createClass({
     },
 
     _redirectAfterSave() {
+        const {dataset, associations} = this.props.store;
+        log('edit', 'success', dataset);
         snackActions.show({message: 'dataset_saved', action: 'ok', translate: true});
         this.props.afterSave();
     },
 
     _saveErrors(error) {
+        const {dataset, associations} = this.props.store;
+        log('edit', 'failed', dataset);
         console.trace(error);
         const message = _.isEmpty(error) ? error.toString() : JSON.stringify(error, null, 2);
         this.setState({saveState: this.saveStates.SAVE_ERROR, errors: [message]})
