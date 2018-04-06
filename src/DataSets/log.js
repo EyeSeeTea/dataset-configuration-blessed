@@ -5,7 +5,7 @@ import { getInstance as getD2 } from 'd2/lib/d2';
 async function log(actionName, status, dataset) {
     // Log the name of the action that has been executed, its status
     // ("success", "failed"), by whom and on which datasets.
-    const maxLogs = 4;
+    const maxLogs = 1e4;
 
     const d2 = await getD2();
     const store = await d2.dataStore.get('dataset-configuration');
