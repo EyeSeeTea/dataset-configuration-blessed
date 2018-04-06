@@ -39,6 +39,7 @@ import Checkbox from 'material-ui/Checkbox/Checkbox';
 import Dialog from 'material-ui/Dialog/Dialog';
 import FlatButton from 'material-ui/FlatButton/FlatButton';
 import HelpOutlineIcon from 'material-ui/svg-icons/action/help-outline';
+import ListIcon from 'material-ui/svg-icons/action/list';
 import FormHelpers from '../forms/FormHelpers';
 import {currentUserHasPermission} from '../utils/Dhis2Helpers';
 
@@ -171,6 +172,15 @@ const DataSets = React.createClass({
         this.setState({settingsOpen: false});
     },
 
+    openLogs() {
+        this.context.d2.dataStore.get('dataset-configuration').then(store => {
+            return store.get('logs').catch(() => []);
+        }).then(logs => {
+            this.setState({logs: logs.map(LogEntry)});
+        });
+        this.setState({logsObject: true});  // could set to anything
+    },
+
     onSelectToggle(ev, dataset) {
         ev.preventDefault();
         ev.stopPropagation();
@@ -282,10 +292,18 @@ const DataSets = React.createClass({
             </div>
         );
 
+        const renderLogsButton = () => (
+            <div style={{float: 'right'}}>
+                <IconButton tooltip={this.getTranslation("logs")} onClick={this.openLogs}>
+                    <ListIcon />
+                </IconButton>
+            </div>
+        );
+
         const {d2} = this.context;
         const userCanCreateDataSets = currentUserHasPermission(d2, d2.models.dataSet, "CREATE_PRIVATE");
 
-        const actions = [
+        const logActions = [
             <FlatButton
                 label={this.getTranslation('close')}
                 onClick={listActions.hideLogs}
@@ -339,6 +357,7 @@ const DataSets = React.createClass({
                         <SearchBox searchObserverHandler={this.searchListByName}/>
                     </div>
                     {this.getTranslation("help_landing_page") != '' && renderHelp()}
+                    {this.state.currentUserHasAdminRole && renderLogsButton()}
                     {this.state.currentUserHasAdminRole && renderSettingsButton()}
                     <div>
                         <Pagination {...paginationProps} />
@@ -376,7 +395,7 @@ const DataSets = React.createClass({
                          this.state.logsObject ? (
                              <Dialog
                                  title={this.getTranslation('logs')}
-                                 actions={actions}
+                                 actions={logActions}
                                  open={true}
                                  onRequestClose={listActions.hideLogs}
                               >
