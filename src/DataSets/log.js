@@ -33,6 +33,10 @@ async function log(actionName, status, dataset) {
     store.set('logs', logs);
 }
 
+function dateSort(log1, log2) {
+    // Return, basically, log1.date < log2.date. Useful for sorting logs.
+    return new Date(log2.date) - new Date(log1.date);
+}
 
 // Simple component to show a log entry.
 function LogEntry(props) {
@@ -41,9 +45,9 @@ function LogEntry(props) {
                 <b>Action:</b> {props.action} <br />
                 <b>Status:</b> {props.status} <br />
                 <b>User:</b> {props.user.displayName} ({props.user.username})<br />
-                <b>Datasets:</b> {props.datasets.map(ds => ds.displayName)} <br />
+                <b>Datasets:</b> {props.datasets.map(ds => `${ds.displayName} (${ds.id}) `)} <br />
             </div>);
 }
 
 
-export { log, LogEntry };
+export { log, dateSort, LogEntry };
