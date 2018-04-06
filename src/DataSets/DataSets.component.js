@@ -1,5 +1,4 @@
 import React from 'react';
-import log from 'loglevel';
 import fp from 'lodash/fp';
 import _ from 'lodash';
 
