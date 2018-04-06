@@ -404,6 +404,7 @@ const DataSets = React.createClass({
                                  actions={logActions}
                                  open={true}
                                  onRequestClose={listActions.hideLogs}
+                                 autoScrollBodyContent={true}
                               >
                                  {this.state.logs}
                               </Dialog>)
