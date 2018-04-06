@@ -65,7 +65,8 @@ function logNRun(actionName, f) {
     // actionName and some info related to the dataset, and then calls
     // f(dataset)
     return (dataset) => {
-        log(actionName, 'started', dataset);
+        //log(actionName, 'started', dataset);
+        // if uncommented, will log the fact that we tried to start the action.
         f(dataset);
     }
 }
