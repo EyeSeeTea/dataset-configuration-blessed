@@ -28,7 +28,7 @@ import deleteStore from './delete.store';
 import orgUnitsStore from './orgUnits.store';
 import sharingStore from './sharing.store';
 import 'd2-ui/scss/DataTable.scss';
-import { LogEntry } from './log';
+import { log, dateSort, LogEntry } from './log';
 
 import Settings from '../models/Settings';
 import SettingsDialog from '../Settings/Settings.component';
@@ -142,7 +142,9 @@ const DataSets = React.createClass({
             }).then(logs => {
                 const idsSelected = new Set(datasets.map(ds => ds.id));
                 const hasIds = (log) => log.datasets.some(ds => idsSelected.has(ds.id));
-                this.setState({logs: logs.filter(hasIds).map(LogEntry)});
+                const logsSelected = logs.filter(hasIds);
+                logsSelected.sort(dateSort);
+                this.setState({logs: logsSelected.map(LogEntry)});
             });
             this.setState({logsObject: true});  // could set to datasets, or anything
             // We just want to change the state of the object so it is redisplayed.
@@ -175,6 +177,7 @@ const DataSets = React.createClass({
         this.context.d2.dataStore.get('dataset-configuration').then(store => {
             return store.get('logs').catch(() => []);
         }).then(logs => {
+            logs.sort(dateSort);
             this.setState({logs: logs.map(LogEntry)});
         });
         this.setState({logsObject: true});  // could set to anything
