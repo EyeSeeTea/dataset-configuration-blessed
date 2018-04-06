@@ -349,8 +349,12 @@ const DataSets = React.createClass({
                 {this.state.sharing ? <SharingDialog
                     objectsToShare={this.state.sharing.models}
                     open={true}
-                    onRequestClose={listActions.hideSharingBox}
-                    onError={err => snackActions.show({message: err && err.message || 'Error'})}
+                    onRequestClose={() => {
+                        log('change sharing settings', 'success', this.state.sharing.models);
+                        listActions.hideSharingBox();}}
+                    onError={err => {
+                        log('change sharing settings', 'failed', this.state.sharing.models);
+                        snackActions.show({message: err && err.message || 'Error'});}}
                     bodyStyle={{minHeight: '400px'}}
                 /> : null }
 
