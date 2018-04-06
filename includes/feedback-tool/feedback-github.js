@@ -21,6 +21,8 @@ Usage:
 
   $.feedbackGithub({
     token: "PERSONAL_TOKEN",
+    createIssue: true,
+    postFunction: ({title, body}) => { },
     issues: {
       repository: "ORG/PROJECT_WHERE_ISSUES_WILL_BE_CREATED",
       title: "User feedback",
@@ -36,41 +38,46 @@ Usage:
 
 class FeedBackToolGithub {
   constructor(options) {
-    this.token = options.token;
-    this.issues = options.issues;
-    this.snapshots = options.snapshots;
-    this.feedbackOptions = options.feedbackOptions;
+    this.options = options;
   }
   
   init() {
     $.feedback(Object.assign({}, {
       postFunction: this._sendReport.bind(this),
-    }, this.feedbackOptions));
+    }, this.options.feedbackOptions || {}));
   }
   
   _setAuthHeader(xhr) {
-    xhr.setRequestHeader("Authorization", "token " + this.token);
+    xhr.setRequestHeader("Authorization", "token " + this.options.token);
   }
   
   _sendReport(data) {
     // data.post.img = "data:image/png;base64,iVBORw0KG..."
     const imgBase64 = data.post.img.split(",")[1];
     const uid = new Date().getTime() + parseInt(Math.random() * 1e6).toString();
+    const postFunction = this.options.postFunction;
      
-    this._uploadFile("screenshot-" + uid + ".png", imgBase64)
-      .then(url => this._postIssue(data, url))
+    return this._uploadFile("screenshot-" + uid + ".png", imgBase64)
+      .then(url =>
+        this._getPayload(data, url))
+      .then(payload => {
+        if (this.options.createIssue)
+          this._postIssue(payload);
+        if (postFunction)
+            postFunction(payload);
+      })
       .then(data.success, data.error);
   }
 
   _uploadFile(filename, contents) {
     const payload = {
       "message": "feedback.js snapshot",
-      "branch": this.snapshots.branch,
+      "branch": this.options.snapshots.branch,
       "content": contents,
     };
     
     return $.ajax({
-      url: 'https://api.github.com/repos/' + this.snapshots.repository + '/contents/' + filename,
+      url: 'https://api.github.com/repos/' + this.options.snapshots.repository + '/contents/' + filename,
       type: "PUT",
       beforeSend: this._setAuthHeader.bind(this),
       dataType: 'json',
@@ -78,7 +85,7 @@ class FeedBackToolGithub {
     }).then(res => res.content.download_url);
   }
 
-  _postIssue(data, screenshotUrl) {
+  _getPayload(data, screenshotUrl) {
     const info = data.post;
     const browser = info.browser;
     const body = [
@@ -86,21 +93,25 @@ class FeedBackToolGithub {
       "- Name: " + browser.appCodeName,
       "- Version: " + browser.appVersion,
       "- Platform: " + browser.platform,
+      "",
       "## User report",
       "URL: " + info.url,
       "",
       info.note,
       "",
-      "![screenshot](" + screenshotUrl + ")",
-    ].join("\n")
-    const payload = {
-      "title": this.issues.title,
-      "body": this.issues.renderBody ? this.issues.renderBody(body) : body,
+      "![See screenshot here]( " + screenshotUrl + " )",
+    ].join("\n");
+
+    return {
+      "title": this.options.issues.title,
+      "body": this.options.issues.renderBody ? this.options.issues.renderBody(body) : body,
     };
-    
+  }
+
+  _postIssue(payload) {
     return $.ajax({
       type: "POST",
-      url: 'https://api.github.com/repos/' + this.issues.repository + '/issues',
+      url: 'https://api.github.com/repos/' + this.options.issues.repository + '/issues',
       beforeSend: this._setAuthHeader.bind(this),
       dataType: 'json',
       data: JSON.stringify(payload),
