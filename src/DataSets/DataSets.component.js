@@ -28,7 +28,7 @@ import deleteStore from './delete.store';
 import orgUnitsStore from './orgUnits.store';
 import sharingStore from './sharing.store';
 import 'd2-ui/scss/DataTable.scss';
-import { log, dateSort, LogEntry } from './log';
+import { log, getLogs, dateSort, LogEntry } from './log';
 
 import Settings from '../models/Settings';
 import SettingsDialog from '../Settings/Settings.component';
@@ -101,7 +101,7 @@ const DataSets = React.createClass({
         this.registerDisposable(deleteStore.subscribe(deleteObjects => this.getDataSets()));
         this.registerDisposable(this.subscribeToModelStore(sharingStore, "sharing"));
         this.registerDisposable(this.subscribeToModelStore(orgUnitsStore, "orgUnits"));
-        this.registerDisposable(logsStore.subscribe(datasets => this.getLogs(datasets)));
+        this.registerDisposable(logsStore.subscribe(datasets => this.showDatasetsLogs(datasets)));
     },
 
     subscribeToModelStore(store, modelName) {
@@ -132,14 +132,12 @@ const DataSets = React.createClass({
         });
     },
 
-    getLogs(datasets) {
+    showDatasetsLogs(datasets) {
         // Set this.state.logs to the logs that include any of the given datasets.
-        if (datasets === null) {
+        if (!datasets) {
             this.setState({logsObject: null});
         } else {
-            this.context.d2.dataStore.get('dataset-configuration').then(store => {
-                return store.get('logs').catch(() => []);
-            }).then(logs => {
+            getLogs().then(logs => {
                 const idsSelected = new Set(datasets.map(ds => ds.id));
                 const hasIds = (log) => log.datasets.some(ds => idsSelected.has(ds.id));
                 const logsSelected = logs.filter(hasIds);
@@ -174,9 +172,7 @@ const DataSets = React.createClass({
     },
 
     openLogs() {
-        this.context.d2.dataStore.get('dataset-configuration').then(store => {
-            return store.get('logs').catch(() => []);
-        }).then(logs => {
+        getLogs().then(logs => {
             logs.sort(dateSort);
             this.setState({logs: logs.map(LogEntry)});
         });
