@@ -36,14 +36,14 @@ const Save = React.createClass({
 
     _redirectAfterSave() {
         const {dataset, associations} = this.props.store;
-        log('edit', 'success', dataset);
+        log(this.props.store.action, 'success', dataset);
         snackActions.show({message: 'dataset_saved', action: 'ok', translate: true});
         this.props.afterSave();
     },
 
     _saveErrors(error) {
         const {dataset, associations} = this.props.store;
-        log('edit', 'failed', dataset);
+        log(this.props.store.action, 'failed', dataset);
         console.trace(error);
         const message = _.isEmpty(error) ? error.toString() : JSON.stringify(error, null, 2);
         this.setState({saveState: this.saveStates.SAVE_ERROR, errors: [message]})
