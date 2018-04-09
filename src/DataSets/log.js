@@ -15,14 +15,16 @@ async function log(actionName, status, dataset) {
 
     const datasets = Array.isArray(dataset) ? dataset : [dataset];
 
-    const newLog = {date: Date(),
-                    action: actionName,
-                    status: status,
-                    user: {displayName: d2.currentUser.name,
-                           username: d2.currentUser.username,
-                           id: d2.currentUser.id},
-                    datasets: datasets.map(ds => ({displayName: ds.name,
-                                                   id: ds.id}))};
+    const newLog = {
+        date: Date(),
+        action: actionName,
+        status: status,
+        user: {displayName: d2.currentUser.name,
+               username: d2.currentUser.username,
+               id: d2.currentUser.id},
+        datasets: datasets.map(ds => ({displayName: ds.name,
+                                       id: ds.id})),
+    };
 
     if (logs.length < maxLogs)
         logs.push(newLog)
