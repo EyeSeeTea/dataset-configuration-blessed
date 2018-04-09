@@ -8,7 +8,6 @@ import sharingStore from './sharing.store';
 import { goToRoute } from '../router';
 import {currentUserHasPermission} from '../utils/Dhis2Helpers';
 import _ from 'lodash';
-import { log } from './log';
 
 const setupActions = (actions) => {
     const actionsByName = _.keyBy(actions, "name");
@@ -60,35 +59,24 @@ const canUpdate = (d2, datasets) => {
     );
 }
 
-function logNRun(actionName, f) {
-    // Return a function that, when called with a dataset, logs the
-    // actionName and some info related to the dataset, and then calls
-    // f(dataset)
-    return (dataset) => {
-        //log(actionName, 'started', dataset);
-        // if uncommented, will log the fact that we tried to start the action.
-        f(dataset);
-    }
-}
-
 const {contextActions, contextMenuIcons, isContextActionAllowed} = setupActions([
     {
         name: 'edit',
         multiple: false,
         isActive: (d2, dataset) => canUpdate(d2, [dataset]),
-        onClick: logNRun('edit', dataset => goToRoute(`/datasets/edit/${dataset.id}`)),
+        onClick: dataset => goToRoute(`/datasets/edit/${dataset.id}`),
     },
     {
         name: 'share',
         multiple: true,
-        onClick: logNRun('share', datasets => sharingStore.setState(datasets)),
+        onClick: datasets => sharingStore.setState(datasets),
     },
     {
         name: 'define_associations',
         multiple: true,
         icon: "business",
         isActive: canUpdate,
-        onClick: logNRun('define associations', datasets => orgUnitsStore.setState(datasets)),
+        onClick: datasets => orgUnitsStore.setState(datasets),
     },
     {
         name: 'details',
@@ -100,13 +88,13 @@ const {contextActions, contextMenuIcons, isContextActionAllowed} = setupActions(
         multiple: false,
         icon: "content_copy",
         isActive: canCreate,
-        onClick: logNRun('clone', dataset => goToRoute(`/datasets/clone/${dataset.id}`)),
+        onClick: dataset => goToRoute(`/datasets/clone/${dataset.id}`),
     },
     {
         name: 'delete',
         multiple: true,
         isActive: canDelete,
-        onClick: logNRun('delete', datasets => deleteStore.delete(datasets)),
+        onClick: datasets => deleteStore.delete(datasets),
     },
     {
         name: 'logs',
