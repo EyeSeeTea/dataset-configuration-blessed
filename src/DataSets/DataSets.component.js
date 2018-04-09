@@ -28,7 +28,7 @@ import deleteStore from './delete.store';
 import orgUnitsStore from './orgUnits.store';
 import sharingStore from './sharing.store';
 import 'd2-ui/scss/DataTable.scss';
-import { log, getLogs, dateSort, LogEntry } from './log';
+import { log, getLogs, LogEntry } from './log';
 
 import Settings from '../models/Settings';
 import SettingsDialog from '../Settings/Settings.component';
@@ -140,8 +140,7 @@ const DataSets = React.createClass({
             getLogs().then(logs => {
                 const idsSelected = new Set(datasets.map(ds => ds.id));
                 const hasIds = (log) => log.datasets.some(ds => idsSelected.has(ds.id));
-                const logsSelected = logs.filter(hasIds);
-                logsSelected.sort(dateSort);
+                const logsSelected = _(logs).filter(hasIds).orderBy('date', 'desc').value();
                 this.setState({logs: logsSelected.map(LogEntry)});
             });
             this.setState({logsObject: true});  // could set to datasets, or anything
@@ -173,8 +172,7 @@ const DataSets = React.createClass({
 
     openLogs() {
         getLogs().then(logs => {
-            logs.sort(dateSort);
-            this.setState({logs: logs.map(LogEntry)});
+            this.setState({logs: _(logs).orderBy('date', 'desc').value().map(LogEntry)});
         });
         this.setState({logsObject: true});  // could set to anything
     },
