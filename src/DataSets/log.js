@@ -35,6 +35,13 @@ async function log(actionName, status, dataset) {
     store.set('logs', logs);
 }
 
+async function getLogs() {
+    // Return logs if they exist, or an empty list otherwise.
+    const d2 = await getD2();
+    const store = await d2.dataStore.get('dataset-configuration');
+    return store.get('logs').catch(() => []);
+}
+
 function dateSort(log1, log2) {
     // Return, basically, log1.date < log2.date. Useful for sorting logs.
     return new Date(log2.date) - new Date(log1.date);
@@ -52,4 +59,4 @@ function LogEntry(props) {
 }
 
 
-export { log, dateSort, LogEntry };
+export { log, getLogs, dateSort, LogEntry };
