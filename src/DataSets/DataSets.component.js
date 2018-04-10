@@ -1,5 +1,4 @@
 import React from 'react';
-import log from 'loglevel';
 import fp from 'lodash/fp';
 import _ from 'lodash';
 
@@ -24,10 +23,12 @@ import DetailsBoxWithScroll from './DetailsBoxWithScroll.component';
 import listActions from './list.actions';
 import { contextActions, contextMenuIcons, isContextActionAllowed } from './context.actions';
 import detailsStore from './details.store';
+import logsStore from './logs.store';
 import deleteStore from './delete.store';
 import orgUnitsStore from './orgUnits.store';
 import sharingStore from './sharing.store';
 import 'd2-ui/scss/DataTable.scss';
+import { log, getLogs, LogEntry } from './log';
 
 import Settings from '../models/Settings';
 import SettingsDialog from '../Settings/Settings.component';
@@ -37,6 +38,7 @@ import Checkbox from 'material-ui/Checkbox/Checkbox';
 import Dialog from 'material-ui/Dialog/Dialog';
 import FlatButton from 'material-ui/FlatButton/FlatButton';
 import HelpOutlineIcon from 'material-ui/svg-icons/action/help-outline';
+import ListIcon from 'material-ui/svg-icons/action/list';
 import FormHelpers from '../forms/FormHelpers';
 import {currentUserHasPermission} from '../utils/Dhis2Helpers';
 
@@ -86,6 +88,7 @@ const DataSets = React.createClass({
             searchValue: null,
             orgUnits: null,
             helpOpen: false,
+            logs: null,
         }
     },
 
@@ -98,6 +101,7 @@ const DataSets = React.createClass({
         this.registerDisposable(deleteStore.subscribe(deleteObjects => this.getDataSets()));
         this.registerDisposable(this.subscribeToModelStore(sharingStore, "sharing"));
         this.registerDisposable(this.subscribeToModelStore(orgUnitsStore, "orgUnits"));
+        this.registerDisposable(logsStore.subscribe(datasets => this.showDatasetsLogs(datasets)));
     },
 
     subscribeToModelStore(store, modelName) {
@@ -128,6 +132,22 @@ const DataSets = React.createClass({
         });
     },
 
+    showDatasetsLogs(datasets) {
+        // Set this.state.logs to the logs that include any of the given
+        // datasets, and this.state.logsObject to a description of their contents.
+        if (!datasets) {
+            this.setState({logsObject: null});
+        } else {
+            getLogs().then(logs => {
+                const idsSelected = new Set(datasets.map(ds => ds.id));
+                const hasIds = (log) => log.datasets.some(ds => idsSelected.has(ds.id));
+                const logsSelected = _(logs).filter(hasIds).orderBy('date', 'desc').value();
+                this.setState({logs: logsSelected.map(LogEntry)});
+            });
+            this.setState({logsObject: datasets.map(ds => ds.id).join(", ")});  // description of what it has
+        }
+    },
+
     searchListByName(searchObserver) {
 
         //bind key search listener
@@ -148,6 +168,15 @@ const DataSets = React.createClass({
 
     closeSettings() {
         this.setState({settingsOpen: false});
+    },
+
+    openLogs() {
+        // Retrieve the logs and save them in this.state.logs, and set
+        // this.state.logsObject to a description of their contents.
+        getLogs().then(logs => {
+            this.setState({logs: _(logs).orderBy('date', 'desc').value().map(LogEntry)});
+        });
+        this.setState({logsObject: this.getTranslation("all")});  // description of what it has
     },
 
     onSelectToggle(ev, dataset) {
@@ -261,8 +290,23 @@ const DataSets = React.createClass({
             </div>
         );
 
+        const renderLogsButton = () => (
+            <div style={{float: 'right'}}>
+                <IconButton tooltip={this.getTranslation("logs")} onClick={this.openLogs}>
+                    <ListIcon />
+                </IconButton>
+            </div>
+        );
+
         const {d2} = this.context;
         const userCanCreateDataSets = currentUserHasPermission(d2, d2.models.dataSet, "CREATE_PRIVATE");
+
+        const logActions = [
+            <FlatButton
+                label={this.getTranslation('close')}
+                onClick={listActions.hideLogs}
+            />,
+        ];
 
         const helpActions = [
             <FlatButton
@@ -293,6 +337,7 @@ const DataSets = React.createClass({
                 {this.state.orgUnits ? <OrgUnitsDialog
                      objects={this.state.orgUnits.models}
                      open={true}
+                     onSave={datasets => log('change org units', 'success', datasets)}
                      onRequestClose={listActions.hideOrgUnitsBox}
                      contentStyle={{width: '1150px', maxWidth: 'none'}}
                      bodyStyle={{minHeight: '440px', maxHeight: '600px'}}
@@ -301,8 +346,12 @@ const DataSets = React.createClass({
                 {this.state.sharing ? <SharingDialog
                     objectsToShare={this.state.sharing.models}
                     open={true}
-                    onRequestClose={listActions.hideSharingBox}
-                    onError={err => snackActions.show({message: err && err.message || 'Error'})}
+                    onRequestClose={() => {
+                        log('change sharing settings', 'success', this.state.sharing.models);
+                        listActions.hideSharingBox();}}
+                    onError={err => {
+                        log('change sharing settings', 'failed', this.state.sharing.models);
+                        snackActions.show({message: err && err.message || 'Error'});}}
                     bodyStyle={{minHeight: '400px'}}
                 /> : null }
 
@@ -311,6 +360,7 @@ const DataSets = React.createClass({
                         <SearchBox searchObserverHandler={this.searchListByName}/>
                     </div>
                     {this.getTranslation("help_landing_page") != '' && renderHelp()}
+                    {this.state.currentUserHasAdminRole && renderLogsButton()}
                     {this.state.currentUserHasAdminRole && renderSettingsButton()}
                     <div>
                         <Pagination {...paginationProps} />
@@ -343,6 +393,19 @@ const DataSets = React.createClass({
                                 detailsObject={this.state.detailsObject}
                                 onClose={listActions.hideDetailsBox}
                             />
+                        : null}
+                    {
+                        this.state.logsObject ? (
+                            <Dialog
+                                title={this.getTranslation("logs") + " (" + this.state.logsObject + ")"}
+                                actions={logActions}
+                                open={true}
+                                bodyStyle={{padding: "20px"}}
+                                onRequestClose={listActions.hideLogs}
+                                autoScrollBodyContent={true}
+                            >
+                                {_(this.state.logs).isEmpty() ? this.getTranslation('logs_none') : this.state.logs}
+                            </Dialog>)
                         : null}
                 </div>
 
