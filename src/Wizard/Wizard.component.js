@@ -160,7 +160,6 @@ const Wizard = React.createClass({
                         )}
                     </ToolbarGroup>
                 </ToolbarGroup>
-
                 {showHelp && renderHelp()}
             </Toolbar>
         );
