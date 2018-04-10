@@ -133,7 +133,8 @@ const DataSets = React.createClass({
     },
 
     showDatasetsLogs(datasets) {
-        // Set this.state.logs to the logs that include any of the given datasets.
+        // Set this.state.logs to the logs that include any of the given
+        // datasets, and this.state.logsObject to a description of their contents.
         if (!datasets) {
             this.setState({logsObject: null});
         } else {
@@ -143,8 +144,7 @@ const DataSets = React.createClass({
                 const logsSelected = _(logs).filter(hasIds).orderBy('date', 'desc').value();
                 this.setState({logs: logsSelected.map(LogEntry)});
             });
-            this.setState({logsObject: true});  // could set to datasets, or anything
-            // We just want to change the state of the object so it is redisplayed.
+            this.setState({logsObject: datasets.map(ds => ds.id).join(", ")});  // description of what it has
         }
     },
 
@@ -171,10 +171,12 @@ const DataSets = React.createClass({
     },
 
     openLogs() {
+        // Retrieve the logs and save them in this.state.logs, and set
+        // this.state.logsObject to a description of their contents.
         getLogs().then(logs => {
             this.setState({logs: _(logs).orderBy('date', 'desc').value().map(LogEntry)});
         });
-        this.setState({logsObject: true});  // could set to anything
+        this.setState({logsObject: this.getTranslation("all")});  // description of what it has
     },
 
     onSelectToggle(ev, dataset) {
@@ -393,16 +395,17 @@ const DataSets = React.createClass({
                             />
                         : null}
                     {
-                         this.state.logsObject ? (
-                             <Dialog
-                                 title={this.getTranslation('logs')}
-                                 actions={logActions}
-                                 open={true}
-                                 onRequestClose={listActions.hideLogs}
-                                 autoScrollBodyContent={true}
-                              >
-                                 {this.state.logs}
-                              </Dialog>)
+                        this.state.logsObject ? (
+                            <Dialog
+                                title={this.getTranslation("logs") + " (" + this.state.logsObject + ")"}
+                                actions={logActions}
+                                open={true}
+                                bodyStyle={{padding: "20px"}}
+                                onRequestClose={listActions.hideLogs}
+                                autoScrollBodyContent={true}
+                            >
+                                {_(this.state.logs).isEmpty() ? this.getTranslation('logs_none') : this.state.logs}
+                            </Dialog>)
                         : null}
                 </div>
 
