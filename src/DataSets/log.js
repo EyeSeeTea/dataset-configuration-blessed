@@ -43,7 +43,7 @@ async function getLogs() {
 
 // Simple component to show a log entry.
 function LogEntry(props) {
-    return (<div key={props.date} style={{paddingBottom: '10px'}}>
+    return (<div key={props.date} style={{paddingBottom: "15px"}}>
                 <b>Date:</b> {props.date} <br />
                 <b>Action:</b> {props.action} <br />
                 <b>Status:</b> {props.status} <br />
