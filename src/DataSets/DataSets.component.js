@@ -304,7 +304,10 @@ const DataSets = React.createClass({
         const logActions = [
             <FlatButton
                 label={this.getTranslation('close')}
-                onClick={listActions.hideLogs}
+                onClick={() => {
+                    this.state.logs = this.getTranslation("reloading_available_values");
+                    listActions.hideLogs();
+                }}
             />,
         ];
 
