@@ -144,7 +144,7 @@ const DataSets = React.createClass({
                 const logsSelected = _(logs).filter(hasIds).orderBy('date', 'desc').value();
                 this.setState({logs: logsSelected.map(LogEntry)});
             });
-            this.setState({logsObject: datasets.map(ds => ds.id).join(", ")});  // description of what it has
+            this.setState({logsObject: datasets.map(ds => ds.id).join(", "), logs: this.getTranslation("logs_loading")});  // description of what it has
         }
     },
 
@@ -176,7 +176,7 @@ const DataSets = React.createClass({
         getLogs().then(logs => {
             this.setState({logs: _(logs).orderBy('date', 'desc').value().map(LogEntry)});
         });
-        this.setState({logsObject: this.getTranslation("all")});  // description of what it has
+        this.setState({logsObject: this.getTranslation("all"), logs: this.getTranslation("logs_loading")});  // description of what it has
     },
 
     onSelectToggle(ev, dataset) {
@@ -305,7 +305,6 @@ const DataSets = React.createClass({
             <FlatButton
                 label={this.getTranslation('close')}
                 onClick={() => {
-                    this.state.logs = this.getTranslation("reloading_available_values");
                     listActions.hideLogs();
                 }}
             />,
