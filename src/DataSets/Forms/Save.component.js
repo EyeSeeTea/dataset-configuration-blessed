@@ -4,7 +4,7 @@ import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
 import Card from 'material-ui/Card/Card';
 import CardText from 'material-ui/Card/CardText';
 import snackActions from '../../Snackbar/snack.actions';
-import {collectionToArray, collectionString} from '../../utils/Dhis2Helpers';
+import { collectionToArray, collectionString } from '../../utils/Dhis2Helpers';
 import { log } from '../log';
 
 const Save = React.createClass({
@@ -31,41 +31,41 @@ const Save = React.createClass({
     },
 
     getInitialState() {
-        return {saveState: this.saveStates.SHOW, errors: []};
+        return { saveState: this.saveStates.SHOW, errors: [] };
     },
 
     _getLoggingMessage() {
-        if (this.props.store.action=='add'){
-            return 'create new dataset'
+        if (this.props.store.action === 'add') {
+            return 'create new dataset';
         }
-        else if (this.props.store.action=='edit'){
-            return 'edit dataset'
+        else if (this.props.store.action === 'edit') {
+            return 'edit dataset';
         }
-        else if (this.props.store.action=='clone'){
-            return 'clone dataset'
+        else if (this.props.store.action === 'clone') {
+            return 'clone dataset';
         }
-        else{
-            return 'unknown action'
+        else {
+            return 'unknown action';
         }
     },
 
     _redirectAfterSave() {
-        const {dataset, associations} = this.props.store;
+        const { dataset, associations } = this.props.store;
         log(this._getLoggingMessage(), 'success', dataset);
-        snackActions.show({message: 'dataset_saved', action: 'ok', translate: true});
+        snackActions.show({ message: 'dataset_saved', action: 'ok', translate: true });
         this.props.afterSave();
     },
 
     _saveErrors(error) {
-        const {dataset, associations} = this.props.store;
+        const { dataset, associations } = this.props.store;
         log(this._getLoggingMessage(), 'failed', dataset);
         console.trace(error);
         const message = _.isEmpty(error) ? error.toString() : JSON.stringify(error, null, 2);
-        this.setState({saveState: this.saveStates.SAVE_ERROR, errors: [message]})
+        this.setState({ saveState: this.saveStates.SAVE_ERROR, errors: [message] })
     },
 
     _save() {
-        this.setState({saveState: this.saveStates.SAVING});
+        this.setState({ saveState: this.saveStates.SAVING });
         this.props.store
             .save()
             .then(this._redirectAfterSave)
@@ -73,13 +73,13 @@ const Save = React.createClass({
     },
 
     render() {
-        const {d2} = this.context;
-        const {dataset, associations} = this.props.store;
-        const {saveState, errors} = this.state;
-        const ListItem = ({field, value}) => {
+        const { d2 } = this.context;
+        const { dataset, associations } = this.props.store;
+        const { saveState, errors } = this.state;
+        const ListItem = ({ field, value }) => {
             return (
                 <li className="list-group-item">
-                    <label style={{fontWeight: 'bold', marginRight: 5}}>
+                    <label style={{ fontWeight: 'bold', marginRight: 5 }}>
                         {this.getTranslation(field)}:
                     </label>
                     <span>{value || '-'}</span>
@@ -89,7 +89,7 @@ const Save = React.createClass({
 
         if (saveState === this.saveStates.SHOW || saveState === this.saveStates.SAVING) {
             return (
-                <div style={{fontSize: '1.2em', marginTop: 10}}>
+                <div style={{ fontSize: '1.2em', marginTop: 10 }}>
                     <div>
                         {saveState === "SAVING" ?
                             <div>
