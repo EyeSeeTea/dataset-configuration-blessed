@@ -337,7 +337,7 @@ const DataSets = React.createClass({
                 {this.state.orgUnits ? <OrgUnitsDialog
                      objects={this.state.orgUnits.models}
                      open={true}
-                     onSave={datasets => log('change org units', 'success', datasets)}
+                     onSave={datasets => log('change organisation units', 'success', datasets)}
                      onRequestClose={listActions.hideOrgUnitsBox}
                      contentStyle={{width: '1150px', maxWidth: 'none'}}
                      bodyStyle={{minHeight: '440px', maxHeight: '600px'}}
