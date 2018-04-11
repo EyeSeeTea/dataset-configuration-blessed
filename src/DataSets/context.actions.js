@@ -2,9 +2,11 @@ import Action from 'd2-ui/lib/action/Action';
 import detailsStore from './details.store';
 import deleteStore from './delete.store';
 import orgUnitsStore from './orgUnits.store';
+import logsStore from './logs.store';
 import sharingStore from './sharing.store';
 import { goToRoute } from '../router';
 import {currentUserHasPermission} from '../utils/Dhis2Helpers';
+import Settings from '../models/Settings';
 import _ from 'lodash';
 
 const setupActions = (actions) => {
@@ -57,6 +59,9 @@ const canUpdate = (d2, datasets) => {
     );
 }
 
+const hasAdminRole = (d2) =>
+      new Settings(d2).currentUserHasAdminRole();
+
 const {contextActions, contextMenuIcons, isContextActionAllowed} = setupActions([
     {
         name: 'edit',
@@ -93,6 +98,13 @@ const {contextActions, contextMenuIcons, isContextActionAllowed} = setupActions(
         multiple: true,
         isActive: canDelete,
         onClick: datasets => deleteStore.delete(datasets),
+    },
+    {
+        name: 'logs',
+        multiple: true,
+        icon: "list",
+        isActive: hasAdminRole,
+        onClick: datasets => logsStore.setState(datasets),
     },
 ]);
 
