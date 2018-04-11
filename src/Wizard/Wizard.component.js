@@ -5,6 +5,10 @@ import ToolbarGroup from 'material-ui/Toolbar/ToolbarGroup';
 import RaisedButton from 'material-ui/RaisedButton/RaisedButton';
 import Card from 'material-ui/Card/Card';
 import CardText from 'material-ui/Card/CardText';
+import IconButton from 'material-ui/IconButton';
+import HelpOutlineIcon from 'material-ui/svg-icons/action/help-outline';
+import Dialog from 'material-ui/Dialog/Dialog';
+import FlatButton from 'material-ui/FlatButton/FlatButton';
 import Steps from 'react-steps';
 
 const Wizard = React.createClass({
@@ -18,7 +22,7 @@ const Wizard = React.createClass({
 
     getDefaultProps: function() {
         return {
-            onFieldsChange: _.identity, 
+            onFieldsChange: _.identity,
             nextEnabled: true,
             active: 0,
             doneUntil: 0,
@@ -27,6 +31,7 @@ const Wizard = React.createClass({
 
     getInitialState() {
         return {
+            helpOpen: false,
         };
     },
 
@@ -42,6 +47,14 @@ const Wizard = React.createClass({
         const newActive = _(this._getIndexedVisibleSteps())
             .map("index").sortBy().find(idx => idx > this.props.active);
         this.props.onStepChange(newActive);
+    },
+
+    _openHelp() {
+        this.setState({helpOpen: true});
+    },
+
+    _closeHelp() {
+        this.setState({helpOpen: false});
     },
 
     render() {
@@ -61,13 +74,26 @@ const Wizard = React.createClass({
         const lastStepIndex = indexedVisibleSteps[indexedVisibleSteps.length - 1].index;
         const showPrevious = this.props.active > firstStepIndex;
         const showNext = this.props.active < lastStepIndex;
-        const buttons = this._renderButtons(currentStep, showPrevious, showNext);
+        const actions = [
+            <FlatButton
+                label={this.getTranslation('close')}
+                onClick={this._closeHelp}
+            />,
+        ];
 
         return (
             <div>
-                <Steps 
-                    items={items} 
-                    type="point" 
+                <Dialog
+                    title={this.getTranslation('help')}
+                    actions={actions}
+                    open={this.state.helpOpen}
+                    onRequestClose={this._closeHelp}
+                >
+                    {currentStep.help}
+                </Dialog>
+                <Steps
+                    items={items}
+                    type="point"
                     styles={{
                         main: {fontFamily: 'Roboto, sans-serif', fontSize: '1.2em'},
                         doneItemNumber: {background: "#3162C5"},
@@ -75,19 +101,19 @@ const Wizard = React.createClass({
                     }}/>
 
 
-                {_(actionsBar).includes("top") && buttons}
+                {_(actionsBar).includes("top") && this._renderButtons(currentStep, showPrevious, showNext, currentStep.help != '')}
 
                 <Card>
                     <CardText>
-                        <currentStep.component 
-                            onFieldsChange={(...args) => 
-                                this.props.onFieldsChange(currentStep.id, ...args)} 
-                            {...currentStep.props} 
+                        <currentStep.component
+                            onFieldsChange={(...args) =>
+                                this.props.onFieldsChange(currentStep.id, ...args)}
+                            {...currentStep.props}
                         />
                     </CardText>
                 </Card>
 
-                {_(actionsBar).includes("bottom") && buttons}
+                {_(actionsBar).includes("top") && this._renderButtons(currentStep, showPrevious, showNext, false)}
             </div>
         );
     },
@@ -98,32 +124,43 @@ const Wizard = React.createClass({
             .filter(({step}) => step.visible !== false);
     },
 
-    _renderButtons(step, showPrevious, showNext) {
+    _renderButtons(step, showPrevious, showNext, showHelp) {
+        const renderHelp = () => (
+            <ToolbarGroup lastChild={true}>
+                <IconButton tooltip={this.getTranslation("help")} onClick={this._openHelp}>
+                    <HelpOutlineIcon />
+                </IconButton>
+            </ToolbarGroup>
+        );
+
         return (
             <Toolbar>
-                <ToolbarGroup>
-                    <RaisedButton
-                        label={"← " + this.getTranslation("previous")}
-                        disabled={this.props.previousEnabled === false || !showPrevious}
-                        onTouchTap={this._onPreviousClicked}
-                    />
-                    <RaisedButton
-                        label={this.getTranslation("next") + " →"}
-                        disabled={this.props.nextEnabled === false || !showNext}
-                        onTouchTap={this._onNextClicked}
-                    />
-                </ToolbarGroup>
+                <ToolbarGroup style={{flexGrow: 3}}>
+                    <ToolbarGroup>
+                        <RaisedButton
+                            label={"← " + this.getTranslation("previous")}
+                            disabled={this.props.previousEnabled === false || !showPrevious}
+                            onTouchTap={this._onPreviousClicked}
+                        />
+                        <RaisedButton
+                            label={this.getTranslation("next") + " →"}
+                            disabled={this.props.nextEnabled === false || !showNext}
+                            onTouchTap={this._onNextClicked}
+                        />
+                    </ToolbarGroup>
 
-                <ToolbarGroup>
-                    {this.props.buttons.map(button =>
-                        !button.showFunc || button.showFunc(step) ?
-                            (<RaisedButton
-                                key={button.id}
-                                label={button.label}
-                                onTouchTap={button.onClick} />) :
-                            null
-                    )}
+                    <ToolbarGroup>
+                        {this.props.buttons.map(button =>
+                            !button.showFunc || button.showFunc(step) ?
+                                (<RaisedButton
+                                    key={button.id}
+                                    label={button.label}
+                                    onTouchTap={button.onClick} />) :
+                                null
+                        )}
+                    </ToolbarGroup>
                 </ToolbarGroup>
+                {showHelp && renderHelp()}
             </Toolbar>
         );
     },

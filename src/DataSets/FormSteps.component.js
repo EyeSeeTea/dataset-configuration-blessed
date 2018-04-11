@@ -129,36 +129,42 @@ const DataSetFormSteps = React.createClass({
                 title: this.getTranslation("step_initial_configuration"),
                 component: InitialConfig,
                 props: props,
+                help: this.getTranslation("help_initial_configuration"),
             },
             {
                 id: 'generalInformation',
                 title: this.getTranslation("step_general_information"),
                 component: GeneralInformation,
                 props: props,
+                help: this.getTranslation("help_general_information"),
             },
             {
                 id: 'organisationUnit',
                 title: this.getTranslation("organisation_unit"),
                 component: OrganisationUnit,
                 props: props,
+                help: this.getTranslation("help_organisation_unit"),
             },
             {
                 id: 'sections',
                 title: this.getTranslation("step_sections"),
                 component: Sections,
                 props: props,
+                help: this.getTranslation("help_sections"),
             },
             {
                 id: 'disaggregation',
                 title: this.getTranslation("step_disaggregation"),
                 component: Disaggregation,
                 props: props,
+                help: this.getTranslation("help_disaggregation"),
             },
             {
                 id: 'grey_fields',
                 title: this.getTranslation("step_grey_fields"),
                 component: GreyFields,
                 props: props,
+                help: this.getTranslation("help_grey_fields"),
             },
             {
                 id: 'sharing',
@@ -166,6 +172,7 @@ const DataSetFormSteps = React.createClass({
                 component: Sharing,
                 visible: store.isSharingStepVisible(),
                 props: props,
+                help: this.getTranslation("help_sharing"),
             },
             {
                 id: 'save',
@@ -173,6 +180,7 @@ const DataSetFormSteps = React.createClass({
                 component: Save,
                 props: _.merge(props,
                     {saving: this.state.saving, afterSave: this._afterSave}),
+                help: this.getTranslation("help_save"),
             },
         ].filter(step => !step.disabled);
 

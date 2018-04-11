@@ -14,6 +14,8 @@ import appTheme from './app.theme';
 import SnackbarContainer from '../Snackbar/SnackbarContainer.component';
 import SessionDialog from '../SessionDialog/SessionDialog.component';
 import feedbackOptions from '../config/feedback';
+import {getUserGroups, sendMessage} from '../utils/Dhis2Helpers';
+import _ from '../utils/lodash-mixins';
 
 const HeaderBar = withStateFrom(headerBarStore$, HeaderBarComponent);
 
@@ -27,8 +29,21 @@ class App extends AppWithD2 {
         this.setupFeedback();
     }
 
+    sendFeedbackToUserGroups(payload) {
+        const {d2} = this.state;
+        const userGroupNames = feedbackOptions.sendToDhis2UserGroups;
+        const {title, body} = payload;
+
+        if (d2 && !_(userGroupNames).isEmpty()) {
+            return getUserGroups(d2, userGroupNames)
+                .then(userGroups => sendMessage(d2, title, body, userGroups.toArray()))
+                .catch(err => { alert("Cannot send dhis2 message"); });
+        }
+    }
+
     setupFeedback() {
-        $.feedbackGithub(feedbackOptions);
+        const options = _.imerge(feedbackOptions, {postFunction: this.sendFeedbackToUserGroups.bind(this)});
+        $.feedbackGithub(options);
     }
 
     render() {

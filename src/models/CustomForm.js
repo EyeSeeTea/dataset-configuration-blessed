@@ -141,7 +141,8 @@ const getContext = (d2, dataset, richSections, allCategoryCombos) => {
 
 const get = (d2, dataset, sections, categoryCombos, data) => {
   const context = getContext(d2, dataset, sections, categoryCombos);
-  const htmlForm = velocity.render(data.template, context, {}, {env: "development"});
+  const config = {env: "development", escape: false};
+  const htmlForm = velocity.render(data.template, context, {}, config);
   return `
     <style>
       ${data.css}
