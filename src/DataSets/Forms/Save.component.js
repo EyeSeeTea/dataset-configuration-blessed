@@ -34,16 +34,31 @@ const Save = React.createClass({
         return {saveState: this.saveStates.SHOW, errors: []};
     },
 
+    _getLoggingMessage() {
+        if (this.props.store.action=='add'){
+            return 'create new dataset'
+        }
+        else if (this.props.store.action=='edit'){
+            return 'edit dataset'
+        }
+        else if (this.props.store.action=='clone'){
+            return 'clone dataset'
+        }
+        else{
+            return 'unknown action'
+        }
+    },
+
     _redirectAfterSave() {
         const {dataset, associations} = this.props.store;
-        log(this.props.store.action, 'success', dataset);
+        log(this._getLoggingMessage(), 'success', dataset);
         snackActions.show({message: 'dataset_saved', action: 'ok', translate: true});
         this.props.afterSave();
     },
 
     _saveErrors(error) {
         const {dataset, associations} = this.props.store;
-        log(this.props.store.action, 'failed', dataset);
+        log(this._getLoggingMessage(), 'failed', dataset);
         console.trace(error);
         const message = _.isEmpty(error) ? error.toString() : JSON.stringify(error, null, 2);
         this.setState({saveState: this.saveStates.SAVE_ERROR, errors: [message]})
