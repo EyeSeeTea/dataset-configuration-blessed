@@ -307,6 +307,11 @@ function collectionString(d2, objects, field, maxShown) {
     }
 }
 
+function currentUserHasAdminRole(d2) {
+    const authorities = d2.currentUser.authorities;
+    return authorities.has("M_dhis-web-maintenance-appmanager") || authorities.has("ALL");
+}
+
 export {
     redirectToLogin,
     getCategoryCombos,
@@ -328,4 +333,5 @@ export {
     deepMerge,
     update,
     collectionString,
+    currentUserHasAdminRole,
 };

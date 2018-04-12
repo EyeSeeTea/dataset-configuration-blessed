@@ -11,11 +11,11 @@ const ListActionBar = React.createClass({
     
     contextTypes: {
         d2: React.PropTypes.object.isRequired,
-    },    
+    },
 
     mixins: [Auth],
 
-    _addClick() {                  
+    _addClick() {
         goToRoute(this.props.route);
     },
 
@@ -28,12 +28,6 @@ const ListActionBar = React.createClass({
             position: 'fixed',
             zIndex: 10,
         };
-
-        // const modelDefinition = this.getModelDefinitionByName(this.props.modelType);
-
-        // if (!this.getCurrentUser().canCreate(modelDefinition)) {
-        //     return null;
-        // }
 
         return (
             <div style={cssStyles}>

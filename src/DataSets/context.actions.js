@@ -5,7 +5,7 @@ import orgUnitsStore from './orgUnits.store';
 import logsStore from './logs.store';
 import sharingStore from './sharing.store';
 import { goToRoute } from '../router';
-import Settings from '../models/Settings';
+import {currentUserHasAdminRole} from '../utils/Dhis2Helpers';
 import _ from 'lodash';
 
 const setupActions = (actions) => {
@@ -64,9 +64,6 @@ const canUpdate = (d2, datasets) => {
     return hasRequiredAuthorities && privateCondition && publicCondition && datasetsUpdatable;
 }
 
-const hasAdminRole = (d2) =>
-    new Settings(d2).currentUserHasAdminRole();
-
 const {contextActions, contextMenuIcons, isContextActionAllowed} = setupActions([
     {
         name: 'edit',
@@ -109,7 +106,7 @@ const {contextActions, contextMenuIcons, isContextActionAllowed} = setupActions(
         name: 'logs',
         multiple: true,
         icon: "list",
-        isActive: hasAdminRole,
+        isActive: currentUserHasAdminRole,
         onClick: datasets => logsStore.setState(datasets),
     },
 ]);
