@@ -47,7 +47,7 @@ const canManage = (d2, datasets) =>
     datasets.every(dataset => dataset.access.manage);
 
 const canCreate = (d2) =>
-    d2.currentUser.canCreate(d2.models.dataSets) && hasRequiredAuthorities;
+    d2.currentUser.canCreatePrivate(d2.models.dataSets) && hasRequiredAuthorities;
 
 const canDelete = (d2, datasets) =>
     d2.currentUser.canDelete(d2.models.dataSets) &&
