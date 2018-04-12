@@ -38,12 +38,18 @@ const setupActions = (actions) => {
     return {contextActions, contextMenuIcons, isContextActionAllowed};
 };
 
+const requiredAuthorities = ["F_SECTION_DELETE", "F_SECTION_ADD"];
+
+const hasRequiredAuthorities = (d2) =>
+    requiredAuthorities.every(authority => d2.currentUser.authorities.has(authority));
+
 const canCreate = (d2) =>
-    d2.currentUser.canCreate(d2.models.dataSets);
+    d2.currentUser.canCreate(d2.models.dataSets) && hasRequiredAuthorities;
 
 const canDelete = (d2, datasets) =>
     d2.currentUser.canDelete(d2.models.dataSets) &&
-        _(datasets).every(dataset => dataset.access.delete);
+        _(datasets).every(dataset => dataset.access.delete) &&
+        hasRequiredAuthorities;
 
 const canUpdate = (d2, datasets) => {
     const publicDatasetsSelected = _(datasets).some(dataset => dataset.publicAccess.match(/^r/));
@@ -52,11 +58,11 @@ const canUpdate = (d2, datasets) => {
     const privateCondition = !privateDatasetsSelected || d2.currentUser.canCreatePrivate(d2.models.dataSets);
     const publicCondition = !publicDatasetsSelected || d2.currentUser.canCreatePublic(d2.models.dataSets);
 
-    return privateCondition && publicCondition && datasetsUpdatable;
+    return hasRequiredAuthorities && privateCondition && publicCondition && datasetsUpdatable;
 }
 
 const hasAdminRole = (d2) =>
-      new Settings(d2).currentUserHasAdminRole();
+    new Settings(d2).currentUserHasAdminRole();
 
 const {contextActions, contextMenuIcons, isContextActionAllowed} = setupActions([
     {
