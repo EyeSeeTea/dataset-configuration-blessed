@@ -4,8 +4,8 @@ import deleteStore from './delete.store';
 import orgUnitsStore from './orgUnits.store';
 import logsStore from './logs.store';
 import sharingStore from './sharing.store';
-import { goToRoute } from '../router';
-import {currentUserHasAdminRole} from '../utils/Dhis2Helpers';
+import {goToRoute} from '../router';
+import {currentUserHasAdminRole, canManage, canCreate, canDelete, canUpdate} from '../utils/Dhis2Helpers';
 import _ from 'lodash';
 
 const setupActions = (actions) => {
@@ -37,32 +37,6 @@ const setupActions = (actions) => {
 
     return {contextActions, contextMenuIcons, isContextActionAllowed};
 };
-
-const requiredAuthorities = ["F_SECTION_DELETE", "F_SECTION_ADD"];
-
-const hasRequiredAuthorities = (d2) =>
-    requiredAuthorities.every(authority => d2.currentUser.authorities.has(authority));
-
-const canManage = (d2, datasets) =>
-    datasets.every(dataset => dataset.access.manage);
-
-const canCreate = (d2) =>
-    d2.currentUser.canCreatePrivate(d2.models.dataSets) && hasRequiredAuthorities;
-
-const canDelete = (d2, datasets) =>
-    d2.currentUser.canDelete(d2.models.dataSets) &&
-        _(datasets).every(dataset => dataset.access.delete) &&
-        hasRequiredAuthorities;
-
-const canUpdate = (d2, datasets) => {
-    const publicDatasetsSelected = _(datasets).some(dataset => dataset.publicAccess.match(/^r/));
-    const privateDatasetsSelected = _(datasets).some(dataset => dataset.publicAccess.match(/^-/));
-    const datasetsUpdatable = _(datasets).every(dataset => dataset.access.update);
-    const privateCondition = !privateDatasetsSelected || d2.currentUser.canCreatePrivate(d2.models.dataSets);
-    const publicCondition = !publicDatasetsSelected || d2.currentUser.canCreatePublic(d2.models.dataSets);
-
-    return hasRequiredAuthorities && privateCondition && publicCondition && datasetsUpdatable;
-}
 
 const {contextActions, contextMenuIcons, isContextActionAllowed} = setupActions([
     {
