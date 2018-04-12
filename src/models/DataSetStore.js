@@ -4,6 +4,7 @@ import { generateUid } from 'd2/lib/uid';
 import moment from 'moment';
 import { getOwnedPropertyJSON } from 'd2/lib/model/helpers/json';
 import { map, pick, get, filter, flatten, compose, identity, head } from 'lodash/fp';
+import feedbackOptions from '../config/feedback';
 import {getCategoryCombos,
         collectionToArray,
         getAsyncUniqueValidator,
@@ -19,6 +20,7 @@ import {getCategoryCombos,
         postMetadata,
         getUids,
         update,
+        sendMessageToGroups,
        } from '../utils/Dhis2Helpers';
 import * as Section from './Section';
 import getCustomForm from './CustomForm';
@@ -644,8 +646,19 @@ export default class DataSetStore {
         return postMetadata(this.d2, saving.metadata).then(() => saving);
     }
 
+    _notifyError(err) {
+        const stringErr = err.message || err;
+        const title = "Error when saving a dataset";
+        const body = "There has been an error when a dataset was being saved:\n\n" + stringErr;
+        sendMessageToGroups(this.d2, feedbackOptions.sendToDhis2UserGroups, title, body);
+        throw err;
+    }
+
     _processSave(methods) {
-        return methods.reduce((accPromise, method) => accPromise.then(method.bind(this)), this._getInitialSaving());
+        const reducer = (accPromise, method) => accPromise.then(method.bind(this));
+        return methods
+            .reduce(reducer, this._getInitialSaving())
+            .catch(err => this._notifyError(err));
     }
 
     save() {

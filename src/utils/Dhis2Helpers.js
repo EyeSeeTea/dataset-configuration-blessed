@@ -296,6 +296,12 @@ function getUids(d2, length) {
     }
 }
 
+function sendMessageToGroups(d2, userGroupNames, title, body) {
+    return getUserGroups(d2, userGroupNames)
+        .then(userGroups => sendMessage(d2, title, body, userGroups.toArray()))
+        .catch(err => { alert("Could not send DHIS2 message"); });
+}
+
 function collectionString(d2, objects, field, maxShown) {
     const array = collectionToArray(objects);
     const base = _(array).take(maxShown).map(field).join(", ");
@@ -335,6 +341,7 @@ export {
     getUids,
     deepMerge,
     update,
+    sendMessageToGroups,
     collectionString,
     currentUserHasPermission,
 };
