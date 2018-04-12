@@ -43,6 +43,9 @@ const requiredAuthorities = ["F_SECTION_DELETE", "F_SECTION_ADD"];
 const hasRequiredAuthorities = (d2) =>
     requiredAuthorities.every(authority => d2.currentUser.authorities.has(authority));
 
+const canManage = (d2, datasets) =>
+    datasets.every(dataset => dataset.access.manage);
+
 const canCreate = (d2) =>
     d2.currentUser.canCreate(d2.models.dataSets) && hasRequiredAuthorities;
 
@@ -74,6 +77,7 @@ const {contextActions, contextMenuIcons, isContextActionAllowed} = setupActions(
     {
         name: 'share',
         multiple: true,
+        isActive: canManage,
         onClick: datasets => sharingStore.setState(datasets),
     },
     {
