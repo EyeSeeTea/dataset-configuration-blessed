@@ -30,7 +30,9 @@ class App extends AppWithD2 {
     }
 
     sendFeedbackToUserGroups(payload) {
-        sendMessageToGroups(this.state.d2, feedbackOptions.sendToDhis2UserGroups, payload.title, payload.body);
+        if (this.state.d2) {
+            sendMessageToGroups(this.state.d2, feedbackOptions.sendToDhis2UserGroups, payload.title, payload.body);
+        }
     }
 
     setupFeedback() {
