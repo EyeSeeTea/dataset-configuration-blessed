@@ -40,7 +40,6 @@ import FlatButton from 'material-ui/FlatButton/FlatButton';
 import HelpOutlineIcon from 'material-ui/svg-icons/action/help-outline';
 import ListIcon from 'material-ui/svg-icons/action/list';
 import FormHelpers from '../forms/FormHelpers';
-import {currentUserHasPermission} from '../utils/Dhis2Helpers';
 
 const {SimpleCheckBox} = FormHelpers;
 
@@ -299,7 +298,7 @@ const DataSets = React.createClass({
         );
 
         const {d2} = this.context;
-        const userCanCreateDataSets = currentUserHasPermission(d2, d2.models.dataSet, "CREATE_PRIVATE");
+        const userCanCreateDataSets = d2.currentUser.canCreatePrivate(d2.models.dataSet);
 
         const logActions = [
             <FlatButton

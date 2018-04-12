@@ -5,7 +5,6 @@ import orgUnitsStore from './orgUnits.store';
 import logsStore from './logs.store';
 import sharingStore from './sharing.store';
 import { goToRoute } from '../router';
-import {currentUserHasPermission} from '../utils/Dhis2Helpers';
 import Settings from '../models/Settings';
 import _ from 'lodash';
 
@@ -40,23 +39,20 @@ const setupActions = (actions) => {
 };
 
 const canCreate = (d2) =>
-    currentUserHasPermission(d2, d2.models.dataSet, "CREATE_PRIVATE");
+    d2.currentUser.canCreate(d2.models.dataSets);
 
 const canDelete = (d2, datasets) =>
-    currentUserHasPermission(d2, d2.models.dataSet, "DELETE") &&
+    d2.currentUser.canDelete(d2.models.dataSets) &&
         _(datasets).every(dataset => dataset.access.delete);
 
 const canUpdate = (d2, datasets) => {
     const publicDatasetsSelected = _(datasets).some(dataset => dataset.publicAccess.match(/^r/));
     const privateDatasetsSelected = _(datasets).some(dataset => dataset.publicAccess.match(/^-/));
+    const datasetsUpdatable = _(datasets).every(dataset => dataset.access.update);
+    const privateCondition = !privateDatasetsSelected || d2.currentUser.canCreatePrivate(d2.models.dataSets);
+    const publicCondition = !publicDatasetsSelected || d2.currentUser.canCreatePublic(d2.models.dataSets);
 
-    return (
-        (!privateDatasetsSelected ||
-            currentUserHasPermission(d2, d2.models.dataSet, "CREATE_PRIVATE")) &&
-        (!publicDatasetsSelected ||
-            currentUserHasPermission(d2, d2.models.dataSet, "CREATE_PUBLIC")) &&
-        _(datasets).every(dataset => dataset.access.update)
-    );
+    return privateCondition && publicCondition && datasetsUpdatable;
 }
 
 const hasAdminRole = (d2) =>
