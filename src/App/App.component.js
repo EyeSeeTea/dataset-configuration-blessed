@@ -26,24 +26,7 @@ class App extends AppWithD2 {
 
     componentDidMount() {
         super.componentDidMount();
-        this.setupFeedback();
-    }
-
-    sendFeedbackToUserGroups(payload) {
-        const {d2} = this.state;
-        const userGroupNames = feedbackOptions.sendToDhis2UserGroups;
-        const {title, body} = payload;
-
-        if (d2 && !_(userGroupNames).isEmpty()) {
-            return getUserGroups(d2, userGroupNames)
-                .then(userGroups => sendMessage(d2, title, body, userGroups.toArray()))
-                .catch(err => { alert("Cannot send dhis2 message"); });
-        }
-    }
-
-    setupFeedback() {
-        const options = _.imerge(feedbackOptions, {postFunction: this.sendFeedbackToUserGroups.bind(this)});
-        $.feedbackGithub(options);
+        $.feedbackDhis2(d2, "dataset-configuration", feedbackOptions);
     }
 
     render() {
