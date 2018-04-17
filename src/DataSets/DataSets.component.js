@@ -138,13 +138,17 @@ const DataSets = React.createClass({
         if (!datasets) {
             this.setState({logsObject: null});
         } else {
+            const title = this.getTranslation("logs") + " (" + datasets.map(ds => ds.id).join(", ") + ")";
+            this.setState({
+                logsObject: title,
+                logs: this.getTranslation("logs_loading"),  // show while loading
+            });
             getLogs().then(logs => {
                 const idsSelected = new Set(datasets.map(ds => ds.id));
                 const hasIds = (log) => log.datasets.some(ds => idsSelected.has(ds.id));
                 const logsSelected = _(logs).filter(hasIds).orderBy('date', 'desc').value();
-                this.setState({logs: logsSelected.map(LogEntry)});
+                this.setState({logs: logsSelected});
             });
-            this.setState({logsObject: datasets.map(ds => ds.id).join(", "), logs: this.getTranslation("logs_loading")});  // description of what it has
         }
     },
 
@@ -173,10 +177,14 @@ const DataSets = React.createClass({
     openLogs() {
         // Retrieve the logs and save them in this.state.logs, and set
         // this.state.logsObject to a description of their contents.
-        getLogs().then(logs => {
-            this.setState({logs: _(logs).orderBy('date', 'desc').value().map(LogEntry)});
+        const title = this.getTranslation("logs") + " (" + this.getTranslation("all") + ")";
+        this.setState({
+            logsObject: title,
+            logs: this.getTranslation("logs_loading"),  // show while loading
         });
-        this.setState({logsObject: this.getTranslation("all"), logs: this.getTranslation("logs_loading")});  // description of what it has
+        getLogs().then(logs => {
+            this.setState({logs: _(logs).orderBy('date', 'desc').value()});
+        });
     },
 
     onSelectToggle(ev, dataset) {
@@ -393,20 +401,23 @@ const DataSets = React.createClass({
                                 detailsObject={this.state.detailsObject}
                                 onClose={listActions.hideDetailsBox}
                             />
-                        : null}
+                        : null }
                     {
                         this.state.logsObject ? (
                             <Dialog
-                                title={this.getTranslation("logs") + " (" + this.state.logsObject + ")"}
+                                title={this.state.logsObject}
                                 actions={logActions}
                                 open={true}
                                 bodyStyle={{padding: "20px"}}
                                 onRequestClose={listActions.hideLogs}
                                 autoScrollBodyContent={true}
                             >
-                                {_(this.state.logs).isEmpty() ? this.getTranslation('logs_none') : this.state.logs}
+                                {
+                                    !_(this.state.logs).isEmpty() ?
+                                        this.state.logs.map(LogEntry)
+                                        : this.getTranslation("logs_none") }
                             </Dialog>)
-                        : null}
+                        : null }
                 </div>
 
                 {userCanCreateDataSets && <ListActionBar route="datasets/add" />}
