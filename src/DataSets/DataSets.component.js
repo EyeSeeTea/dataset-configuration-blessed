@@ -327,13 +327,6 @@ const DataSets = React.createClass({
             />,
         ];
 
-        const helpActions = [
-            <FlatButton
-                label={this.tr("close")}
-                onClick={this._closeHelp}
-            />,
-        ];
-
         const renderLogs = () => {
             const logs = this.state.logs;  // shortcut
             if (logs === null)
@@ -343,6 +336,13 @@ const DataSets = React.createClass({
             else
                 return logs.map(LogEntry);
         };
+
+        const helpActions = [
+            <FlatButton
+                label={this.tr("close")}
+                onClick={this._closeHelp}
+            />,
+        ];
 
         const renderHelp = () => (
             <div style={{float: 'right'}}>
