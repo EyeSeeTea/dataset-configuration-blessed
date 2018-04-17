@@ -187,6 +187,13 @@ const DataSets = React.createClass({
         });
     },
 
+    addLogPage() {
+        getLogs([-2]).then(logs => {
+            logs = [].concat(this.state.logs, logs);
+            this.setState({logs: _(logs).orderBy('date', 'desc').value()});
+        });
+    },
+
     onSelectToggle(ev, dataset) {
         ev.preventDefault();
         ev.stopPropagation();
