@@ -74,6 +74,10 @@ const DataSets = React.createClass({
         };
     },
 
+    tr(text) {
+        return this.getTranslation(text);  // so it's less verbose
+    },
+
     getInitialState() {
         const settings = new Settings(this.context.d2);
 
@@ -138,10 +142,10 @@ const DataSets = React.createClass({
         if (!datasets) {
             this.setState({logsObject: null});
         } else {
-            const title = this.getTranslation("logs") + " (" + datasets.map(ds => ds.id).join(", ") + ")";
+            const title = this.tr("logs") + " (" + datasets.map(ds => ds.id).join(", ") + ")";
             this.setState({
                 logsObject: title,
-                logs: this.getTranslation("logs_loading"),  // show while loading
+                logs: this.tr("logs_loading"),  // show while loading
             });
             getLogs().then(logs => {
                 const idsSelected = new Set(datasets.map(ds => ds.id));
@@ -177,10 +181,10 @@ const DataSets = React.createClass({
     openLogs() {
         // Retrieve the logs and save them in this.state.logs, and set
         // this.state.logsObject to a description of their contents.
-        const title = this.getTranslation("logs") + " (" + this.getTranslation("all") + ")";
+        const title = this.tr("logs") + " (" + this.tr("all") + ")";
         this.setState({
             logsObject: title,
-            logs: this.getTranslation("logs_loading"),  // show while loading
+            logs: this.tr("logs_loading"),  // show while loading
         });
         getLogs().then(logs => {
             this.setState({logs: _(logs).orderBy('date', 'desc').value()});
@@ -299,7 +303,7 @@ const DataSets = React.createClass({
 
         const renderSettingsButton = () => (
             <div style={{float: 'right'}}>
-                <IconButton onTouchTap={this.openSettings} tooltip={this.getTranslation('settings')}>
+                <IconButton onTouchTap={this.openSettings} tooltip={this.tr("settings")}>
                   <SettingsIcon />
                 </IconButton>
             </div>
@@ -307,7 +311,7 @@ const DataSets = React.createClass({
 
         const renderLogsButton = () => (
             <div style={{float: 'right'}}>
-                <IconButton tooltip={this.getTranslation("logs")} onClick={this.openLogs}>
+                <IconButton tooltip={this.tr("logs")} onClick={this.openLogs}>
                     <ListIcon />
                 </IconButton>
             </div>
@@ -318,21 +322,21 @@ const DataSets = React.createClass({
 
         const logActions = [
             <FlatButton
-                label={this.getTranslation('close')}
+                label={this.tr("close")}
                 onClick={listActions.hideLogs}
             />,
         ];
 
         const helpActions = [
             <FlatButton
-                label={this.getTranslation('close')}
+                label={this.tr("close")}
                 onClick={this._closeHelp}
             />,
         ];
 
         const renderHelp = () => (
             <div style={{float: 'right'}}>
-                <IconButton tooltip={this.getTranslation("help")} onClick={this._openHelp}>
+                <IconButton tooltip={this.tr("help")} onClick={this._openHelp}>
                     <HelpOutlineIcon />
                 </IconButton>
             </div>
@@ -341,12 +345,12 @@ const DataSets = React.createClass({
         return (
             <div>
                 <Dialog
-                    title={this.getTranslation('help')}
+                    title={this.tr("help")}
                     actions={helpActions}
                     open={this.state.helpOpen}
                     onRequestClose={this._closeHelp}
                 >
-                    {this.getTranslation("help_landing_page")}
+                    {this.tr("help_landing_page")}
                 </Dialog>
                 <SettingsDialog open={this.state.settingsOpen} onRequestClose={this.closeSettings} />
                 {this.state.orgUnits ? <OrgUnitsDialog
@@ -374,7 +378,7 @@ const DataSets = React.createClass({
                     <div style={{ float: 'left', width: '75%' }}>
                         <SearchBox searchObserverHandler={this.searchListByName}/>
                     </div>
-                    {this.getTranslation("help_landing_page") != '' && renderHelp()}
+                    {this.tr("help_landing_page") != '' && renderHelp()}
                     {this.state.currentUserHasAdminRole && renderLogsButton()}
                     {this.state.currentUserHasAdminRole && renderSettingsButton()}
                     <div>
@@ -422,7 +426,7 @@ const DataSets = React.createClass({
                                 {
                                     !_(this.state.logs).isEmpty() ?
                                         this.state.logs.map(LogEntry)
-                                        : this.getTranslation("logs_none") }
+                                    : this.tr("logs_none") }
                             </Dialog>)
                         : null }
                 </div>
