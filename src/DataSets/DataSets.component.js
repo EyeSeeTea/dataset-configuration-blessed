@@ -145,7 +145,7 @@ const DataSets = React.createClass({
             const title = this.tr("logs") + " (" + datasets.map(ds => ds.id).join(", ") + ")";
             this.setState({
                 logsObject: title,
-                logs: this.tr("logs_loading"),  // show while loading
+                logs: null,
             });
             getLogs().then(logs => {
                 const idsSelected = new Set(datasets.map(ds => ds.id));
@@ -184,7 +184,7 @@ const DataSets = React.createClass({
         const title = this.tr("logs") + " (" + this.tr("all") + ")";
         this.setState({
             logsObject: title,
-            logs: this.tr("logs_loading"),  // show while loading
+            logs: null,
         });
         getLogs().then(logs => {
             this.setState({logs: _(logs).orderBy('date', 'desc').value()});
@@ -334,6 +334,16 @@ const DataSets = React.createClass({
             />,
         ];
 
+        const renderLogs = () => {
+            const logs = this.state.logs;  // shortcut
+            if (logs === null)
+                return this.tr("logs_loading");
+            else if (_(logs).isEmpty())
+                return this.tr("logs_none");
+            else
+                return logs.map(LogEntry);
+        };
+
         const renderHelp = () => (
             <div style={{float: 'right'}}>
                 <IconButton tooltip={this.tr("help")} onClick={this._openHelp}>
@@ -423,10 +433,7 @@ const DataSets = React.createClass({
                                 onRequestClose={listActions.hideLogs}
                                 autoScrollBodyContent={true}
                             >
-                                {
-                                    !_(this.state.logs).isEmpty() ?
-                                        this.state.logs.map(LogEntry)
-                                    : this.tr("logs_none") }
+                                { renderLogs() }
                             </Dialog>)
                         : null }
                 </div>
