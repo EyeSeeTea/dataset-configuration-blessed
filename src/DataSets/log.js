@@ -11,7 +11,7 @@ async function log(actionName, status, datasets) {
     const store = await getStore();
     const logs = await getLogs([0], store);
     logs.push(await makeEntry(actionName, status, datasets));
-    setLogs(logs, store);
+    return setLogs(logs, store);
 }
 
 async function getStore() {
@@ -54,13 +54,15 @@ async function setLogs(logs, store) {
     // Save the given list of logs in the current page index and
     // update the page index.
     const logsPageCurrent = await store.get('logs-page-current').catch(() => 0);
-    store.set('logs-page-' + logsPageCurrent, logs);
-    store.set('logs-page-current', logs.length < maxLogsPerPage ?
-              logsPageCurrent : mod(logsPageCurrent + 1, maxLogPages));
+    return Promise.all([
+        store.set('logs-page-' + logsPageCurrent, logs),
+        store.set('logs-page-current', logs.length < maxLogsPerPage ?
+                  logsPageCurrent : mod(logsPageCurrent + 1, maxLogPages)),
+        ]);
 }
 
 function mod(n, m) {
-    return ((n % m) + m) % m;  // the modulo operation can be negative...
+    return ((n % m) + m) % m;  // the modulo operation can be negative otherwise...
 }
 
 // Simple component to show a log entry.
