@@ -42,7 +42,7 @@ async function getLogs(pages, store) {
     const logsPageCurrent = await get('logs-page-current', 0, store);
     const pagesNames = pages.map(n => 'logs-page-' + mod(logsPageCurrent + n, maxLogPages));
     const logs = await Promise.all(pagesNames.map(name => get(name, [], store)));
-    return [].concat(...logs);
+    return _.flatten(logs);
 }
 
 async function setLogs(logs, store) {
