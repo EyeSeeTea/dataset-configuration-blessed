@@ -74,8 +74,8 @@ const DataSets = React.createClass({
         };
     },
 
-    tr(text) {
-        return this.getTranslation(text);  // so it's less verbose
+    tr(text, variables={}) {
+        return this.getTranslation(text, variables);  // so it's less verbose
     },
 
     getInitialState() {
