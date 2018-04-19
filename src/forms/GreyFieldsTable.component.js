@@ -36,6 +36,9 @@ const styles = {
         whiteSpace: 'nowrap',
         padding: 6,
         border: '1px solid #e0e0e0',
+        maxWidth: '40vw',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis'
     },
 };
 
@@ -234,7 +237,9 @@ class GreyFieldsTable extends React.Component {
             .map((dse, deNum) => {
                 return (
                     <tr key={deNum} style={{ background: deNum % 2 === 0 ? 'none' : '#f0f0f0' }}>
-                        <td style={styles.tdDataElement}>{dse.dataElement.displayName}</td>
+                        <td title={dse.dataElement.displayName} style={styles.tdDataElement}>
+                            {dse.dataElement.displayName}
+                        </td>
                         {categoryOptionCombos.map(cos => this.renderCheckbox(dse, cos))}
                     </tr>
                 );
