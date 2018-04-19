@@ -14,6 +14,11 @@ async function log(actionName, status, datasets) {
     setLogs(logs, store);
 }
 
+async function getStore() {
+    const d2 = await getD2();
+    return d2.dataStore.get('dataset-configuration');
+}
+
 async function makeEntry(actionName, status, datasets) {
     // Return an object (a "dictionary") with the information we want to log.
     datasets = Array.isArray(datasets) ? datasets : [datasets];
@@ -37,39 +42,25 @@ async function makeEntry(actionName, status, datasets) {
 async function getLogs(pages, store) {
     // Return the concatenated logs for the given pages (relative to
     // logsPageCurrent) if they exist, or an empty list otherwise.
-    pages = pages || [-1, 0];
+    pages = pages || [-1, 0];  // by default, take the last two pages
     store = store ? store : await getStore();
-    const logsPageCurrent = await get('logs-page-current', 0, store);
+    const logsPageCurrent = await store.get('logs-page-current').catch(() => 0);
     const pagesNames = pages.map(n => 'logs-page-' + mod(logsPageCurrent + n, maxLogPages));
-    const logs = await Promise.all(pagesNames.map(name => get(name, [], store)));
+    const logs = await Promise.all(pagesNames.map(name => store.get(name).catch(() => [])));
     return _.flatten(logs);
 }
 
 async function setLogs(logs, store) {
     // Save the given list of logs in the current page index and
-    // increase it if necessary.
-    const logsPageCurrent = await get('logs-page-current', 0, store);
+    // update the page index.
+    const logsPageCurrent = await store.get('logs-page-current').catch(() => 0);
     store.set('logs-page-' + logsPageCurrent, logs);
-    if (logs.length < maxLogsPerPage)
-        store.set('logs-page-current', logsPageCurrent);  // in case it was not defined
-    else
-        store.set('logs-page-current', mod(logsPageCurrent + 1, maxLogPages));
-}
-
-function get(key, defaultValue, store) {
-    // Return the value for key in the store.
-    return store.get(key).catch(() => defaultValue);
-}
-
-async function getStore() {
-    // Retrieve and return our dataStore.
-    const d2 = await getD2();
-    return d2.dataStore.get('dataset-configuration');
+    store.set('logs-page-current', logs.length < maxLogsPerPage ?
+              logsPageCurrent : mod(logsPageCurrent + 1, maxLogPages));
 }
 
 function mod(n, m) {
-    return ((n % m) + m) % m;
-    // Because javascript is retarded and the modulo operation can be negative.
+    return ((n % m) + m) % m;  // the modulo operation can be negative...
 }
 
 // Simple component to show a log entry.
