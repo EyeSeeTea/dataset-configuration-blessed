@@ -10,11 +10,11 @@ async function log(actionName, status, datasets) {
     // ("success", "failed"), by whom and on which datasets.
     const store = await getStore();
     const logs = await getLogs([0], store);
-    logs.push(await logEntry(actionName, status, datasets));
+    logs.push(await makeEntry(actionName, status, datasets));
     setLogs(logs, store);
 }
 
-async function logEntry(actionName, status, datasets) {
+async function makeEntry(actionName, status, datasets) {
     // Return an object (a "dictionary") with the information we want to log.
     datasets = Array.isArray(datasets) ? datasets : [datasets];
     const user = await getD2().then(d2 => d2.currentUser);
