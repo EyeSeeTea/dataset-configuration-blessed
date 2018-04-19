@@ -192,7 +192,10 @@ const DataSets = React.createClass({
     },
 
     addLogPage() {
+        // Placeholder for a function that will add another page to
+        // the already stored logs.
         getLogs([-2]).then(logs => {
+            // TODO: instead of "-2", get the page previous to the last one retrieved.
             logs = [].concat(this.state.logs, logs);
             this.setState({logs: _(logs).orderBy('date', 'desc').value()});
         });
