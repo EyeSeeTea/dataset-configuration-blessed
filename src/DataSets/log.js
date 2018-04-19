@@ -50,19 +50,21 @@ async function setLogs(logs, store) {
     // increase it if necessary.
     const logsPageCurrent = await get('logs-page-current', 0, store);
     store.set('logs-page-' + logsPageCurrent, logs);
-    if (logs.length >= maxLogsPerPage)
+    if (logs.length < maxLogsPerPage)
+        store.set('logs-page-current', logsPageCurrent);  // in case it was not defined
+    else
         store.set('logs-page-current', mod(logsPageCurrent + 1, maxLogPages));
 }
 
-async function get(key, defaultValue, store) {
+function get(key, defaultValue, store) {
     // Return the value for key in the store.
-    return await store.get(key).catch(() => defaultValue);
+    return store.get(key).catch(() => defaultValue);
 }
 
 async function getStore() {
     // Retrieve and return our dataStore.
     const d2 = await getD2();
-    return await d2.dataStore.get('dataset-configuration');
+    return d2.dataStore.get('dataset-configuration');
 }
 
 function mod(n, m) {
