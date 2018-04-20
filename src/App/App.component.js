@@ -14,7 +14,7 @@ import appTheme from './app.theme';
 import SnackbarContainer from '../Snackbar/SnackbarContainer.component';
 import SessionDialog from '../SessionDialog/SessionDialog.component';
 import feedbackOptions from '../config/feedback';
-import {getUserGroups, sendMessage} from '../utils/Dhis2Helpers';
+import { sendMessageToGroups } from '../utils/Dhis2Helpers';
 import _ from '../utils/lodash-mixins';
 
 const HeaderBar = withStateFrom(headerBarStore$, HeaderBarComponent);
