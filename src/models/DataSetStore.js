@@ -647,9 +647,17 @@ export default class DataSetStore {
     }
 
     _notifyError(err) {
+        const datasetName = this.dataset.name;
         const stringErr = err.message || err;
-        const title = "Error when saving a dataset";
-        const body = "There has been an error when a dataset was being saved:\n\n" + stringErr;
+        const title = `[dataset-configuration] Error when saving dataset '${datasetName}'`;
+        const currentUser = this.d2.currentUser;
+        const currentUserInfo = `User: ${currentUser.username} (${currentUser.id})`;
+        const body = [
+            `There has been an error when dataset '${datasetName}' was being saved.`,
+            currentUserInfo,
+            stringErr,
+        ].join("\n\n");
+
         sendMessageToGroups(this.d2, feedbackOptions.sendToDhis2UserGroups, title, body);
         throw err;
     }
