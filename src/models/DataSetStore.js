@@ -4,6 +4,7 @@ import { generateUid } from 'd2/lib/uid';
 import moment from 'moment';
 import { getOwnedPropertyJSON } from 'd2/lib/model/helpers/json';
 import { map, pick, get, filter, flatten, compose, identity, head } from 'lodash/fp';
+import feedbackOptions from '../config/feedback';
 import {getCategoryCombos,
         collectionToArray,
         getAsyncUniqueValidator,
@@ -19,12 +20,10 @@ import {getCategoryCombos,
         postMetadata,
         getUids,
         update,
+        sendMessageToGroups,
        } from '../utils/Dhis2Helpers';
 import * as Section from './Section';
 import getCustomForm from './CustomForm';
-import customFormTemplate from '!!raw-loader!./custom-form-resources/sectionForm.vm';
-import customFormJs from '!!raw-loader!./custom-form-resources/script.js';
-import customFormCss from '!!raw-loader!./custom-form-resources/style.css';
 
 // From maintenance-app/src/EditModel/objectActions.js
 const extractErrorMessagesFromResponse = compose(
@@ -230,13 +229,12 @@ export default class DataSetStore {
     }
 
     _saveCustomForm(saving) {
-        const {richSections, dataset} = saving;
+        const {richSections, dataset, project} = saving;
         const categoryCombos$ = getCategoryCombos(this.d2);
-        const data = {template: customFormTemplate, css: customFormCss, js: customFormJs};
         const api = this.d2.Api.getApi();
 
         return categoryCombos$.then(categoryCombos => {
-            const htmlCode = getCustomForm(this.d2, dataset, richSections, categoryCombos, data);
+            const htmlCode = getCustomForm(this.d2, dataset, project, richSections, categoryCombos);
             const payload = {style: "NORMAL", htmlCode};
             return api.post(['dataSets', dataset.id, 'form'].join('/'), payload).then(() => saving);
         });
@@ -644,8 +642,27 @@ export default class DataSetStore {
         return postMetadata(this.d2, saving.metadata).then(() => saving);
     }
 
+    _notifyError(err) {
+        const datasetName = this.dataset.name;
+        const stringErr = err.message || err;
+        const title = `[dataset-configuration] Error when saving dataset '${datasetName}'`;
+        const currentUser = this.d2.currentUser;
+        const currentUserInfo = `User: ${currentUser.username} (${currentUser.id})`;
+        const body = [
+            `There has been an error when dataset '${datasetName}' was being saved.`,
+            currentUserInfo,
+            stringErr,
+        ].join("\n\n");
+
+        sendMessageToGroups(this.d2, feedbackOptions.sendToDhis2UserGroups, title, body);
+        throw err;
+    }
+
     _processSave(methods) {
-        return methods.reduce((accPromise, method) => accPromise.then(method.bind(this)), this._getInitialSaving());
+        const reducer = (accPromise, method) => accPromise.then(method.bind(this));
+        return methods
+            .reduce(reducer, this._getInitialSaving())
+            .catch(err => this._notifyError(err));
     }
 
     save() {

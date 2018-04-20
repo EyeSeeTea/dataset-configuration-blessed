@@ -2,6 +2,16 @@ import velocity from 'velocityjs';
 import htmlencode from 'htmlencode';
 import _ from '../utils/lodash-mixins';
 
+import customFormTemplate from '!!raw-loader!./custom-form-resources/sectionForm.vm';
+import customFormJs from '!!raw-loader!./custom-form-resources/script.js';
+import customFormCss from '!!raw-loader!./custom-form-resources/style.css';
+
+const data = {
+  template: customFormTemplate,
+  css: customFormCss,
+  js: customFormJs,
+};
+
 const a = (obj) => obj.toArray ? obj.toArray() : obj;
 const _a = (...args) => _(a(...args));
 
@@ -124,7 +134,7 @@ const getContext = (d2, dataset, richSections, allCategoryCombos) => {
       htmlEncode: htmlencode.htmlEncode,
     },
     auth: {
-      // Used in automatic form, cannot be calculated for a static custom form, leave as true
+      // Used in automatic form, cannot be calculated for a static custom form, leave it as true
       hasAccess: (app, key) => true,
     },
     dataSet: {
@@ -139,17 +149,14 @@ const getContext = (d2, dataset, richSections, allCategoryCombos) => {
   };
 };
 
-const get = (d2, dataset, sections, categoryCombos, data) => {
+const get = (d2, dataset, project, sections, categoryCombos) => {
   const context = getContext(d2, dataset, sections, categoryCombos);
   const config = {env: "development", escape: false};
   const htmlForm = velocity.render(data.template, context, {}, config);
+
   return `
-    <style>
-      ${data.css}
-    </style>
-    <script>
-      ${data.js}
-    </script>
+    <style>${data.css}</style>
+    <script>${data.js}</script>
     ${htmlForm}
   `;
 };
