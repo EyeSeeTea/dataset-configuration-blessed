@@ -120,7 +120,7 @@ const Save = React.createClass({
         } else if (saveState === this.saveStates.SAVE_ERROR) {
             return (
                 <div className="alert alert-danger">
-                    <div>{this.getTranslation("wizard_save_error_message")}</div>
+                    <p><b>{this.getTranslation("wizard_save_error_message")}</b></p>
                     {errors.map((error, idx) => <pre key={idx}>{error}</pre>)}
                 </div>
             );
