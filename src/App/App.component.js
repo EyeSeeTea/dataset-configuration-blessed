@@ -26,18 +26,7 @@ class App extends AppWithD2 {
 
     componentDidMount() {
         super.componentDidMount();
-        this.setupFeedback();
-    }
-
-    sendFeedbackToUserGroups(payload) {
-        if (this.state.d2) {
-            sendMessageToGroups(this.state.d2, feedbackOptions.sendToDhis2UserGroups, payload.title, payload.body);
-        }
-    }
-
-    setupFeedback() {
-        const options = _.imerge(feedbackOptions, {postFunction: this.sendFeedbackToUserGroups.bind(this)});
-        $.feedbackGithub(options);
+        $.feedbackDhis2(d2, "dataset-configuration", feedbackOptions);
     }
 
     render() {
