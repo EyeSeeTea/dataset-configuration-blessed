@@ -281,7 +281,7 @@ const Sections = React.createClass({
                 items);
         const getFilteredByName = (items) =>
             !filterName ? items :
-                items.filter(de => _.includes(de.name.toLowerCase(), filterName.toLowerCase()));
+                items.filter(de => _.includes(de.displayName.toLowerCase(), filterName.toLowerCase()));
         const getDefaultOrder = (items) =>
             _(items).sortBy(item => [!item.selectedOnLoad, getItemStatus(item) === "phased-out", item.name]).value();
         const getSorted = (items) =>
