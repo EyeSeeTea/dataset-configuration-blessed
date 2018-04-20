@@ -444,7 +444,7 @@ const Sections = React.createClass({
                 contents: selectedColumnContents,
             },
             {
-                name: 'name',
+                name: 'displayName',
                 sortable: true,
                 style: {width: '33%'},
             },
