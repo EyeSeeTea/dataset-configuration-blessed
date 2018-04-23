@@ -74,13 +74,15 @@ function mod(n, m) {
 
 // Simple component to show a log entry.
 function LogEntry(props) {
-    return (<div key={props.date} style={{paddingBottom: "15px"}}>
-                <b>Date:</b> {props.date} <br />
-                <b>Action:</b> {props.action} <br />
-                <b>Status:</b> {props.status} <br />
-                <b>User:</b> {props.user.displayName} ({props.user.username})<br />
-                <b>Datasets:</b> {props.datasets.map(ds => `${ds.displayName} (${ds.id}) `).join(', ')} <br />
-            </div>);
+    return (
+        <div key={props.date} style={{paddingBottom: "15px"}}>
+            <b>Date:</b> {props.date} <br />
+            <b>Action:</b> {props.action} <br />
+            <b>Status:</b> {props.status} <br />
+            <b>User:</b> {props.user.displayName} ({props.user.username})<br />
+            <b>Datasets:</b> {props.datasets.map(ds => `${ds.displayName} (${ds.id}) `).join(', ')} <br />
+        </div>
+    );
 }
 
 
