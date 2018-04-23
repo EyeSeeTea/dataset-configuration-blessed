@@ -8,15 +8,9 @@ const maxLogPages = 100;
 async function log(actionName, status, datasets) {
     // Log the name of the action that has been executed, its status
     // ("success", "failed"), by whom and on which datasets.
-    const store = await getStore();
-    const logs = await getLogs([0], store);
+    const logs = await getLogs([0]);
     logs.push(await makeEntry(actionName, status, datasets));
-    return setLogs(logs, store);
-}
-
-async function getStore() {
-    const d2 = await getD2();
-    return d2.dataStore.get('dataset-configuration');
+    return setLogs(logs);
 }
 
 async function makeEntry(actionName, status, datasets) {
@@ -39,7 +33,7 @@ async function makeEntry(actionName, status, datasets) {
     };
 }
 
-async function getLogs(pages, store) {
+async function getLogs(pages) {
     // Return the concatenated logs for the given pages (relative to
     // logsPageCurrent) if they exist, or an empty list otherwise.
     // It returns null when there are no more log pages.
@@ -47,7 +41,7 @@ async function getLogs(pages, store) {
     if (pages.every(n => n >= maxLogPages))
         return null;
 
-    store = store ? store : await getStore();
+    const store = await getStore();
     const logsPageCurrent = await store.get('logs-page-current').catch(() => 0);
     const pagesNames = pages.map(n => 'logs-page-' + mod(logsPageCurrent - n, maxLogPages));
     const logs = await Promise.all(pagesNames.map(name => store.get(name).catch(() => null)));
@@ -57,15 +51,21 @@ async function getLogs(pages, store) {
         return _.flatten(_.filter(logs));
 }
 
-async function setLogs(logs, store) {
+async function setLogs(logs) {
     // Save the given list of logs in the current page index and
     // update the page index.
+    const store = await getStore();
     const logsPageCurrent = await store.get('logs-page-current').catch(() => 0);
     return Promise.all([
         store.set('logs-page-' + logsPageCurrent, logs),
         store.set('logs-page-current', logs.length < maxLogsPerPage ?
                   logsPageCurrent : mod(logsPageCurrent + 1, maxLogPages)),
         ]);
+}
+
+async function getStore() {
+    const d2 = await getD2();
+    return d2.dataStore.get('dataset-configuration');
 }
 
 function mod(n, m) {
