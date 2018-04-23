@@ -80,7 +80,7 @@ function LogEntry(props) {
             <b>Action:</b> {props.action} <br />
             <b>Status:</b> {props.status} <br />
             <b>User:</b> {props.user.displayName} ({props.user.username})<br />
-            <b>Datasets:</b> {props.datasets.map(ds => `${ds.displayName} (${ds.id}) `).join(', ')} <br />
+            <b>Datasets:</b> {props.datasets.map(ds => `${ds.displayName} (${ds.id})`).join(', ')} <br />
         </div>
     );
 }
