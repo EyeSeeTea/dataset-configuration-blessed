@@ -42,12 +42,19 @@ async function makeEntry(actionName, status, datasets) {
 async function getLogs(pages, store) {
     // Return the concatenated logs for the given pages (relative to
     // logsPageCurrent) if they exist, or an empty list otherwise.
-    pages = pages || [-1, 0];  // by default, take the last two pages
+    // It returns null when there are no more log pages.
+    pages = pages || [0, 1];  // by default, take the last two pages
+    if (pages.every(n => n >= maxLogPages))
+        return null;
+
     store = store ? store : await getStore();
     const logsPageCurrent = await store.get('logs-page-current').catch(() => 0);
-    const pagesNames = pages.map(n => 'logs-page-' + mod(logsPageCurrent + n, maxLogPages));
-    const logs = await Promise.all(pagesNames.map(name => store.get(name).catch(() => [])));
-    return _.flatten(logs);
+    const pagesNames = pages.map(n => 'logs-page-' + mod(logsPageCurrent - n, maxLogPages));
+    const logs = await Promise.all(pagesNames.map(name => store.get(name).catch(() => null)));
+    if (logs.every(log => log === null))
+        return null;
+    else
+        return _.flatten(_.filter(logs));
 }
 
 async function setLogs(logs, store) {

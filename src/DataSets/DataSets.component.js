@@ -93,6 +93,8 @@ const DataSets = React.createClass({
             orgUnits: null,
             helpOpen: false,
             logs: null,
+            logsFilter: log => true,
+            logsPageLast: 0,
         }
     },
 
@@ -105,7 +107,7 @@ const DataSets = React.createClass({
         this.registerDisposable(deleteStore.subscribe(deleteObjects => this.getDataSets()));
         this.registerDisposable(this.subscribeToModelStore(sharingStore, "sharing"));
         this.registerDisposable(this.subscribeToModelStore(orgUnitsStore, "orgUnits"));
-        this.registerDisposable(logsStore.subscribe(datasets => this.showDatasetsLogs(datasets)));
+        this.registerDisposable(logsStore.subscribe(datasets => this.openLogs(datasets)));
     },
 
     subscribeToModelStore(store, modelName) {
@@ -136,26 +138,6 @@ const DataSets = React.createClass({
         });
     },
 
-    showDatasetsLogs(datasets) {
-        // Set this.state.logs to the logs that include any of the given
-        // datasets, and this.state.logsObject to a description of their contents.
-        if (!datasets) {
-            this.setState({logsObject: null});
-        } else {
-            const title = this.tr("logs") + " (" + datasets.map(ds => ds.id).join(", ") + ")";
-            this.setState({
-                logsObject: title,
-                logs: null,
-            });
-            getLogs().then(logs => {
-                const idsSelected = new Set(datasets.map(ds => ds.id));
-                const hasIds = (log) => log.datasets.some(ds => idsSelected.has(ds.id));
-                const logsSelected = _(logs).filter(hasIds).orderBy('date', 'desc').value();
-                this.setState({logs: logsSelected});
-            });
-        }
-    },
-
     searchListByName(searchObserver) {
 
         //bind key search listener
@@ -178,26 +160,48 @@ const DataSets = React.createClass({
         this.setState({settingsOpen: false});
     },
 
-    openLogs() {
-        // Retrieve the logs and save them in this.state.logs, and set
-        // this.state.logsObject to a description of their contents.
-        const title = this.tr("logs") + " (" + this.tr("all") + ")";
+    openLogs(datasets) {
+        // Set this.state.logs to the logs that include any of the given
+        // datasets, this.state.logsObject to a description of their contents
+        // and this.state.logsFilter so it selects only the relevant logs.
+        if (datasets === null) {
+            this.setState({logsObject: null});
+            return;
+        }
+
+        let title = this.tr("logs");
+        if (Array.isArray(datasets)) {
+            const ids = datasets.map(ds => ds.id);
+            const idsSet = new Set(ids);
+            this.state.logsFilter = log => log.datasets.some(ds => idsSet.has(ds.id));
+            title += " (" + ids.join(", ") + ")";
+        } else {
+            this.state.logsFilter = log => true;
+            title += " (" + this.tr("all") + ")";
+        }
+
         this.setState({
             logsObject: title,
             logs: null,
         });
-        getLogs().then(logs => {
-            this.setState({logs: _(logs).orderBy('date', 'desc').value()});
-        });
+        this.addLogs([0, 1]);
     },
 
-    addLogPage() {
-        // Placeholder for a function that will add another page to
-        // the already stored logs.
-        getLogs([-2]).then(logs => {
-            // TODO: instead of "-2", get the page previous to the last one retrieved.
-            logs = [].concat(this.state.logs, logs);
-            this.setState({logs: _(logs).orderBy('date', 'desc').value()});
+    addLogs(pages) {
+        // Add logs from the given log pages (to the already loaded logs if any).
+        if (!Array.isArray(pages))
+            pages = [this.state.logsPageLast + 1];
+
+        getLogs(pages).then(logs => {
+            if (logs === null) {
+                this.setState({logsPageLast: -1});
+            } else {
+                logs = _(logs).filter(this.state.logsFilter).orderBy('date', 'desc').value();
+                this.setState({
+                    logs: _.flatten(_.filter([this.state.logs, logs])),
+                    logsPageLast: pages[pages.length - 1],
+                });
+            }
         });
     },
 
@@ -324,6 +328,11 @@ const DataSets = React.createClass({
         const userCanCreateDataSets = currentUserHasPermission(d2, d2.models.dataSet, "CREATE_PRIVATE");
 
         const logActions = [
+            <FlatButton
+                label={this.tr("logs_more")}
+                onClick={this.addLogs}
+                disabled={this.state.logsPageLast < 0}
+            />,
             <FlatButton
                 label={this.tr("close")}
                 onClick={listActions.hideLogs}
