@@ -201,7 +201,7 @@ const DataSets = React.createClass({
                 logs = _(logs).filter(this.state.logsFilter).orderBy('date', 'desc').value();
                 this.setState({
                     logs: _.flatten(_.filter([this.state.logs, logs])),
-                    logsPageLast: pages[pages.length - 1],
+                    logsPageLast: _.max(pages),
                     logsOldestDate: logsOldestDate,
                 });
             }

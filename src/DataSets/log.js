@@ -33,11 +33,11 @@ async function makeEntry(actionName, status, datasets) {
     };
 }
 
-async function getLogs(pages) {
+async function getLogs(pages = [1, 0]) {
     // Return the concatenated logs for the given pages (relative to
     // logsPageCurrent) if they exist, or an empty list otherwise.
     // It returns null when there are no more log pages.
-    pages = pages || [1, 0];  // by default, take the last two pages
+    pages = _(pages).sortBy().reverse().value();  // ensure "oldest first"
     if (pages.every(n => n >= maxLogPages))
         return null;
 
