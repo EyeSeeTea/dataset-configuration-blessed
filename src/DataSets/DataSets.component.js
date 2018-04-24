@@ -184,7 +184,7 @@ const DataSets = React.createClass({
             logsObject: title,
             logs: null,
         });
-        this.addLogs([0, 1]);
+        this.addLogs([1, 0]);
     },
 
     addLogs(pages) {

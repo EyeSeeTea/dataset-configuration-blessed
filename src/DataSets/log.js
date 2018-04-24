@@ -37,7 +37,7 @@ async function getLogs(pages) {
     // Return the concatenated logs for the given pages (relative to
     // logsPageCurrent) if they exist, or an empty list otherwise.
     // It returns null when there are no more log pages.
-    pages = pages || [0, 1];  // by default, take the last two pages
+    pages = pages || [1, 0];  // by default, take the last two pages
     if (pages.every(n => n >= maxLogPages))
         return null;
 
