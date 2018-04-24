@@ -95,6 +95,7 @@ const DataSets = React.createClass({
             logs: null,
             logsFilter: log => true,
             logsPageLast: 0,
+            logsOldestDate: null,
         }
     },
 
@@ -196,10 +197,12 @@ const DataSets = React.createClass({
             if (logs === null) {
                 this.setState({logsPageLast: -1});
             } else {
+                const logsOldestDate = logs.length > 0 ? logs[0].date : null;
                 logs = _(logs).filter(this.state.logsFilter).orderBy('date', 'desc').value();
                 this.setState({
                     logs: _.flatten(_.filter([this.state.logs, logs])),
                     logsPageLast: pages[pages.length - 1],
+                    logsOldestDate: logsOldestDate,
                 });
             }
         });
@@ -329,7 +332,8 @@ const DataSets = React.createClass({
 
         const logActions = [
             <FlatButton
-                label={this.tr("logs_more")}
+                label={(this.state.logsPageLast < 0 ? this.tr("logs_no_older") : this.tr("logs_older")) +
+                       " " + new Date(this.state.logsOldestDate || Date()).toLocaleString()}
                 onClick={this.addLogs}
                 disabled={this.state.logsPageLast < 0}
             />,
