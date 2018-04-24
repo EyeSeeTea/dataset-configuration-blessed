@@ -185,7 +185,7 @@ const DataSets = React.createClass({
             logsObject: title,
             logs: null,
         });
-        this.addLogs([1, 0]);
+        this.addLogs([0, 1]);  // load the last two log pages
     },
 
     addLogs(pages) {
@@ -197,10 +197,10 @@ const DataSets = React.createClass({
             if (logs === null) {
                 this.setState({logsPageLast: -1});
             } else {
-                const logsOldestDate = logs.length > 0 ? logs[0].date : null;
-                logs = _(logs).filter(this.state.logsFilter).orderBy('date', 'desc').value();
+                const logsOldestDate = logs.length > 0 ? logs[logs.length - 1].date : null;
+                logs = _(logs).filter(this.state.logsFilter).value();
                 this.setState({
-                    logs: _.flatten(_.filter([this.state.logs, logs])),
+                    logs: _([this.state.logs, logs]).filter().flatten().value(),
                     logsPageLast: _.max(pages),
                     logsOldestDate: logsOldestDate,
                 });
