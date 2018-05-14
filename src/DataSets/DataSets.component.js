@@ -73,6 +73,10 @@ const DataSets = React.createClass({
         };
     },
 
+    tr(text, variables={}) {
+        return this.getTranslation(text, variables);  // so it's less verbose
+    },
+
     getInitialState() {
         return {
             isLoading: true,
@@ -135,13 +139,17 @@ const DataSets = React.createClass({
         if (!datasets) {
             this.setState({logsObject: null});
         } else {
+            const title = this.tr("logs") + " (" + datasets.map(ds => ds.id).join(", ") + ")";
+            this.setState({
+                logsObject: title,
+                logs: null,
+            });
             getLogs().then(logs => {
                 const idsSelected = new Set(datasets.map(ds => ds.id));
                 const hasIds = (log) => log.datasets.some(ds => idsSelected.has(ds.id));
                 const logsSelected = _(logs).filter(hasIds).orderBy('date', 'desc').value();
-                this.setState({logs: logsSelected.map(LogEntry)});
+                this.setState({logs: logsSelected});
             });
-            this.setState({logsObject: datasets.map(ds => ds.id).join(", "), logs: this.getTranslation("logs_loading")});  // description of what it has
         }
     },
 
@@ -170,10 +178,24 @@ const DataSets = React.createClass({
     openLogs() {
         // Retrieve the logs and save them in this.state.logs, and set
         // this.state.logsObject to a description of their contents.
-        getLogs().then(logs => {
-            this.setState({logs: _(logs).orderBy('date', 'desc').value().map(LogEntry)});
+        const title = this.tr("logs") + " (" + this.tr("all") + ")";
+        this.setState({
+            logsObject: title,
+            logs: null,
         });
-        this.setState({logsObject: this.getTranslation("all"), logs: this.getTranslation("logs_loading")});  // description of what it has
+        getLogs().then(logs => {
+            this.setState({logs: _(logs).orderBy('date', 'desc').value()});
+        });
+    },
+
+    addLogPage() {
+        // Placeholder for a function that will add another page to
+        // the already stored logs.
+        getLogs([-2]).then(logs => {
+            // TODO: instead of "-2", get the page previous to the last one retrieved.
+            logs = [].concat(this.state.logs, logs);
+            this.setState({logs: _(logs).orderBy('date', 'desc').value()});
+        });
     },
 
     onSelectToggle(ev, dataset) {
@@ -281,7 +303,7 @@ const DataSets = React.createClass({
 
         const renderSettingsButton = () => (
             <div style={{float: 'right'}}>
-                <IconButton onTouchTap={this.openSettings} tooltip={this.getTranslation('settings')}>
+                <IconButton onTouchTap={this.openSettings} tooltip={this.tr("settings")}>
                   <SettingsIcon />
                 </IconButton>
             </div>
@@ -289,7 +311,7 @@ const DataSets = React.createClass({
 
         const renderLogsButton = () => (
             <div style={{float: 'right'}}>
-                <IconButton tooltip={this.getTranslation("logs")} onClick={this.openLogs}>
+                <IconButton tooltip={this.tr("logs")} onClick={this.openLogs}>
                     <ListIcon />
                 </IconButton>
             </div>
@@ -300,21 +322,31 @@ const DataSets = React.createClass({
 
         const logActions = [
             <FlatButton
-                label={this.getTranslation('close')}
+                label={this.tr("close")}
                 onClick={listActions.hideLogs}
             />,
         ];
 
+        const renderLogs = () => {
+            const logs = this.state.logs;  // shortcut
+            if (logs === null)
+                return this.tr("logs_loading");
+            else if (_(logs).isEmpty())
+                return this.tr("logs_none");
+            else
+                return logs.map(LogEntry);
+        };
+
         const helpActions = [
             <FlatButton
-                label={this.getTranslation('close')}
+                label={this.tr("close")}
                 onClick={this._closeHelp}
             />,
         ];
 
         const renderHelp = () => (
             <div style={{float: 'right'}}>
-                <IconButton tooltip={this.getTranslation("help")} onClick={this._openHelp}>
+                <IconButton tooltip={this.tr("help")} onClick={this._openHelp}>
                     <HelpOutlineIcon />
                 </IconButton>
             </div>
@@ -323,12 +355,12 @@ const DataSets = React.createClass({
         return (
             <div>
                 <Dialog
-                    title={this.getTranslation('help')}
+                    title={this.tr("help")}
                     actions={helpActions}
                     open={this.state.helpOpen}
                     onRequestClose={this._closeHelp}
                 >
-                    {this.getTranslation("help_landing_page")}
+                    {this.tr("help_landing_page")}
                 </Dialog>
                 <SettingsDialog open={this.state.settingsOpen} onRequestClose={this.closeSettings} />
                 {this.state.orgUnits ? <OrgUnitsDialog
@@ -356,7 +388,7 @@ const DataSets = React.createClass({
                     <div style={{ float: 'left', width: '75%' }}>
                         <SearchBox searchObserverHandler={this.searchListByName}/>
                     </div>
-                    {this.getTranslation("help_landing_page") != '' && renderHelp()}
+                    {this.tr("help_landing_page") != '' && renderHelp()}
                     {this.state.currentUserHasAdminRole && renderLogsButton()}
                     {this.state.currentUserHasAdminRole && renderSettingsButton()}
                     <div>
@@ -390,20 +422,20 @@ const DataSets = React.createClass({
                                 detailsObject={this.state.detailsObject}
                                 onClose={listActions.hideDetailsBox}
                             />
-                        : null}
+                        : null }
                     {
                         this.state.logsObject ? (
                             <Dialog
-                                title={this.getTranslation("logs") + " (" + this.state.logsObject + ")"}
+                                title={this.state.logsObject}
                                 actions={logActions}
                                 open={true}
                                 bodyStyle={{padding: "20px"}}
                                 onRequestClose={listActions.hideLogs}
                                 autoScrollBodyContent={true}
                             >
-                                {_(this.state.logs).isEmpty() ? this.getTranslation('logs_none') : this.state.logs}
+                                { renderLogs() }
                             </Dialog>)
-                        : null}
+                        : null }
                 </div>
 
                 {userCanCreateDataSets && <ListActionBar route="datasets/add" />}
