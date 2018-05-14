@@ -57,11 +57,19 @@ function collectionToArray(collectionOrArray) {
 let cachedCategoryCombos = {};
 
 function getDisaggregationCategoryCombo(d2, dataElement, categoryCombos, categoryCombo) {
+    const categoriesById = _(categoryCombos)
+        .flatMap(cc => cc.categories.toArray()).uniqBy("id").keyBy("id").value();
     const getCategoryIds = categories => _(collectionToArray(categories)).map("id").uniqBy().value();
-    const combinedCategoriesIds = getCategoryIds(_.concat(
-        dataElement.categoryCombo.categories,
-        collectionToArray(categoryCombo.categories),
-    ));
+    const allCategories = _(dataElement.categoryCombo.categories)
+        .concat(collectionToArray(categoryCombo.categories))
+        .uniqBy("id")
+        .value();
+
+    // Special category <default> should be used only when no other category is present, remove otherwise
+    const allValidCategories = allCategories.length > 1 ?
+        allCategories.filter(category => categoriesById[category.id].displayName !== "default") :
+        allCategories;
+    const combinedCategoriesIds = getCategoryIds(allValidCategories);
     const existingCategoryCombo = categoryCombos.find(cc =>
         _(getCategoryIds(cc.categories)).sortBy().isEqual(_.sortBy(combinedCategoriesIds)));
     const cacheKey = combinedCategoriesIds.join(".");
@@ -73,9 +81,7 @@ function getDisaggregationCategoryCombo(d2, dataElement, categoryCombos, categor
         return cachedCategoryCombo;
     } else {
         const newCategoryComboId = generateUid();
-        const allCategoriesById = _(categoryCombos)
-            .flatMap(cc => cc.categories.toArray()).uniqBy("id").keyBy("id").value();
-        const categories = _.at(allCategoriesById, combinedCategoriesIds);
+        const categories = _.at(categoriesById, combinedCategoriesIds);
         const categoryOptions = categories.map(c => c.categoryOptions.toArray());
         const categoryOptionCombos = _.cartesianProduct(...categoryOptions).map(cos => ({
             id: generateUid(),
