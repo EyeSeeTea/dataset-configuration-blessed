@@ -30,7 +30,6 @@ import sharingStore from './sharing.store';
 import 'd2-ui/scss/DataTable.scss';
 import { log, getLogs, LogEntry } from './log';
 
-import Settings from '../models/Settings';
 import SettingsDialog from '../Settings/Settings.component';
 import IconButton from 'material-ui/IconButton';
 import SettingsIcon from 'material-ui/svg-icons/action/settings';
@@ -40,7 +39,7 @@ import FlatButton from 'material-ui/FlatButton/FlatButton';
 import HelpOutlineIcon from 'material-ui/svg-icons/action/help-outline';
 import ListIcon from 'material-ui/svg-icons/action/list';
 import FormHelpers from '../forms/FormHelpers';
-import {currentUserHasPermission} from '../utils/Dhis2Helpers';
+import {currentUserHasAdminRole, canCreate} from '../utils/Dhis2Helpers';
 
 const {SimpleCheckBox} = FormHelpers;
 
@@ -75,14 +74,12 @@ const DataSets = React.createClass({
     },
 
     getInitialState() {
-        const settings = new Settings(this.context.d2);
-
         return {
             isLoading: true,
             pager: { total: 0 },
             dataRows: [],
             d2: this.context.d2,
-            currentUserHasAdminRole: settings.currentUserHasAdminRole(),
+            currentUserHasAdminRole: currentUserHasAdminRole(this.context.d2),
             settingsOpen: false,
             sorting: null,
             searchValue: null,
@@ -299,7 +296,7 @@ const DataSets = React.createClass({
         );
 
         const {d2} = this.context;
-        const userCanCreateDataSets = currentUserHasPermission(d2, d2.models.dataSet, "CREATE_PRIVATE");
+        const userCanCreateDataSets = canCreate(d2);
 
         const logActions = [
             <FlatButton

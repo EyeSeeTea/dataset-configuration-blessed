@@ -4,9 +4,8 @@ import deleteStore from './delete.store';
 import orgUnitsStore from './orgUnits.store';
 import logsStore from './logs.store';
 import sharingStore from './sharing.store';
-import { goToRoute } from '../router';
-import {currentUserHasPermission} from '../utils/Dhis2Helpers';
-import Settings from '../models/Settings';
+import {goToRoute} from '../router';
+import {currentUserHasAdminRole, canManage, canCreate, canDelete, canUpdate} from '../utils/Dhis2Helpers';
 import _ from 'lodash';
 
 const setupActions = (actions) => {
@@ -39,29 +38,6 @@ const setupActions = (actions) => {
     return {contextActions, contextMenuIcons, isContextActionAllowed};
 };
 
-const canCreate = (d2) =>
-    currentUserHasPermission(d2, d2.models.dataSet, "CREATE_PRIVATE");
-
-const canDelete = (d2, datasets) =>
-    currentUserHasPermission(d2, d2.models.dataSet, "DELETE") &&
-        _(datasets).every(dataset => dataset.access.delete);
-
-const canUpdate = (d2, datasets) => {
-    const publicDatasetsSelected = _(datasets).some(dataset => dataset.publicAccess.match(/^r/));
-    const privateDatasetsSelected = _(datasets).some(dataset => dataset.publicAccess.match(/^-/));
-
-    return (
-        (!privateDatasetsSelected ||
-            currentUserHasPermission(d2, d2.models.dataSet, "CREATE_PRIVATE")) &&
-        (!publicDatasetsSelected ||
-            currentUserHasPermission(d2, d2.models.dataSet, "CREATE_PUBLIC")) &&
-        _(datasets).every(dataset => dataset.access.update)
-    );
-}
-
-const hasAdminRole = (d2) =>
-      new Settings(d2).currentUserHasAdminRole();
-
 const {contextActions, contextMenuIcons, isContextActionAllowed} = setupActions([
     {
         name: 'edit',
@@ -72,6 +48,7 @@ const {contextActions, contextMenuIcons, isContextActionAllowed} = setupActions(
     {
         name: 'share',
         multiple: true,
+        isActive: canManage,
         onClick: datasets => sharingStore.setState(datasets),
     },
     {
@@ -103,7 +80,7 @@ const {contextActions, contextMenuIcons, isContextActionAllowed} = setupActions(
         name: 'logs',
         multiple: true,
         icon: "list",
-        isActive: hasAdminRole,
+        isActive: currentUserHasAdminRole,
         onClick: datasets => logsStore.setState(datasets),
     },
 ]);
