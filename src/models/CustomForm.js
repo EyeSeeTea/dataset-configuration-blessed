@@ -42,7 +42,7 @@ const map = obj => new Map(obj);
 
 const createViewDataElement = (de) => ({
   id: de.id,
-  displayFormName: de.name,
+  displayFormName: de.displayName,
   url: de.href,
   hasUrl: () => !!de.href,
   valueType: de.valueType,
