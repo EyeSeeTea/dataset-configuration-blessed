@@ -24,7 +24,7 @@ function getCategoryCombos(d2) {
         fields: [
             'id,name,displayName,dataDimensionType,isDefault',
             'categories[id,displayName,categoryOptions[id,displayName]]',
-            'categoryOptionCombos[id,displayName,categoryOptions[id,displayName]]',
+            'categoryOptionCombos[id,displayName,categoryOptions[id,name,displayName]]',
         ].join(','),
         filter: "dataDimensionType:eq:DISAGGREGATION",
         paging: false,
