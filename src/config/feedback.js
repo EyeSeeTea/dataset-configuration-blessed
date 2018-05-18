@@ -4,7 +4,7 @@ export default {
   sendToDhis2UserGroups: ["GL_GlobalAdministrator", "GL_LocalindicatorAdmin"],
   issues: {
     repository: "EyeSeeTea/dataset-configuration-blessed",
-    title: "[dataset-configuration] User feedback",
+    renderTitle: title => `[User feedback] ${title}`,
     renderBody: body => ["## dhis2", "- Username: " + d2.currentUser.username, "", body].join("\n"),
   },
   snapshots: {

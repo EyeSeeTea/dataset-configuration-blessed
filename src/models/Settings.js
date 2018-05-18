@@ -140,11 +140,6 @@ export default class Settings {
         return this.d2.currentUser.authorities.has("ALL");
     }
 
-    currentUserHasAdminRole() {
-        const authorities = this.d2.currentUser.authorities;
-        return authorities.has("M_dhis-web-maintenance-appmanager") || authorities.has("ALL");
-    }
-
     getFields() {
         const models = _(this.fieldDefinitions).filter(fd => fd.type === "d2-object").map("model").uniq();
         const optionsForModelPairs$ = models.map(model =>

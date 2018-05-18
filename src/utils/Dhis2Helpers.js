@@ -57,11 +57,19 @@ function collectionToArray(collectionOrArray) {
 let cachedCategoryCombos = {};
 
 function getDisaggregationCategoryCombo(d2, dataElement, categoryCombos, categoryCombo) {
+    const categoriesById = _(categoryCombos)
+        .flatMap(cc => cc.categories.toArray()).uniqBy("id").keyBy("id").value();
     const getCategoryIds = categories => _(collectionToArray(categories)).map("id").uniqBy().value();
-    const combinedCategoriesIds = getCategoryIds(_.concat(
-        dataElement.categoryCombo.categories,
-        collectionToArray(categoryCombo.categories),
-    ));
+    const allCategories = _(dataElement.categoryCombo.categories)
+        .concat(collectionToArray(categoryCombo.categories))
+        .uniqBy("id")
+        .value();
+
+    // Special category <default> should be used only when no other category is present, remove otherwise
+    const allValidCategories = allCategories.length > 1 ?
+        allCategories.filter(category => categoriesById[category.id].displayName !== "default") :
+        allCategories;
+    const combinedCategoriesIds = getCategoryIds(allValidCategories);
     const existingCategoryCombo = categoryCombos.find(cc =>
         _(getCategoryIds(cc.categories)).sortBy().isEqual(_.sortBy(combinedCategoriesIds)));
     const cacheKey = combinedCategoriesIds.join(".");
@@ -73,9 +81,7 @@ function getDisaggregationCategoryCombo(d2, dataElement, categoryCombos, categor
         return cachedCategoryCombo;
     } else {
         const newCategoryComboId = generateUid();
-        const allCategoriesById = _(categoryCombos)
-            .flatMap(cc => cc.categories.toArray()).uniqBy("id").keyBy("id").value();
-        const categories = _.at(allCategoriesById, combinedCategoriesIds);
+        const categories = _.at(categoriesById, combinedCategoriesIds);
         const categoryOptions = categories.map(c => c.categoryOptions.toArray());
         const categoryOptionCombos = _.cartesianProduct(...categoryOptions).map(cos => ({
             id: generateUid(),
@@ -296,6 +302,12 @@ function getUids(d2, length) {
     }
 }
 
+function sendMessageToGroups(d2, userGroupNames, title, body) {
+    return getUserGroups(d2, userGroupNames)
+        .then(userGroups => sendMessage(d2, title, body, userGroups.toArray()))
+        .catch(err => { alert("Could not send DHIS2 message"); });
+}
+
 function collectionString(d2, objects, field, maxShown) {
     const array = collectionToArray(objects);
     const base = _(array).take(maxShown).map(field).join(", ");
@@ -307,12 +319,39 @@ function collectionString(d2, objects, field, maxShown) {
     }
 }
 
-/* action: "CREATE_PUBLIC" | "CREATE_PRIVATE" | "DELETE" */
-function currentUserHasPermission(d2, model, action) {
-    const authoritiesByType =
-        _(d2.models.dataSets.authorities).map(auth => [auth.type, auth.authorities]).fromPairs().value();
-    return authoritiesByType[action] &&
-        _(authoritiesByType[action]).every(authority => d2.currentUser.authorities.has(authority));
+function currentUserHasAdminRole(d2) {
+    const authorities = d2.currentUser.authorities;
+    return authorities.has("M_dhis-web-maintenance-appmanager") || authorities.has("ALL");
+}
+
+const requiredAuthorities = ["F_SECTION_DELETE", "F_SECTION_ADD"];
+
+function hasRequiredAuthorities(d2) {
+    return requiredAuthorities.every(authority => d2.currentUser.authorities.has(authority))
+}
+
+function canManage(d2, datasets) {
+    return datasets.every(dataset => dataset.access.manage);
+}
+
+function canCreate(d2) {
+    return d2.currentUser.canCreatePrivate(d2.models.dataSets) && hasRequiredAuthorities(d2);
+}
+
+function canDelete(d2, datasets) {
+    return d2.currentUser.canDelete(d2.models.dataSets) &&
+        _(datasets).every(dataset => dataset.access.delete) &&
+        hasRequiredAuthorities(d2);
+}
+
+function canUpdate(d2, datasets) {
+    const publicDatasetsSelected = _(datasets).some(dataset => dataset.publicAccess.match(/^r/));
+    const privateDatasetsSelected = _(datasets).some(dataset => dataset.publicAccess.match(/^-/));
+    const datasetsUpdatable = _(datasets).every(dataset => dataset.access.update);
+    const privateCondition = !privateDatasetsSelected || d2.currentUser.canCreatePrivate(d2.models.dataSets);
+    const publicCondition = !publicDatasetsSelected || d2.currentUser.canCreatePublic(d2.models.dataSets);
+
+    return hasRequiredAuthorities(d2) && privateCondition && publicCondition && datasetsUpdatable;
 }
 
 export {
@@ -335,6 +374,11 @@ export {
     getUids,
     deepMerge,
     update,
+    sendMessageToGroups,
     collectionString,
-    currentUserHasPermission,
+    currentUserHasAdminRole,
+    canManage,
+    canCreate,
+    canDelete,
+    canUpdate,
 };
