@@ -208,7 +208,7 @@ const DataSets = React.createClass({
                 const {logs, hasMore: logsHasMore} = res;
                 const logsOldestDate = logs.length > 0 ? logs[logs.length - 1].date : null;
                 const filteredLogs = _(logs).filter(this.state.logsFilter).value();
-                
+
                 this.setState({
                     logsHasMore: logsHasMore,
                     logs: _([this.state.logs, filteredLogs]).compact().flatten().value(),
@@ -252,6 +252,10 @@ const DataSets = React.createClass({
 
     _closeHelp() {
         this.setState({helpOpen: false});
+    },
+
+    _onSharingSave(sharings) {
+        log('change sharing settings', 'success', sharings.map(sharing => sharing.model));
     },
 
     render() {
@@ -408,9 +412,8 @@ const DataSets = React.createClass({
                 {this.state.sharing ? <SharingDialog
                     objectsToShare={this.state.sharing.models}
                     open={true}
-                    onRequestClose={() => {
-                        log('change sharing settings', 'success', this.state.sharing.models);
-                        listActions.hideSharingBox();}}
+                    onRequestClose={listActions.hideSharingBox}
+                    onSave={this._onSharingSave}
                     onError={err => {
                         log('change sharing settings', 'failed', this.state.sharing.models);
                         snackActions.show({message: err && err.message || 'Error'});}}
