@@ -74,8 +74,8 @@ const DataSets = React.createClass({
         };
     },
 
-    tr(text, variables={}) {
-        return this.getTranslation(text, variables);  // so it's less verbose
+    tr(text, namespace = {}) {
+        return this.getTranslation(text, namespace);
     },
 
     getInitialState() {
@@ -93,6 +93,7 @@ const DataSets = React.createClass({
             orgUnits: null,
             helpOpen: false,
             logs: null,
+            logsHasMore: null,
             logsFilter: log => true,
             logsPageLast: 0,
             logsOldestDate: null,
@@ -161,46 +162,56 @@ const DataSets = React.createClass({
         this.setState({settingsOpen: false});
     },
 
+    openAllLogs() {
+        const title = `${this.tr("logs")} (${this.tr("all")})`;
+        this.setState({
+            logsFilter: log => true,
+            logsObject: title,
+            logs: null,
+        });
+        this.addLogs([0, 1]);
+    },
+
     openLogs(datasets) {
         // Set this.state.logs to the logs that include any of the given
         // datasets, this.state.logsObject to a description of their contents
         // and this.state.logsFilter so it selects only the relevant logs.
         if (datasets === null) {
             this.setState({logsObject: null});
-            return;
-        }
-
-        let title = this.tr("logs");
-        if (Array.isArray(datasets)) {
+        } else {
             const ids = datasets.map(ds => ds.id);
             const idsSet = new Set(ids);
-            this.state.logsFilter = log => log.datasets.some(ds => idsSet.has(ds.id));
-            title += " (" + ids.join(", ") + ")";
-        } else {
-            this.state.logsFilter = log => true;
-            title += " (" + this.tr("all") + ")";
-        }
+            const title = `${this.tr("logs")} (${ids.join(", ")})`;
+            const logsFilter = log => log.datasets.some(ds => idsSet.has(ds.id));
 
-        this.setState({
-            logsObject: title,
-            logs: null,
-        });
-        this.addLogs([0, 1]);  // load the last two log pages
+            this.setState({
+                logsObject: title,
+                logs: null,
+                logsFilter,
+            });
+            this.addLogs([0, 1]);  // load the last two log pages
+        }
     },
 
+    addNextLog() {
+        return this.addLogs([this.state.logsPageLast + 1]);
+    },
+    
     addLogs(pages) {
-        // Add logs from the given log pages (to the already loaded logs if any).
-        if (!Array.isArray(pages))
-            pages = [this.state.logsPageLast + 1];
-
-        getLogs(pages).then(logs => {
-            if (logs === null) {
-                this.setState({logsPageLast: -1});
-            } else {
-                const logsOldestDate = logs.length > 0 ? logs[logs.length - 1].date : null;
-                logs = _(logs).filter(this.state.logsFilter).value();
+        return getLogs(pages).then(res => {
+            if (res === null) {
                 this.setState({
-                    logs: _([this.state.logs, logs]).filter().flatten().value(),
+                    logsPageLast: -1,
+                    logs: this.state.logs || [],
+                });
+            } else {
+                const {logs, hasMore: logsHasMore} = res;
+                const logsOldestDate = logs.length > 0 ? logs[logs.length - 1].date : null;
+                const filteredLogs = _(logs).filter(this.state.logsFilter).value();
+                
+                this.setState({
+                    logsHasMore: logsHasMore,
+                    logs: _([this.state.logs, filteredLogs]).compact().flatten().value(),
                     logsPageLast: _.max(pages),
                     logsOldestDate: logsOldestDate,
                 });
@@ -321,22 +332,27 @@ const DataSets = React.createClass({
 
         const renderLogsButton = () => (
             <div style={{float: 'right'}}>
-                <IconButton tooltip={this.tr("logs")} onClick={this.openLogs}>
+                <IconButton tooltip={this.tr("logs")} onClick={this.openAllLogs}>
                     <ListIcon />
                 </IconButton>
             </div>
         );
 
         const {d2} = this.context;
+        const { logsPageLast, logsOldestDate, logsHasMore } = this.state;
         const userCanCreateDataSets = currentUserHasPermission(d2, d2.models.dataSet, "CREATE_PRIVATE");
+        const olderLogLiteral = logsPageLast < 0 ? this.tr("logs_no_older") : this.tr("logs_older");
+        const dateString = new Date(logsOldestDate || Date()).toLocaleString();
+        const label = olderLogLiteral + " " + dateString;
+
+        const logLoadMoreButton = logsHasMore ? (
+            <FlatButton
+                label={label}
+                onClick={this.addNextLog}
+            />
+        ) : null;
 
         const logActions = [
-            <FlatButton
-                label={(this.state.logsPageLast < 0 ? this.tr("logs_no_older") : this.tr("logs_older")) +
-                       " " + new Date(this.state.logsOldestDate || Date()).toLocaleString()}
-                onClick={this.addLogs}
-                disabled={this.state.logsPageLast < 0}
-            />,
             <FlatButton
                 label={this.tr("close")}
                 onClick={listActions.hideLogs}
@@ -344,8 +360,9 @@ const DataSets = React.createClass({
         ];
 
         const renderLogs = () => {
-            const logs = this.state.logs;  // shortcut
-            if (logs === null)
+            const { logs } = this.state;
+
+            if (!logs)
                 return this.tr("logs_loading");
             else if (_(logs).isEmpty())
                 return this.tr("logs_none");
@@ -449,7 +466,10 @@ const DataSets = React.createClass({
                                 onRequestClose={listActions.hideLogs}
                                 autoScrollBodyContent={true}
                             >
-                                { renderLogs() }
+                                {renderLogs()}
+                                <div style={{textAlign: "center"}}>
+                                    {logLoadMoreButton}
+                                </div>
                             </Dialog>)
                         : null }
                 </div>
