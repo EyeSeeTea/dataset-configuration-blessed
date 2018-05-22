@@ -658,6 +658,29 @@ export default class DataSetStore {
         throw err;
     }
 
+    _setCreatedByAttribute(saving) {
+        const attributeId = this.config.createdByDataSetConfigurationAttributeId;
+
+        if (!attributeId) {
+            return this._notifyError({message: "Setting createdByDataSetConfigurationAttribute is not set"})
+                .catch(() => Promise.resolve(saving));
+        } else {
+            const attributeValues = saving.dataset.attributeValues || [];
+            const attributeValueExists = _(attributeValues).some(av => av.attribute.id === attributeId);
+            let newAttributeValues;
+            if (attributeValueExists) {
+                newAttributeValues = attributeValues
+                    .map(av => av.attribute.id === attributeId ? _.imerge(av, {value: "true"}) : av);
+            } else {
+                const newAttributeValue = {value: "true", attribute: {id: attributeId}};
+                newAttributeValues = attributeValues.concat([newAttributeValue]);
+            }
+
+            saving.dataset.attributeValues = newAttributeValues;
+            return Promise.resolve(saving);
+        }
+    }
+
     _processSave(methods) {
         const reducer = (accPromise, method) => accPromise.then(method.bind(this));
         return methods
@@ -667,6 +690,7 @@ export default class DataSetStore {
 
     save() {
         return this._processSave([
+            this._setCreatedByAttribute,
             this._setDatasetId,
             this._setDatasetCode,
             this._addSharingToDataset,

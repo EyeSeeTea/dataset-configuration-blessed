@@ -42,6 +42,7 @@ const SettingsDialog = React.createClass({
             "dataElementGroupSetCoreCompetencyId",
             "expiryDays",
             "organisationUnitLevelForCountriesId",
+            "createdByDataSetConfigurationAttributeId",
         ],
         sections: {
             partition: [

@@ -114,6 +114,12 @@ export default class Settings {
             model: "attributes",
             defaultFilter: "code:eq:Hide in data set app",
         },
+        {
+            name: "createdByDataSetConfigurationAttributeId",
+            type: "d2-object",
+            model: "attributes",
+            defaultFilter: "code:eq:GL_CREATED_BY_DATASET_CONFIGURATION",
+        },
     ];
 
     constructor(d2) {
