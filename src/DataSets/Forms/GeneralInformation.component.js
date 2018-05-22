@@ -2,7 +2,6 @@ import React from 'react';
 import Translate from 'd2-ui/lib/i18n/Translate.mixin';
 import FormBuilder from 'd2-ui/lib/forms/FormBuilder.component';
 import Validators from 'd2-ui/lib/forms/Validators';
-import periodTypes from '../../config/periodTypes';
 import DataInputPeriods from '../../forms/DataInputPeriods.component';
 import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
 import FormHelpers from '../../forms/FormHelpers';
@@ -79,14 +78,6 @@ const GeneralInformation = React.createClass({
                 label: this.getTranslation("open_future_periods"),
                 value: dataset.openFuturePeriods,
                 type: "number",
-            }),
-
-            this.state.currentUserHasAdminRole && FormHelpers.getSelectField({
-                name: "dataset.periodType",
-                label: this.getTranslation("period_type"),
-                isRequired: true,
-                options: periodTypes.map(pt => ({text: pt, value: pt})),
-                value: dataset.periodType,
             }),
 
             FormHelpers.getDateField({
