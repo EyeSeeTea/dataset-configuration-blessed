@@ -1,12 +1,19 @@
-const sharingFields = ["externalAccess", "publicAccess", "userGroupAccesses"];
+const sharingFields = ["externalAccess", "publicAccess", "userAccesses", "userGroupAccesses"];
+
+function normalizeAccesses(accesses) {
+    return _(accesses || [])
+        .map(info => _.pick(info, ["id", "access"]))
+        .sortBy("id")
+        .value();
+}
 
 function getNormalizedSharing(data) {
     const sharing = _.pick(data, sharingFields);
-    const normalizedUserGroupAccesses = _(sharing.userGroupAccesses)
-        .map(userGroup => _.pick(userGroup, ["id", "access"]))
-        .sortBy("id")
-        .value();
-    return {...sharing, userGroupAccesses: normalizedUserGroupAccesses};
+    return {
+        ...sharing,
+        userGroupAccesses: normalizeAccesses(sharing.userGroupAccesses),
+        userAccesses: normalizeAccesses(sharing.userAccesses),
+    };
 }
 
 export function getChanges(models, newSharings) {

@@ -128,7 +128,7 @@ const DataSets = React.createClass({
         const filteredDataSets =
             searchValue ? allDataSets.filter().on('displayName').ilike(searchValue) : allDataSets;
         const order = sorting ? sorting.join(":") : undefined;
-        const fields = "id,name,displayName,shortName,created,lastUpdated,externalAccess,publicAccess,userGroupAccesses,user,access"
+        const fields = "id,name,displayName,shortName,created,lastUpdated,externalAccess,publicAccess,userAccesses,userGroupAccesses,user,access"
 
         filteredDataSets.list({order, fields}).then(da => {
             this.setState({
