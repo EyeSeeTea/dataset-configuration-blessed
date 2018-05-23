@@ -239,7 +239,7 @@ export default class DataSetStore {
                 return api.post(['dataSets', dataset.id, 'form'].join('/'), payload).then(() => saving);
             });
         });
-    };
+    }
 
     getDataInputPeriods(startDate, endDate) {
         if (startDate && endDate) {
@@ -262,6 +262,17 @@ export default class DataSetStore {
         }
     }
 
+    getOpenFuturePeriods(endDate) {
+        if (endDate) {
+            const currentDate = new Date();
+            const monthsDiff = (endDate.getYear() - currentDate.getYear()) * 12 +
+                (endDate.getMonth() - currentDate.getMonth());
+            return monthsDiff > 0 ? monthsDiff + 1 : 1;
+        } else {
+            return 1;
+        }
+    }
+
     getDataFromProject(dataset, associations) {
         const {project} = associations;
         this.associations.countries = this.getSharingCountries();
@@ -276,6 +287,7 @@ export default class DataSetStore {
                 project.startDate ? new Date(project.startDate) : undefined;
             newAssociations.dataInputEndDate =
                 project.endDate ? new Date(project.endDate) : undefined;
+            newDataset.openFuturePeriods = this.getOpenFuturePeriods(newAssociations.dataInputEndDate);
             newDataset.dataInputPeriods = this.getDataInputPeriods(
                 newAssociations.dataInputStartDate, newAssociations.dataInputEndDate);
             newDataset.organisationUnits = project.organisationUnits;
@@ -288,6 +300,7 @@ export default class DataSetStore {
             newAssociations.dataInputStartDate = undefined;
             newAssociations.dataInputEndDate = undefined;
             newAssociations.countries = [];
+            newDataset.openFuturePeriods = this.getOpenFuturePeriods(newAssociations.dataInputEndDate);
             newDataset.dataInputPeriods = this.getDataInputPeriods(
                 newAssociations.dataInputStartDate, newAssociations.dataInputEndDate);
             newDataset.organisationUnits.clear();
@@ -325,6 +338,7 @@ export default class DataSetStore {
             case "associations.dataInputStartDate":
             case "associations.dataInputEndDate":
                 const {dataInputStartDate, dataInputEndDate} = associations;
+                this.dataset.openFuturePeriods = this.getOpenFuturePeriods(dataInputEndDate);
                 this.dataset.dataInputPeriods =
                     this.getDataInputPeriods(dataInputStartDate, dataInputEndDate);
                 break;
