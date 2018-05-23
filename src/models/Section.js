@@ -306,7 +306,7 @@ const getOutcomeSection = (opts) => {
             sectionName: sectionName,
             coreCompetency: coreCompetency,
             theme: theme ? theme.displayName : null,
-            group: group ? group.value : indicator.code,
+            group: group ? group.value : indicator.displayName,
             categoryCombo: null,
             selected: origin && origin.id === mandatoryIndicatorId && statusKey === "active",
             origin: origin ? origin.displayName : null,
