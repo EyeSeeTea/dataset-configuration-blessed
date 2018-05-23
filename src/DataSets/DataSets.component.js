@@ -40,6 +40,7 @@ import HelpOutlineIcon from 'material-ui/svg-icons/action/help-outline';
 import ListIcon from 'material-ui/svg-icons/action/list';
 import FormHelpers from '../forms/FormHelpers';
 import {currentUserHasAdminRole, canCreate} from '../utils/Dhis2Helpers';
+import * as sharing from '../models/Sharing';
 
 const {SimpleCheckBox} = FormHelpers;
 
@@ -94,7 +95,8 @@ const DataSets = React.createClass({
             logsFilter: log => true,
             logsPageLast: 0,
             logsOldestDate: null,
-        }
+            sharing: null,
+        };
     },
 
 
@@ -126,7 +128,7 @@ const DataSets = React.createClass({
         const filteredDataSets =
             searchValue ? allDataSets.filter().on('displayName').ilike(searchValue) : allDataSets;
         const order = sorting ? sorting.join(":") : undefined;
-        const fields = "id,name,displayName,shortName,created,lastUpdated,publicAccess,user,access"
+        const fields = "id,name,displayName,shortName,created,lastUpdated,externalAccess,publicAccess,userGroupAccesses,user,access"
 
         filteredDataSets.list({order, fields}).then(da => {
             this.setState({
@@ -251,8 +253,14 @@ const DataSets = React.createClass({
         this.setState({helpOpen: false});
     },
 
-    _onSharingSave(sharings) {
-        log('change sharing settings', 'success', sharings.map(sharing => sharing.model));
+    _onSharingClose(sharings) {
+        const {updated, all} = sharing.getChanges(this.state.dataRows, sharings);
+
+        if (!_(updated).isEmpty()) {
+            log('change sharing settings', 'success', updated);
+            this.setState({dataRows: all});
+        }
+        listActions.hideSharingBox();
     },
 
     render() {
@@ -408,8 +416,7 @@ const DataSets = React.createClass({
                 {this.state.sharing ? <SharingDialog
                     objectsToShare={this.state.sharing.models}
                     open={true}
-                    onRequestClose={listActions.hideSharingBox}
-                    onSave={this._onSharingSave}
+                    onRequestClose={this._onSharingClose}
                     onError={err => {
                         log('change sharing settings', 'failed', this.state.sharing.models);
                         snackActions.show({message: err && err.message || 'Error'});}}
