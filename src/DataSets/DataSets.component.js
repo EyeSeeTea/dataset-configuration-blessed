@@ -39,8 +39,9 @@ import FlatButton from 'material-ui/FlatButton/FlatButton';
 import HelpOutlineIcon from 'material-ui/svg-icons/action/help-outline';
 import ListIcon from 'material-ui/svg-icons/action/list';
 import FormHelpers from '../forms/FormHelpers';
-import {currentUserHasAdminRole, canCreate} from '../utils/Dhis2Helpers';
+import {currentUserHasAdminRole, canCreate, getFilteredDatasets} from '../utils/Dhis2Helpers';
 import * as sharing from '../models/Sharing';
+import Settings from '../models/Settings';
 
 const {SimpleCheckBox} = FormHelpers;
 
@@ -53,6 +54,7 @@ export function calculatePageValue(pager) {
 
     return `${startItem} - ${endItem > total ? total : endItem}`;
 }
+
 const DataSets = React.createClass({
     propTypes: {
         name: React.PropTypes.string
@@ -80,6 +82,7 @@ const DataSets = React.createClass({
 
     getInitialState() {
         return {
+            config: null,
             isLoading: true,
             pager: { total: 0 },
             dataRows: [],
@@ -96,13 +99,17 @@ const DataSets = React.createClass({
             logsPageLast: 0,
             logsOldestDate: null,
             sharing: null,
+            showOnlyCreatedByApp: true,
         };
     },
 
 
     componentDidMount() {
         const d2 = this.context.d2;
-        this.getDataSets();
+
+        new Settings(d2).get().then(config => {
+            this.setState({config}, this.getDataSets);
+        });
 
         this.registerDisposable(detailsStore.subscribe(detailsObject => this.setState({detailsObject})));
         this.registerDisposable(deleteStore.subscribe(deleteObjects => this.getDataSets()));
@@ -122,20 +129,15 @@ const DataSets = React.createClass({
         });
     },
 
-    getDataSets() {
-        const {sorting, searchValue} = this.state;
-        const allDataSets = this.context.d2.models.dataSets;
-        const filteredDataSets =
-            searchValue ? allDataSets.filter().on('displayName').ilike(searchValue) : allDataSets;
-        const order = sorting ? sorting.join(":") : undefined;
-        const fields = "id,name,displayName,shortName,created,lastUpdated,externalAccess,publicAccess,userAccesses,userGroupAccesses,user,access"
+    async getDataSets() {
+        const {sorting, searchValue, showOnlyCreatedByApp, config} = this.state;
+        const filters = {searchValue, showOnlyCreatedByApp};
+        const dataSetsCollection = await getFilteredDatasets(this.context.d2, config, sorting, filters);
 
-        filteredDataSets.list({order, fields}).then(da => {
-            this.setState({
-                isLoading: false,
-                pager: da.pager,
-                dataRows: da.toArray().map(dr => _.merge(dr, {selected: false}))
-            });
+        this.setState({
+            isLoading: false,
+            pager: dataSetsCollection.pager,
+            dataRows: dataSetsCollection.toArray().map(dr => _.merge(dr, {selected: false}))
         });
     },
 
@@ -263,7 +265,14 @@ const DataSets = React.createClass({
         listActions.hideSharingBox();
     },
 
+    _onShowOnlyCreatedByAppCheck(ev) {
+        this.setState({showOnlyCreatedByApp: ev.target.checked}, this.getDataSets);
+    },
+
     render() {
+        if (!this.state.config)
+            return null;
+
         const currentlyShown = calculatePageValue(this.state.pager);
 
         const paginationProps = {
@@ -348,7 +357,9 @@ const DataSets = React.createClass({
         );
 
         const {d2} = this.context;
-        const { logsPageLast, logsOldestDate, logsHasMore } = this.state;
+        const { config, logsPageLast, logsOldestDate, logsHasMore, showOnlyCreatedByApp } = this.state;
+
+        const showCreatedByAppCheck = !!config.createdByDataSetConfigurationAttributeId;
         const olderLogLiteral = logsPageLast < 0 ? this.tr("logs_no_older") : this.tr("logs_older");
         const dateString = new Date(logsOldestDate || Date()).toLocaleString();
         const label = olderLogLiteral + " " + dateString;
@@ -424,12 +435,24 @@ const DataSets = React.createClass({
                 /> : null }
 
                 <div>
-                    <div style={{ float: 'left', width: '75%' }}>
+                    <div style={{ float: 'left', width: '50%' }}>
                         <SearchBox searchObserverHandler={this.searchListByName}/>
                     </div>
+
+                    {showCreatedByAppCheck && <Checkbox
+                            style={{ float: 'left', width: '25%', paddingTop: 18, marginLeft: 30}}
+                            checked={showOnlyCreatedByApp}
+                            label={this.getTranslation('display_only_datasets_created_by_app')}
+                            onCheck={this._onShowOnlyCreatedByAppCheck}
+                            iconStyle={{marginRight: 8}}
+                        />}
+
                     {this.tr("help_landing_page") != '' && renderHelp()}
+
                     {this.state.currentUserHasAdminRole && renderLogsButton()}
+
                     {this.state.currentUserHasAdminRole && renderSettingsButton()}
+
                     <div>
                         <Pagination {...paginationProps} />
                     </div>
