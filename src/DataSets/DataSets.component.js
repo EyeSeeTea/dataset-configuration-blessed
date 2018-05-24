@@ -40,6 +40,7 @@ import HelpOutlineIcon from 'material-ui/svg-icons/action/help-outline';
 import ListIcon from 'material-ui/svg-icons/action/list';
 import FormHelpers from '../forms/FormHelpers';
 import {currentUserHasAdminRole, canCreate} from '../utils/Dhis2Helpers';
+import * as sharing from '../models/Sharing';
 
 const {SimpleCheckBox} = FormHelpers;
 
@@ -73,8 +74,8 @@ const DataSets = React.createClass({
         };
     },
 
-    tr(text, variables={}) {
-        return this.getTranslation(text, variables);  // so it's less verbose
+    tr(text, namespace = {}) {
+        return this.getTranslation(text, namespace);
     },
 
     getInitialState() {
@@ -90,7 +91,12 @@ const DataSets = React.createClass({
             orgUnits: null,
             helpOpen: false,
             logs: null,
-        }
+            logsHasMore: null,
+            logsFilter: log => true,
+            logsPageLast: 0,
+            logsOldestDate: null,
+            sharing: null,
+        };
     },
 
 
@@ -102,7 +108,7 @@ const DataSets = React.createClass({
         this.registerDisposable(deleteStore.subscribe(deleteObjects => this.getDataSets()));
         this.registerDisposable(this.subscribeToModelStore(sharingStore, "sharing"));
         this.registerDisposable(this.subscribeToModelStore(orgUnitsStore, "orgUnits"));
-        this.registerDisposable(logsStore.subscribe(datasets => this.showDatasetsLogs(datasets)));
+        this.registerDisposable(logsStore.subscribe(datasets => this.openLogs(datasets)));
     },
 
     subscribeToModelStore(store, modelName) {
@@ -122,7 +128,7 @@ const DataSets = React.createClass({
         const filteredDataSets =
             searchValue ? allDataSets.filter().on('displayName').ilike(searchValue) : allDataSets;
         const order = sorting ? sorting.join(":") : undefined;
-        const fields = "id,name,displayName,shortName,created,lastUpdated,publicAccess,user,access"
+        const fields = "id,name,displayName,shortName,created,lastUpdated,externalAccess,publicAccess,userAccesses,userGroupAccesses,user,access"
 
         filteredDataSets.list({order, fields}).then(da => {
             this.setState({
@@ -131,26 +137,6 @@ const DataSets = React.createClass({
                 dataRows: da.toArray().map(dr => _.merge(dr, {selected: false}))
             });
         });
-    },
-
-    showDatasetsLogs(datasets) {
-        // Set this.state.logs to the logs that include any of the given
-        // datasets, and this.state.logsObject to a description of their contents.
-        if (!datasets) {
-            this.setState({logsObject: null});
-        } else {
-            const title = this.tr("logs") + " (" + datasets.map(ds => ds.id).join(", ") + ")";
-            this.setState({
-                logsObject: title,
-                logs: null,
-            });
-            getLogs().then(logs => {
-                const idsSelected = new Set(datasets.map(ds => ds.id));
-                const hasIds = (log) => log.datasets.some(ds => idsSelected.has(ds.id));
-                const logsSelected = _(logs).filter(hasIds).orderBy('date', 'desc').value();
-                this.setState({logs: logsSelected});
-            });
-        }
     },
 
     searchListByName(searchObserver) {
@@ -175,26 +161,60 @@ const DataSets = React.createClass({
         this.setState({settingsOpen: false});
     },
 
-    openLogs() {
-        // Retrieve the logs and save them in this.state.logs, and set
-        // this.state.logsObject to a description of their contents.
-        const title = this.tr("logs") + " (" + this.tr("all") + ")";
+    openAllLogs() {
+        const title = `${this.tr("logs")} (${this.tr("all")})`;
         this.setState({
+            logsFilter: log => true,
             logsObject: title,
             logs: null,
         });
-        getLogs().then(logs => {
-            this.setState({logs: _(logs).orderBy('date', 'desc').value()});
-        });
+        this.addLogs([0, 1]);
     },
 
-    addLogPage() {
-        // Placeholder for a function that will add another page to
-        // the already stored logs.
-        getLogs([-2]).then(logs => {
-            // TODO: instead of "-2", get the page previous to the last one retrieved.
-            logs = [].concat(this.state.logs, logs);
-            this.setState({logs: _(logs).orderBy('date', 'desc').value()});
+    openLogs(datasets) {
+        // Set this.state.logs to the logs that include any of the given
+        // datasets, this.state.logsObject to a description of their contents
+        // and this.state.logsFilter so it selects only the relevant logs.
+        if (datasets === null) {
+            this.setState({logsObject: null});
+        } else {
+            const ids = datasets.map(ds => ds.id);
+            const idsSet = new Set(ids);
+            const title = `${this.tr("logs")} (${ids.join(", ")})`;
+            const logsFilter = log => log.datasets.some(ds => idsSet.has(ds.id));
+
+            this.setState({
+                logsObject: title,
+                logs: null,
+                logsFilter,
+            });
+            this.addLogs([0, 1]);  // load the last two log pages
+        }
+    },
+
+    addNextLog() {
+        return this.addLogs([this.state.logsPageLast + 1]);
+    },
+    
+    addLogs(pages) {
+        return getLogs(pages).then(res => {
+            if (res === null) {
+                this.setState({
+                    logsPageLast: -1,
+                    logs: this.state.logs || [],
+                });
+            } else {
+                const {logs, hasMore: logsHasMore} = res;
+                const logsOldestDate = logs.length > 0 ? logs[logs.length - 1].date : null;
+                const filteredLogs = _(logs).filter(this.state.logsFilter).value();
+
+                this.setState({
+                    logsHasMore: logsHasMore,
+                    logs: _([this.state.logs, filteredLogs]).compact().flatten().value(),
+                    logsPageLast: _.max(pages),
+                    logsOldestDate: logsOldestDate,
+                });
+            }
         });
     },
 
@@ -231,6 +251,16 @@ const DataSets = React.createClass({
 
     _closeHelp() {
         this.setState({helpOpen: false});
+    },
+
+    _onSharingClose(sharings) {
+        const {updated, all} = sharing.getChanges(this.state.dataRows, sharings);
+
+        if (!_(updated).isEmpty()) {
+            log('change sharing settings', 'success', updated);
+            this.setState({dataRows: all});
+        }
+        listActions.hideSharingBox();
     },
 
     render() {
@@ -311,14 +341,24 @@ const DataSets = React.createClass({
 
         const renderLogsButton = () => (
             <div style={{float: 'right'}}>
-                <IconButton tooltip={this.tr("logs")} onClick={this.openLogs}>
+                <IconButton tooltip={this.tr("logs")} onClick={this.openAllLogs}>
                     <ListIcon />
                 </IconButton>
             </div>
         );
 
         const {d2} = this.context;
-        const userCanCreateDataSets = canCreate(d2);
+        const { logsPageLast, logsOldestDate, logsHasMore } = this.state;
+        const olderLogLiteral = logsPageLast < 0 ? this.tr("logs_no_older") : this.tr("logs_older");
+        const dateString = new Date(logsOldestDate || Date()).toLocaleString();
+        const label = olderLogLiteral + " " + dateString;
+
+        const logLoadMoreButton = logsHasMore ? (
+            <FlatButton
+                label={label}
+                onClick={this.addNextLog}
+            />
+        ) : null;
 
         const logActions = [
             <FlatButton
@@ -328,8 +368,9 @@ const DataSets = React.createClass({
         ];
 
         const renderLogs = () => {
-            const logs = this.state.logs;  // shortcut
-            if (logs === null)
+            const { logs } = this.state;
+
+            if (!logs)
                 return this.tr("logs_loading");
             else if (_(logs).isEmpty())
                 return this.tr("logs_none");
@@ -375,9 +416,7 @@ const DataSets = React.createClass({
                 {this.state.sharing ? <SharingDialog
                     objectsToShare={this.state.sharing.models}
                     open={true}
-                    onRequestClose={() => {
-                        log('change sharing settings', 'success', this.state.sharing.models);
-                        listActions.hideSharingBox();}}
+                    onRequestClose={this._onSharingClose}
                     onError={err => {
                         log('change sharing settings', 'failed', this.state.sharing.models);
                         snackActions.show({message: err && err.message || 'Error'});}}
@@ -433,12 +472,15 @@ const DataSets = React.createClass({
                                 onRequestClose={listActions.hideLogs}
                                 autoScrollBodyContent={true}
                             >
-                                { renderLogs() }
+                                {renderLogs()}
+                                <div style={{textAlign: "center"}}>
+                                    {logLoadMoreButton}
+                                </div>
                             </Dialog>)
                         : null }
                 </div>
 
-                {userCanCreateDataSets && <ListActionBar route="datasets/add" />}
+                {canCreate(d2) && <ListActionBar route="datasets/add" />}
             </div>
         );
     },
