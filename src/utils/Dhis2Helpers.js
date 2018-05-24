@@ -358,17 +358,18 @@ async function getFilteredDatasets(d2, config, sorting, filters) {
     const { searchValue, showOnlyCreatedByApp } = filters;
     const allDataSets = d2.models.dataSets;
     const attributeByAppId = config.createdByDataSetConfigurationAttributeId;
+    const filterByAppId = attributeByAppId && showOnlyCreatedByApp;
     const filteredByNameDataSets = searchValue ?
         allDataSets.filter().on('displayName').ilike(searchValue) :
         allDataSets;
-    const filteredDataSets = showOnlyCreatedByApp ?
+    const filteredDataSets = filterByAppId ?
         filteredByNameDataSets.filter().on('attributeValues.attribute.id').equals(attributeByAppId) :
         filteredByNameDataSets;
     const order = sorting ? sorting.join(":") : "";
     const fields = "id,name,displayName,shortName,created,lastUpdated,externalAccess," +
         "publicAccess,userAccesses,userGroupAccesses,user,access,attributeValues";
 
-    if (showOnlyCreatedByApp) {
+    if (filterByAppId) {
         // The API does not allow to simultaneously filter by attributeValue.attribute.id AND attributeValue.value,
         // so we need to make a double request: first get non-paginated datasets, filter manually by the attribute,
         // and finally make a query on paginated datasets filtering by those datasets.

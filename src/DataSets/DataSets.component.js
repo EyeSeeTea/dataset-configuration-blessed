@@ -270,6 +270,9 @@ const DataSets = React.createClass({
     },
 
     render() {
+        if (!this.state.config)
+            return null;
+
         const currentlyShown = calculatePageValue(this.state.pager);
 
         const paginationProps = {
@@ -354,8 +357,9 @@ const DataSets = React.createClass({
         );
 
         const {d2} = this.context;
-        const { logsPageLast, logsOldestDate, logsHasMore, showOnlyCreatedByApp } = this.state;
+        const { config, logsPageLast, logsOldestDate, logsHasMore, showOnlyCreatedByApp } = this.state;
 
+        const showCreatedByAppCheck = !!config.createdByDataSetConfigurationAttributeId;
         const olderLogLiteral = logsPageLast < 0 ? this.tr("logs_no_older") : this.tr("logs_older");
         const dateString = new Date(logsOldestDate || Date()).toLocaleString();
         const label = olderLogLiteral + " " + dateString;
@@ -435,13 +439,13 @@ const DataSets = React.createClass({
                         <SearchBox searchObserverHandler={this.searchListByName}/>
                     </div>
 
-                    <Checkbox
-                        style={{ float: 'left', width: '25%', paddingTop: 18, marginLeft: 30}}
-                        checked={showOnlyCreatedByApp}
-                        label={this.getTranslation('display_only_datasets_created_by_app')}
-                        onCheck={this._onShowOnlyCreatedByAppCheck}
-                        iconStyle={{marginRight: 8}}
-                    />
+                    {showCreatedByAppCheck && <Checkbox
+                            style={{ float: 'left', width: '25%', paddingTop: 18, marginLeft: 30}}
+                            checked={showOnlyCreatedByApp}
+                            label={this.getTranslation('display_only_datasets_created_by_app')}
+                            onCheck={this._onShowOnlyCreatedByAppCheck}
+                            iconStyle={{marginRight: 8}}
+                        />}
 
                     {this.tr("help_landing_page") != '' && renderHelp()}
 
