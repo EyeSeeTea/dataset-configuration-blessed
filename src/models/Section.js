@@ -207,10 +207,10 @@ const getD2Section = (d2, section) => {
     const items = _(section.items).values().filter("selected").value();
     const dataElements = _(items)
         .flatMap(item => item.type === "dataElement" ? [item] : item.dataElements)
-        .map(de => ({id: de.id, name: de.name, categoryCombo: de.categoryCombo}))
+        .map(de => ({id: de.id, name: de.name, displayName: de.displayName, categoryCombo: de.categoryCombo}))
         .uniqBy("id").value();
     const indicators = _(items).flatMap(item => item.type === "indicator" ? [item] : [])
-        .map(ind => ({id: ind.id, name: ind.name}))
+        .map(ind => ({id: ind.id, displayName: ind.displayName, name: ind.name}))
         .uniqBy("id").value();
 
     return d2.models.sections.create({
@@ -306,7 +306,7 @@ const getOutcomeSection = (opts) => {
             sectionName: sectionName,
             coreCompetency: coreCompetency,
             theme: theme ? theme.displayName : null,
-            group: group ? group.value : indicator.code,
+            group: group ? group.value : indicator.displayName,
             categoryCombo: null,
             selected: origin && origin.id === mandatoryIndicatorId && statusKey === "active",
             origin: origin ? origin.displayName : null,

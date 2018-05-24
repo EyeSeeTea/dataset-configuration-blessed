@@ -1,5 +1,6 @@
 import velocity from 'velocityjs';
 import htmlencode from 'htmlencode';
+import I18n from 'd2/lib/i18n/I18n';
 import _ from '../utils/lodash-mixins';
 
 import customFormTemplate from '!!raw-loader!./custom-form-resources/sectionForm.vm';
@@ -86,11 +87,19 @@ const getHeaders = (categories, visibleOptionCombos) => {
     .flatMap((cat, idx) => a(cat.categoryOptions).map(co => [co.id, idx]))
     .fromPairs()
     .value();
+
   return a(categories).map((category, catIndex) =>
     _a(visibleOptionCombos)
       .map(coc => _a(coc.categoryOptions).sortBy(co => indexes[co.id]).value())
       .groupConsecutiveBy(cos => _a(cos).map(co => co.id).take(catIndex + 1).value())
-      .map(group =>({colSpan: group.length, name: group[0][catIndex] ? group[0][catIndex].displayName : "not-found"}))
+      .map(group => {
+        const categoryOption = group[0][catIndex] || {displayName: "not found"};
+        return {
+          colSpan: group.length,
+          name: categoryOption.name,
+          displayName: categoryOption.displayName,
+        };
+      })
       .value());
 };
 
@@ -104,7 +113,7 @@ const getGreyedFields = (dataset) =>
 const getRowTotalId = (dataElement, optionCombos) =>
   ["row", dataElement.id, ...a(optionCombos).map(coc => coc.id)].join("-");
 
-const getContext = (d2, dataset, richSections, allCategoryCombos) => {
+const getContext = (d2, i18n, dataset, richSections, allCategoryCombos) => {
   const sections = richSections.filter(richSection => _(richSection.items).values().some("selected"));
   const categoryComboByDataElementId = _a(dataset.dataSetElements)
     .map(dse => [dse.dataElement.id, dse.categoryCombo]).fromPairs().value();
@@ -128,7 +137,7 @@ const getContext = (d2, dataset, richSections, allCategoryCombos) => {
       getRowTotalId,
     },
     i18n: {
-      getString: (...args) => d2.i18n.getTranslation(...args),
+      getString: key => i18n.getTranslation(key),
     },
     encoder: {
       htmlEncode: htmlencode.htmlEncode,
@@ -149,8 +158,23 @@ const getContext = (d2, dataset, richSections, allCategoryCombos) => {
   };
 };
 
-const get = (d2, dataset, project, sections, categoryCombos) => {
-  const context = getContext(d2, dataset, sections, categoryCombos);
+// d2.i18n contains uiLocale translations, a custom form should use dbLocale translations.
+const getI18n = (d2) => {
+  const { keyUiLocale, keyDbLocale } = d2.currentUser.settings;
+
+  if (!keyDbLocale || keyDbLocale === keyUiLocale) {
+    return Promise.resolve(d2.i18n);
+  } else {
+    const locales = _([keyDbLocale, "en"]).compact().uniq().value();
+    const sources = locales.map(locale => `./i18n/i18n_module_${locale}.properties`);
+    const i18n = new I18n(sources);
+    return i18n.load().then(() => i18n);
+  }
+};
+
+const get = async (d2, dataset, project, sections, categoryCombos) => {
+  const i18n = await getI18n(d2);
+  const context = getContext(d2, i18n, dataset, sections, categoryCombos);
   const config = {env: "development", escape: false};
   const htmlForm = velocity.render(data.template, context, {}, config);
 

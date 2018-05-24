@@ -39,12 +39,12 @@ const InitialConfig = React.createClass({
     },
 
     _getProjects() {
-        const fields = ["code", "name", "startDate", "endDate", "organisationUnits[:all]"];
+        const fields = ["code", "name", "displayName", "startDate", "endDate", "organisationUnits[:all]"];
         return this._getCategoryOptions(this.props.config.categoryProjectsId, fields);
     },
 
     _getCoreCompetencies() {
-        const fields = ["name"];
+        const fields = ["name", "displayName"];
         const degsId = this.props.config.dataElementGroupSetCoreCompetencyId;
         return this._getDataElementGroups(degsId, fields);
     },
@@ -83,7 +83,7 @@ const InitialConfig = React.createClass({
     },
 
     _getOptionsFromIndexedObjects(objects) {
-        return _(objects).values().map(obj => ({value: obj.id, text: obj.name})).value();
+        return _(objects).values().map(obj => ({value: obj.id, text: obj.displayName})).value();
     },
 
     render() {
