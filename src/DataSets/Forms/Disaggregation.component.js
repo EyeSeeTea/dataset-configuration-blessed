@@ -3,7 +3,7 @@ import Translate from 'd2-ui/lib/i18n/Translate.mixin';
 import ObserverRegistry from '../../utils/ObserverRegistry.mixin';
 import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
 import DataSetElementCategoryComboSelectionDialog from '../../forms/DataSetElementCategoryComboSelectionDialog.component';
-import {getCategoryCombos, getDisaggregationCategoryCombo} from '../../utils/Dhis2Helpers';
+import {getCategoryCombos, getDisaggregationForCategories} from '../../utils/Dhis2Helpers';
 import SearchBox from '../../SearchBox/SearchBox.component';
 
 const SearchBoxWrapper = (props) => {
@@ -50,12 +50,12 @@ const Disaggregation = React.createClass({
             props.formStatus(true);
     },
 
-    _onCategoryComboSelected(dataSetElementId, categoryCombo) {
+    _onCategoriesSelected(dataSetElementId, categories) {
         const {dataSetElements} = this.props.store.dataset;
         const dataSetElementToUpdate = _(dataSetElements).find(dse => dse.id == dataSetElementId);
         const {dataElement} = dataSetElementToUpdate;
         const customCategoryCombo =
-            getDisaggregationCategoryCombo(this.context.d2, dataElement, this.state.categoryCombos, categoryCombo);
+            getDisaggregationForCategories(this.context.d2, dataElement, this.state.categoryCombos, categories);
         dataSetElementToUpdate.categoryCombo = customCategoryCombo;
         this.forceUpdate();
     },
@@ -82,7 +82,7 @@ const Disaggregation = React.createClass({
                 <DataSetElementCategoryComboSelectionDialog
                     dataSetElements={filteredDataSetElements}
                     categoryCombos={categoryCombos}
-                    onCategoryComboSelected={this._onCategoryComboSelected}
+                    onCategoriesSelected={this._onCategoriesSelected}
                     d2={d2}
                     canEdit={canEdit}
                 />

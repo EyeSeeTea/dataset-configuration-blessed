@@ -56,12 +56,13 @@ function collectionToArray(collectionOrArray) {
 // Keep track of the created categoryCombos so objects are reused
 let cachedCategoryCombos = {};
 
-function getDisaggregationCategoryCombo(d2, dataElement, categoryCombos, categoryCombo) {
+function getDisaggregationForCategories(d2, dataElement, categoryCombos, categories) {
     const categoriesById = _(categoryCombos)
         .flatMap(cc => cc.categories.toArray()).uniqBy("id").keyBy("id").value();
     const getCategoryIds = categories => _(collectionToArray(categories)).map("id").uniqBy().value();
-    const allCategories = _(dataElement.categoryCombo.categories)
-        .concat(collectionToArray(categoryCombo.categories))
+    const deCategories = _.at(categoriesById, collectionToArray(dataElement.categoryCombo.categories).map(c => c.id));
+    const allCategories = _(deCategories)
+        .concat(collectionToArray(categories))
         .uniqBy("id")
         .value();
 
@@ -76,7 +77,7 @@ function getDisaggregationCategoryCombo(d2, dataElement, categoryCombos, categor
     const cachedCategoryCombo = cachedCategoryCombos[cacheKey];
 
     if (existingCategoryCombo) {
-        return _.merge(existingCategoryCombo, {source: categoryCombo});
+        return existingCategoryCombo;
     } else if (cachedCategoryCombo) {
         return cachedCategoryCombo;
     } else {
@@ -90,7 +91,7 @@ function getDisaggregationCategoryCombo(d2, dataElement, categoryCombos, categor
             categoryCombo: {id: newCategoryComboId},
             categoryOptions: cos,
         }));
-        const ccName = [dataElement.categoryCombo, categoryCombo].map(cc => cc.displayName).join("/");
+        const ccName = allValidCategories.map(cc => cc.displayName).join("/");
         const newCategoryCombo = d2.models.categoryCombo.create({
             id: newCategoryComboId,
             dataDimensionType: "DISAGGREGATION",
@@ -100,7 +101,6 @@ function getDisaggregationCategoryCombo(d2, dataElement, categoryCombos, categor
             categoryOptionCombos: categoryOptionCombos,
         });
         newCategoryCombo.dirty = true; // mark dirty so we know it must be saved
-        newCategoryCombo.source = categoryCombo; // keep a reference of the original catcombo used
         cachedCategoryCombos[cacheKey] = newCategoryCombo;
         return newCategoryCombo;
     }
@@ -391,7 +391,7 @@ export {
     getCategoryCombos,
     collectionToArray,
     getExistingUserRoleByName,
-    getDisaggregationCategoryCombo,
+    getDisaggregationForCategories,
     getAsyncUniqueValidator,
     setSharings,
     sendMessage,
