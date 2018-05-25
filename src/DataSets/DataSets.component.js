@@ -133,11 +133,14 @@ const DataSets = React.createClass({
         const {sorting, searchValue, showOnlyCreatedByApp, config} = this.state;
         const filters = {searchValue, showOnlyCreatedByApp};
         const dataSetsCollection = await getFilteredDatasets(this.context.d2, config, sorting, filters);
+        const formatDate = isoDate => new Date(isoDate).toLocaleString();
+        const dataRows = dataSetsCollection.toArray()
+            .map(dr => _.merge(dr, {selected: false, lastUpdated: formatDate(dr.lastUpdated)}));
 
         this.setState({
             isLoading: false,
             pager: dataSetsCollection.pager,
-            dataRows: dataSetsCollection.toArray().map(dr => _.merge(dr, {selected: false}))
+            dataRows: dataRows,
         });
     },
 
