@@ -7,22 +7,11 @@ import { getInstance } from 'd2/lib/d2';
 import { Observable } from 'rx';
 
 const listActions = Action.createActionsFromNames([
-  'getNextPage',
-  'getPreviousPage',
   'hideDetailsBox',
   'hideSharingBox',
   'hideOrgUnitsBox',
   'hideLogs',
 ]);
-
-// TODO: For simple action mapping like this we should be able to do something less boiler plate like
-listActions.getNextPage.subscribe(() => {
-    // listStore.getNextPage();
-});
-
-listActions.getPreviousPage.subscribe(() => {
-    // listStore.getPreviousPage();
-});
 
 listActions.hideDetailsBox.subscribe(() => {
     detailsStore.setState(null);
