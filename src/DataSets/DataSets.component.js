@@ -84,6 +84,7 @@ const DataSets = React.createClass({
         return {
             config: null,
             isLoading: true,
+            page: 1,
             pager: { total: 0 },
             dataRows: [],
             d2: this.context.d2,
@@ -102,7 +103,6 @@ const DataSets = React.createClass({
             showOnlyCreatedByApp: true,
         };
     },
-
 
     componentDidMount() {
         const d2 = this.context.d2;
@@ -129,10 +129,15 @@ const DataSets = React.createClass({
         });
     },
 
-    async getDataSets() {
-        const {sorting, searchValue, showOnlyCreatedByApp, config} = this.state;
+    getDataSetsOnCurrentPage() {
+        this.getDataSets({clearPage: false});
+    },
+
+    async getDataSets({clearPage = true} = {}) {
+        const {page, sorting, searchValue, showOnlyCreatedByApp, config} = this.state;
+        const newPage = clearPage ? 1 : page;
         const filters = {searchValue, showOnlyCreatedByApp};
-        const dataSetsCollection = await getFilteredDatasets(this.context.d2, config, sorting, filters);
+        const dataSetsCollection = await getFilteredDatasets(this.context.d2, config, newPage, sorting, filters);
         const formatDate = isoDate => new Date(isoDate).toLocaleString();
         const dataRows = dataSetsCollection.toArray()
             .map(dr => _.merge(dr, {selected: false, lastUpdated: formatDate(dr.lastUpdated)}));
@@ -141,6 +146,7 @@ const DataSets = React.createClass({
             isLoading: false,
             pager: dataSetsCollection.pager,
             dataRows: dataRows,
+            page: newPage,
         });
     },
 
@@ -282,12 +288,10 @@ const DataSets = React.createClass({
             hasNextPage: () => Boolean(this.state.pager.hasNextPage) && this.state.pager.hasNextPage(),
             hasPreviousPage: () => Boolean(this.state.pager.hasPreviousPage) && this.state.pager.hasPreviousPage(),
             onNextPageClick: () => {
-                this.setState({ isLoading: true });
-                // listActions.getNextPage();
+                this.setState({ isLoading: true, page: this.state.pager.page + 1 }, this.getDataSetsOnCurrentPage);
             },
             onPreviousPageClick: () => {
-                this.setState({ isLoading: true });
-                // listActions.getPreviousPage();
+                this.setState({ isLoading: true, page: this.state.pager.page - 1 }, this.getDataSetsOnCurrentPage);
             },
             total: this.state.pager.total,
             currentlyShown,
@@ -438,7 +442,7 @@ const DataSets = React.createClass({
                 /> : null }
 
                 <div>
-                    <div style={{ float: 'left', width: '50%' }}>
+                    <div style={{ float: 'left', width: '33%' }}>
                         <SearchBox searchObserverHandler={this.searchListByName}/>
                     </div>
 
@@ -456,9 +460,11 @@ const DataSets = React.createClass({
 
                     {this.state.currentUserHasAdminRole && renderSettingsButton()}
 
-                    <div>
+                    <div style={{ float: 'right' }}>
                         <Pagination {...paginationProps} />
                     </div>
+
+                    <div style={{clear: "both"}} />
                 </div>
                 <LoadingStatus
                     loadingText="Loading datasets"
