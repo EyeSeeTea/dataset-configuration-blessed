@@ -23,7 +23,7 @@ function getCategoryCombos(d2) {
     return d2.models.categoryCombos.list({
         fields: [
             'id,name,displayName,dataDimensionType,isDefault',
-            'categories[id,displayName,categoryOptions[id,displayName]]',
+            'categories[id,displayName,categoryOptions[id,name,displayName]]',
             'categoryOptionCombos[id,displayName,categoryOptions[id,name,displayName]]',
         ].join(','),
         filter: "dataDimensionType:eq:DISAGGREGATION",
