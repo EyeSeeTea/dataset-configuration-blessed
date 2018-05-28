@@ -140,7 +140,7 @@ const DataSets = React.createClass({
         const dataSetsCollection = await getFilteredDatasets(this.context.d2, config, newPage, sorting, filters);
         const formatDate = isoDate => new Date(isoDate).toLocaleString();
         const dataRows = dataSetsCollection.toArray()
-            .map(dr => _.merge(dr, {selected: false, lastUpdated: formatDate(dr.lastUpdated)}));
+            .map(dr => _.merge(dr, {selected: false, lastUpdatedHuman: formatDate(dr.lastUpdated)}));
 
         this.setState({
             isLoading: false,
@@ -341,7 +341,7 @@ const DataSets = React.createClass({
             },
             {name: 'name', sortable: true},
             {name: 'publicAccess', sortable: true,},
-            {name: 'lastUpdated', sortable: true},
+            {name: 'lastUpdated', sortable: true, value: "lastUpdatedHuman"},
         ];
 
         const activeRows = _(rows).keyBy("id")
