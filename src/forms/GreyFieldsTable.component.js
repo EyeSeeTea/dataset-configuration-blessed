@@ -36,6 +36,9 @@ const styles = {
         whiteSpace: 'nowrap',
         padding: 6,
         border: '1px solid #e0e0e0',
+        maxWidth: '33vw',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis'
     },
 };
 
@@ -234,7 +237,9 @@ class GreyFieldsTable extends React.Component {
             .map((dse, deNum) => {
                 return (
                     <tr key={deNum} style={{ background: deNum % 2 === 0 ? 'none' : '#f0f0f0' }}>
-                        <td style={styles.tdDataElement}>{dse.dataElement.displayName}</td>
+                        <td title={dse.dataElement.displayName} style={styles.tdDataElement}>
+                            {dse.dataElement.displayName}
+                        </td>
                         {categoryOptionCombos.map(cos => this.renderCheckbox(dse, cos))}
                     </tr>
                 );
@@ -265,6 +270,7 @@ class GreyFieldsTable extends React.Component {
                 .filter(dse => sectionDataElementIds.has(dse.dataElement.id))
                 .map(dse => dse.categoryCombo)
                 .uniqBy("id")
+                .sortBy("displayName")
                 .value();
 
         const categoryCombosToShow = currentCategoryCombo ?
@@ -286,7 +292,7 @@ class GreyFieldsTable extends React.Component {
 
         const renderTablesForCocs = (categoryCombo, cocs, categoryIndex) => {
             const nCategories = cocs[0].length
-            if (cocs.length <= 10 || categoryIndex >= nCategories -1) {
+            if (cocs.length <= 12 || categoryIndex >= nCategories -1) {
                 return renderTable(categoryCombo, cocs);
             } else {
                 const tables = _(cocs)

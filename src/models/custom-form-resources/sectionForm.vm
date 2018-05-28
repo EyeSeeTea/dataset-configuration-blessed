@@ -46,7 +46,7 @@
                                 #if( $header.name == 'default' )
                                     ${i18n.getString( "value" )}
                                 #else
-                                    ${encoder.htmlEncode( $header.name )}
+                                    ${encoder.htmlEncode( $header.displayName )}
                                 #end
                             </span>
                         </th>
