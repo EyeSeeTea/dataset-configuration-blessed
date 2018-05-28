@@ -47,6 +47,10 @@ var loadJs = function(url, cb) {
     $.getScript(url, cb);
 };
 
+var repeat = function(times, n) {
+    return Array.from(Array(times), () => n);
+};
+
 var splitWideTables = function() {
     var splitedTablesCount = 0;
     var createTablesCount = 0;
@@ -61,11 +65,19 @@ var splitWideTables = function() {
         var cocIds = firstRow.get().map(input => $(input).attr("id").split("-")[1]);
         var tdInputs = table.find("tbody tr td .entryfield").get();
 
-        var categories = table.find("thead tr").get()
-            .map(tr => _.chain($(tr).find("th[scope=col]").get()).map(th => $(th).text().trim()).uniq().value());
-            
-        var cocs = _.chain(categories).cartesianProduct().zip(cocIds)
-            .map(pair => ({cos: pair[0], id: pair[1]})).value();
+        var allCategoryOptions = table.find("thead tr").get().map(tr =>
+            _.chain($(tr).find("th[scope=col]").get())
+                .map(th => [repeat(parseInt($(th).attr("colspan")), $(th).text().trim())])
+                .flatten()
+                .value()
+        );
+          
+        var categoryOptions = _.zip.apply(null, allCategoryOptions);
+        var uniqCategories = allCategoryOptions.map(categoryOptions => _.uniq(categoryOptions));
+        if (categoryOptions.length !== cocIds.length) {
+            alert("Error: parsing of form failed");
+        }
+        var cocs = _.zip(categoryOptions, cocIds).map(pair => ({cos: pair[0], id: pair[1]}));
 
         var rows = _.chain(table.find("tbody tr").get()).map($).map(tr => {
             var td = tr.find("td:first-child");
@@ -83,7 +95,7 @@ var splitWideTables = function() {
 
         var data = {
             group: table.find("nrcinfoheader").text().trim(),
-            categories: categories,
+            categories: uniqCategories,
             cocs: cocs,
             rows: rows,
             showRowTotals: table.find("tbody tr:first-child td:last-child input.dataelementtotal").size() > 0,
@@ -146,7 +158,7 @@ var buildTable = function(data, renderDataElementInfo) {
                 // id = "row-DE-COC1-COC2-.."
                 var rowTotalId = ["row", row.de.id].concat(getValues(row).map(val => val.coc)).join("-");
                 var rowTotal = $("<input>", {class: "dataelementtotal", type: "text", disabled: "", id: rowTotalId});
-                const cssClass = ["derow", "de-" + row.de.id, renderDataElementInfo ? "primary" : "secondary"].join(" ");
+                var cssClass = ["derow", "de-" + row.de.id, renderDataElementInfo ? "primary" : "secondary"].join(" ");
                 return $("<tr>", {class: cssClass}).append(
                     $("<td>", {class: "nrcindicatorName"})
                         .css("opacity", renderDataElementInfo ? 1 : 0).html(row.de.name),

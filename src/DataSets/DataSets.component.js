@@ -30,7 +30,6 @@ import sharingStore from './sharing.store';
 import 'd2-ui/scss/DataTable.scss';
 import { log, getLogs, LogEntry } from './log';
 
-import Settings from '../models/Settings';
 import SettingsDialog from '../Settings/Settings.component';
 import IconButton from 'material-ui/IconButton';
 import SettingsIcon from 'material-ui/svg-icons/action/settings';
@@ -40,7 +39,9 @@ import FlatButton from 'material-ui/FlatButton/FlatButton';
 import HelpOutlineIcon from 'material-ui/svg-icons/action/help-outline';
 import ListIcon from 'material-ui/svg-icons/action/list';
 import FormHelpers from '../forms/FormHelpers';
-import {currentUserHasPermission} from '../utils/Dhis2Helpers';
+import {currentUserHasAdminRole, canCreate, getFilteredDatasets} from '../utils/Dhis2Helpers';
+import * as sharing from '../models/Sharing';
+import Settings from '../models/Settings';
 
 const {SimpleCheckBox} = FormHelpers;
 
@@ -53,6 +54,7 @@ export function calculatePageValue(pager) {
 
     return `${startItem} - ${endItem > total ? total : endItem}`;
 }
+
 const DataSets = React.createClass({
     propTypes: {
         name: React.PropTypes.string
@@ -74,34 +76,46 @@ const DataSets = React.createClass({
         };
     },
 
-    getInitialState() {
-        const settings = new Settings(this.context.d2);
+    tr(text, namespace = {}) {
+        return this.getTranslation(text, namespace);
+    },
 
+    getInitialState() {
         return {
+            config: null,
             isLoading: true,
+            page: 1,
             pager: { total: 0 },
             dataRows: [],
             d2: this.context.d2,
-            currentUserHasAdminRole: settings.currentUserHasAdminRole(),
+            currentUserHasAdminRole: currentUserHasAdminRole(this.context.d2),
             settingsOpen: false,
             sorting: null,
             searchValue: null,
             orgUnits: null,
             helpOpen: false,
             logs: null,
-        }
+            logsHasMore: null,
+            logsFilter: log => true,
+            logsPageLast: 0,
+            logsOldestDate: null,
+            sharing: null,
+            showOnlyCreatedByApp: true,
+        };
     },
-
 
     componentDidMount() {
         const d2 = this.context.d2;
-        this.getDataSets();
+
+        new Settings(d2).get().then(config => {
+            this.setState({config}, this.getDataSets);
+        });
 
         this.registerDisposable(detailsStore.subscribe(detailsObject => this.setState({detailsObject})));
         this.registerDisposable(deleteStore.subscribe(deleteObjects => this.getDataSets()));
         this.registerDisposable(this.subscribeToModelStore(sharingStore, "sharing"));
         this.registerDisposable(this.subscribeToModelStore(orgUnitsStore, "orgUnits"));
-        this.registerDisposable(logsStore.subscribe(datasets => this.showDatasetsLogs(datasets)));
+        this.registerDisposable(logsStore.subscribe(datasets => this.openLogs(datasets)));
     },
 
     subscribeToModelStore(store, modelName) {
@@ -115,37 +129,25 @@ const DataSets = React.createClass({
         });
     },
 
-    getDataSets() {
-        const {sorting, searchValue} = this.state;
-        const allDataSets = this.context.d2.models.dataSets;
-        const filteredDataSets =
-            searchValue ? allDataSets.filter().on('displayName').ilike(searchValue) : allDataSets;
-        const order = sorting ? sorting.join(":") : undefined;
-        const fields = "id,name,displayName,shortName,created,lastUpdated,publicAccess,user,access"
-
-        filteredDataSets.list({order, fields}).then(da => {
-            this.setState({
-                isLoading: false,
-                pager: da.pager,
-                dataRows: da.toArray().map(dr => _.merge(dr, {selected: false}))
-            });
-        });
+    getDataSetsOnCurrentPage() {
+        this.getDataSets({clearPage: false});
     },
 
-    showDatasetsLogs(datasets) {
-        // Set this.state.logs to the logs that include any of the given
-        // datasets, and this.state.logsObject to a description of their contents.
-        if (!datasets) {
-            this.setState({logsObject: null});
-        } else {
-            getLogs().then(logs => {
-                const idsSelected = new Set(datasets.map(ds => ds.id));
-                const hasIds = (log) => log.datasets.some(ds => idsSelected.has(ds.id));
-                const logsSelected = _(logs).filter(hasIds).orderBy('date', 'desc').value();
-                this.setState({logs: logsSelected.map(LogEntry)});
-            });
-            this.setState({logsObject: datasets.map(ds => ds.id).join(", "), logs: this.getTranslation("logs_loading")});  // description of what it has
-        }
+    async getDataSets({clearPage = true} = {}) {
+        const {page, sorting, searchValue, showOnlyCreatedByApp, config} = this.state;
+        const newPage = clearPage ? 1 : page;
+        const filters = {searchValue, showOnlyCreatedByApp};
+        const dataSetsCollection = await getFilteredDatasets(this.context.d2, config, newPage, sorting, filters);
+        const formatDate = isoDate => new Date(isoDate).toLocaleString();
+        const dataRows = dataSetsCollection.toArray()
+            .map(dr => _.merge(dr, {selected: false, lastUpdatedHuman: formatDate(dr.lastUpdated)}));
+
+        this.setState({
+            isLoading: false,
+            pager: dataSetsCollection.pager,
+            dataRows: dataRows,
+            page: newPage,
+        });
     },
 
     searchListByName(searchObserver) {
@@ -170,13 +172,61 @@ const DataSets = React.createClass({
         this.setState({settingsOpen: false});
     },
 
-    openLogs() {
-        // Retrieve the logs and save them in this.state.logs, and set
-        // this.state.logsObject to a description of their contents.
-        getLogs().then(logs => {
-            this.setState({logs: _(logs).orderBy('date', 'desc').value().map(LogEntry)});
+    openAllLogs() {
+        const title = `${this.tr("logs")} (${this.tr("all")})`;
+        this.setState({
+            logsFilter: log => true,
+            logsObject: title,
+            logs: null,
         });
-        this.setState({logsObject: this.getTranslation("all"), logs: this.getTranslation("logs_loading")});  // description of what it has
+        this.addLogs([0, 1]);
+    },
+
+    openLogs(datasets) {
+        // Set this.state.logs to the logs that include any of the given
+        // datasets, this.state.logsObject to a description of their contents
+        // and this.state.logsFilter so it selects only the relevant logs.
+        if (datasets === null) {
+            this.setState({logsObject: null});
+        } else {
+            const ids = datasets.map(ds => ds.id);
+            const idsSet = new Set(ids);
+            const title = `${this.tr("logs")} (${ids.join(", ")})`;
+            const logsFilter = log => log.datasets.some(ds => idsSet.has(ds.id));
+
+            this.setState({
+                logsObject: title,
+                logs: null,
+                logsFilter,
+            });
+            this.addLogs([0, 1]);  // load the last two log pages
+        }
+    },
+
+    addNextLog() {
+        return this.addLogs([this.state.logsPageLast + 1]);
+    },
+    
+    addLogs(pages) {
+        return getLogs(pages).then(res => {
+            if (res === null) {
+                this.setState({
+                    logsPageLast: -1,
+                    logs: this.state.logs || [],
+                });
+            } else {
+                const {logs, hasMore: logsHasMore} = res;
+                const logsOldestDate = logs.length > 0 ? logs[logs.length - 1].date : null;
+                const filteredLogs = _(logs).filter(this.state.logsFilter).value();
+
+                this.setState({
+                    logsHasMore: logsHasMore,
+                    logs: _([this.state.logs, filteredLogs]).compact().flatten().value(),
+                    logsPageLast: _.max(pages),
+                    logsOldestDate: logsOldestDate,
+                });
+            }
+        });
     },
 
     onSelectToggle(ev, dataset) {
@@ -214,19 +264,34 @@ const DataSets = React.createClass({
         this.setState({helpOpen: false});
     },
 
+    _onSharingClose(sharings) {
+        const {updated, all} = sharing.getChanges(this.state.dataRows, sharings);
+
+        if (!_(updated).isEmpty()) {
+            log('change sharing settings', 'success', updated);
+            this.setState({dataRows: all});
+        }
+        listActions.hideSharingBox();
+    },
+
+    _onShowOnlyCreatedByAppCheck(ev) {
+        this.setState({showOnlyCreatedByApp: ev.target.checked}, this.getDataSets);
+    },
+
     render() {
+        if (!this.state.config)
+            return null;
+
         const currentlyShown = calculatePageValue(this.state.pager);
 
         const paginationProps = {
             hasNextPage: () => Boolean(this.state.pager.hasNextPage) && this.state.pager.hasNextPage(),
             hasPreviousPage: () => Boolean(this.state.pager.hasPreviousPage) && this.state.pager.hasPreviousPage(),
             onNextPageClick: () => {
-                this.setState({ isLoading: true });
-                // listActions.getNextPage();
+                this.setState({ isLoading: true, page: this.state.pager.page + 1 }, this.getDataSetsOnCurrentPage);
             },
             onPreviousPageClick: () => {
-                this.setState({ isLoading: true });
-                // listActions.getPreviousPage();
+                this.setState({ isLoading: true, page: this.state.pager.page - 1 }, this.getDataSetsOnCurrentPage);
             },
             total: this.state.pager.total,
             currentlyShown,
@@ -276,7 +341,7 @@ const DataSets = React.createClass({
             },
             {name: 'name', sortable: true},
             {name: 'publicAccess', sortable: true,},
-            {name: 'lastUpdated', sortable: true},
+            {name: 'lastUpdated', sortable: true, value: "lastUpdatedHuman"},
         ];
 
         const activeRows = _(rows).keyBy("id")
@@ -284,7 +349,7 @@ const DataSets = React.createClass({
 
         const renderSettingsButton = () => (
             <div style={{float: 'right'}}>
-                <IconButton onTouchTap={this.openSettings} tooltip={this.getTranslation('settings')}>
+                <IconButton onTouchTap={this.openSettings} tooltip={this.tr("settings")}>
                   <SettingsIcon />
                 </IconButton>
             </div>
@@ -292,32 +357,55 @@ const DataSets = React.createClass({
 
         const renderLogsButton = () => (
             <div style={{float: 'right'}}>
-                <IconButton tooltip={this.getTranslation("logs")} onClick={this.openLogs}>
+                <IconButton tooltip={this.tr("logs")} onClick={this.openAllLogs}>
                     <ListIcon />
                 </IconButton>
             </div>
         );
 
         const {d2} = this.context;
-        const userCanCreateDataSets = currentUserHasPermission(d2, d2.models.dataSet, "CREATE_PRIVATE");
+        const { config, logsPageLast, logsOldestDate, logsHasMore, showOnlyCreatedByApp } = this.state;
+
+        const showCreatedByAppCheck = !!config.createdByDataSetConfigurationAttributeId;
+        const olderLogLiteral = logsPageLast < 0 ? this.tr("logs_no_older") : this.tr("logs_older");
+        const dateString = new Date(logsOldestDate || Date()).toLocaleString();
+        const label = olderLogLiteral + " " + dateString;
+
+        const logLoadMoreButton = logsHasMore ? (
+            <FlatButton
+                label={label}
+                onClick={this.addNextLog}
+            />
+        ) : null;
 
         const logActions = [
             <FlatButton
-                label={this.getTranslation('close')}
+                label={this.tr("close")}
                 onClick={listActions.hideLogs}
             />,
         ];
 
+        const renderLogs = () => {
+            const { logs } = this.state;
+
+            if (!logs)
+                return this.tr("logs_loading");
+            else if (_(logs).isEmpty())
+                return this.tr("logs_none");
+            else
+                return logs.map(LogEntry);
+        };
+
         const helpActions = [
             <FlatButton
-                label={this.getTranslation('close')}
+                label={this.tr("close")}
                 onClick={this._closeHelp}
             />,
         ];
 
         const renderHelp = () => (
             <div style={{float: 'right'}}>
-                <IconButton tooltip={this.getTranslation("help")} onClick={this._openHelp}>
+                <IconButton tooltip={this.tr("help")} onClick={this._openHelp}>
                     <HelpOutlineIcon />
                 </IconButton>
             </div>
@@ -326,12 +414,12 @@ const DataSets = React.createClass({
         return (
             <div>
                 <Dialog
-                    title={this.getTranslation('help')}
+                    title={this.tr("help")}
                     actions={helpActions}
                     open={this.state.helpOpen}
                     onRequestClose={this._closeHelp}
                 >
-                    {this.getTranslation("help_landing_page")}
+                    {this.tr("help_landing_page")}
                 </Dialog>
                 <SettingsDialog open={this.state.settingsOpen} onRequestClose={this.closeSettings} />
                 {this.state.orgUnits ? <OrgUnitsDialog
@@ -346,9 +434,7 @@ const DataSets = React.createClass({
                 {this.state.sharing ? <SharingDialog
                     objectsToShare={this.state.sharing.models}
                     open={true}
-                    onRequestClose={() => {
-                        log('change sharing settings', 'success', this.state.sharing.models);
-                        listActions.hideSharingBox();}}
+                    onRequestClose={this._onSharingClose}
                     onError={err => {
                         log('change sharing settings', 'failed', this.state.sharing.models);
                         snackActions.show({message: err && err.message || 'Error'});}}
@@ -356,15 +442,29 @@ const DataSets = React.createClass({
                 /> : null }
 
                 <div>
-                    <div style={{ float: 'left', width: '75%' }}>
+                    <div style={{ float: 'left', width: '33%' }}>
                         <SearchBox searchObserverHandler={this.searchListByName}/>
                     </div>
-                    {this.getTranslation("help_landing_page") != '' && renderHelp()}
+
+                    {showCreatedByAppCheck && <Checkbox
+                            style={{ float: 'left', width: '25%', paddingTop: 18, marginLeft: 30}}
+                            checked={showOnlyCreatedByApp}
+                            label={this.getTranslation('display_only_datasets_created_by_app')}
+                            onCheck={this._onShowOnlyCreatedByAppCheck}
+                            iconStyle={{marginRight: 8}}
+                        />}
+
+                    {this.tr("help_landing_page") != '' && renderHelp()}
+
                     {this.state.currentUserHasAdminRole && renderLogsButton()}
+
                     {this.state.currentUserHasAdminRole && renderSettingsButton()}
-                    <div>
+
+                    <div style={{ float: 'right' }}>
                         <Pagination {...paginationProps} />
                     </div>
+
+                    <div style={{clear: "both"}} />
                 </div>
                 <LoadingStatus
                     loadingText="Loading datasets"
@@ -393,23 +493,26 @@ const DataSets = React.createClass({
                                 detailsObject={this.state.detailsObject}
                                 onClose={listActions.hideDetailsBox}
                             />
-                        : null}
+                        : null }
                     {
                         this.state.logsObject ? (
                             <Dialog
-                                title={this.getTranslation("logs") + " (" + this.state.logsObject + ")"}
+                                title={this.state.logsObject}
                                 actions={logActions}
                                 open={true}
                                 bodyStyle={{padding: "20px"}}
                                 onRequestClose={listActions.hideLogs}
                                 autoScrollBodyContent={true}
                             >
-                                {_(this.state.logs).isEmpty() ? this.getTranslation('logs_none') : this.state.logs}
+                                {renderLogs()}
+                                <div style={{textAlign: "center"}}>
+                                    {logLoadMoreButton}
+                                </div>
                             </Dialog>)
-                        : null}
+                        : null }
                 </div>
 
-                {userCanCreateDataSets && <ListActionBar route="datasets/add" />}
+                {canCreate(d2) && <ListActionBar route="datasets/add" />}
             </div>
         );
     },

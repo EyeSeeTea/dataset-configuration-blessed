@@ -114,6 +114,12 @@ export default class Settings {
             model: "attributes",
             defaultFilter: "code:eq:Hide in data set app",
         },
+        {
+            name: "createdByDataSetConfigurationAttributeId",
+            type: "d2-object",
+            model: "attributes",
+            defaultFilter: "code:eq:GL_CREATED_BY_DATASET_CONFIGURATION",
+        },
     ];
 
     constructor(d2) {
@@ -138,11 +144,6 @@ export default class Settings {
 
     currentUserIsSuperAdmin() {
         return this.d2.currentUser.authorities.has("ALL");
-    }
-
-    currentUserHasAdminRole() {
-        const authorities = this.d2.currentUser.authorities;
-        return authorities.has("M_dhis-web-maintenance-appmanager") || authorities.has("ALL");
     }
 
     getFields() {

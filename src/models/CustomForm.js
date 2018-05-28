@@ -1,6 +1,17 @@
 import velocity from 'velocityjs';
 import htmlencode from 'htmlencode';
+import I18n from 'd2/lib/i18n/I18n';
 import _ from '../utils/lodash-mixins';
+
+import customFormTemplate from '!!raw-loader!./custom-form-resources/sectionForm.vm';
+import customFormJs from '!!raw-loader!./custom-form-resources/script.js';
+import customFormCss from '!!raw-loader!./custom-form-resources/style.css';
+
+const data = {
+  template: customFormTemplate,
+  css: customFormCss,
+  js: customFormJs,
+};
 
 const a = (obj) => obj.toArray ? obj.toArray() : obj;
 const _a = (...args) => _(a(...args));
@@ -32,7 +43,7 @@ const map = obj => new Map(obj);
 
 const createViewDataElement = (de) => ({
   id: de.id,
-  displayFormName: de.name,
+  displayFormName: de.displayName,
   url: de.href,
   hasUrl: () => !!de.href,
   valueType: de.valueType,
@@ -56,31 +67,41 @@ const getGroupedItems = (sections) =>
     .fromPairs()
     .value();
 
-const getOrderedCategoryOptionCombos  = (categoryCombos) =>
+const getKey = (cos) => _a(cos).map("id").sortBy().uniq().join("-");
+
+const getOrderedCategoryOptionCombos = (categoryCombos) =>
   _a(categoryCombos)
       .map(categoryCombo => {
-        const orderedCatOptsIds = _.cartesianProduct(
-          ...a(categoryCombo.categories).map(cat => a(cat.categoryOptions).map(co => co.id))
-        ).map(coIds => coIds.sort().join("."));
-        const orderedCocs = _a(categoryCombo.categoryOptionCombos)
-          .sortBy(coc => orderedCatOptsIds.indexOf(_a(coc.categoryOptions).map("id").sortBy().join(".")))
-          .value();
+        const categoryOptionsForCategories = _.cartesianProduct(
+          ...a(categoryCombo.categories).map(category => a(category.categoryOptions))
+        );
+        const cocByCosKey = _.keyBy(a(categoryCombo.categoryOptionCombos), coc => getKey(coc.categoryOptions));
+        const orderedCocs = a(categoryOptionsForCategories).map(cos => cocByCosKey[getKey(cos)]);
+
         return [categoryCombo.id, orderedCocs];
       })
       .fromPairs()
       .value();
 
-const getHeaders = (categories, visibleOptionCombos) => {
-  // coc.categoryOptionCombo.categoryOptions from API is not sorted by categories, force sorting
-  const indexes = _a(categories)
-    .flatMap((cat, idx) => a(cat.categoryOptions).map(co => [co.id, idx]))
-    .fromPairs()
-    .value();
+// coc.categoryOptionCombo.categoryOptions return an unorder set, so it cannot be used to
+// univocaly relate a coc with its categoryOptions. Use sets comparison.
+const getHeaders = (categories, categoryOptionCombos) => {
+  const categoryOptionsForCategories = a(categories).map(category => a(category.categoryOptions));
+  const allCategoryOptions = _.cartesianProduct(...categoryOptionsForCategories)
+  const categoryOptionsByCategoryOptionKey = _.keyBy(allCategoryOptions, getKey);
+
   return a(categories).map((category, catIndex) =>
-    _a(visibleOptionCombos)
-      .map(coc => _a(coc.categoryOptions).sortBy(co => indexes[co.id]).value())
+    _a(categoryOptionCombos)
+      .map(coc => categoryOptionsByCategoryOptionKey[getKey(coc.categoryOptions)])
       .groupConsecutiveBy(cos => _a(cos).map(co => co.id).take(catIndex + 1).value())
-      .map(group =>({colSpan: group.length, name: group[0][catIndex] ? group[0][catIndex].displayName : "not-found"}))
+      .map(group => {
+        const categoryOption = group[0][catIndex];
+        return {
+          colSpan: group.length,
+          name: categoryOption.name,
+          displayName: categoryOption.displayName,
+        };
+      })
       .value());
 };
 
@@ -94,7 +115,7 @@ const getGreyedFields = (dataset) =>
 const getRowTotalId = (dataElement, optionCombos) =>
   ["row", dataElement.id, ...a(optionCombos).map(coc => coc.id)].join("-");
 
-const getContext = (d2, dataset, richSections, allCategoryCombos) => {
+const getContext = (d2, i18n, dataset, richSections, allCategoryCombos) => {
   const sections = richSections.filter(richSection => _(richSection.items).values().some("selected"));
   const categoryComboByDataElementId = _a(dataset.dataSetElements)
     .map(dse => [dse.dataElement.id, dse.categoryCombo]).fromPairs().value();
@@ -118,13 +139,13 @@ const getContext = (d2, dataset, richSections, allCategoryCombos) => {
       getRowTotalId,
     },
     i18n: {
-      getString: (...args) => d2.i18n.getTranslation(...args),
+      getString: key => i18n.getTranslation(key),
     },
     encoder: {
       htmlEncode: htmlencode.htmlEncode,
     },
     auth: {
-      // Used in automatic form, cannot be calculated for a static custom form, leave as true
+      // Used in automatic form, cannot be calculated for a static custom form, leave it as true
       hasAccess: (app, key) => true,
     },
     dataSet: {
@@ -139,17 +160,29 @@ const getContext = (d2, dataset, richSections, allCategoryCombos) => {
   };
 };
 
-const get = (d2, dataset, sections, categoryCombos, data) => {
-  const context = getContext(d2, dataset, sections, categoryCombos);
+// d2.i18n contains uiLocale translations, a custom form should use dbLocale translations.
+const getI18n = (d2) => {
+  const { keyUiLocale, keyDbLocale } = d2.currentUser.settings;
+
+  if (!keyDbLocale || keyDbLocale === keyUiLocale) {
+    return Promise.resolve(d2.i18n);
+  } else {
+    const locales = _([keyDbLocale, "en"]).compact().uniq().value();
+    const sources = locales.map(locale => `./i18n/i18n_module_${locale}.properties`);
+    const i18n = new I18n(sources);
+    return i18n.load().then(() => i18n);
+  }
+};
+
+const get = async (d2, dataset, project, sections, categoryCombos) => {
+  const i18n = await getI18n(d2);
+  const context = getContext(d2, i18n, dataset, sections, categoryCombos);
   const config = {env: "development", escape: false};
   const htmlForm = velocity.render(data.template, context, {}, config);
+
   return `
-    <style>
-      ${data.css}
-    </style>
-    <script>
-      ${data.js}
-    </script>
+    <style>${data.css}</style>
+    <script>${data.js}</script>
     ${htmlForm}
   `;
 };

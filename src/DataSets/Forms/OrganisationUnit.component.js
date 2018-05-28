@@ -5,10 +5,6 @@ import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
 import Card from 'material-ui/Card/Card';
 import CardText from 'material-ui/Card/CardText';
 import OrganisationUnitTreeMultiSelect from 'd2-ui/lib/org-unit-select/orgunit-tree-multi-select';
-import OrgUnitTree from 'd2-ui/lib/org-unit-tree/OrgUnitTree.component';
-import OrgUnitSelectByLevel from 'd2-ui/lib/org-unit-select/OrgUnitSelectByLevel.component';
-import OrgUnitSelectByGroup from 'd2-ui/lib/org-unit-select/OrgUnitSelectByGroup.component';
-import OrgUnitSelectAll from 'd2-ui/lib/org-unit-select/OrgUnitSelectAll.component';
 import scrollToComponent from 'react-scroll-to-component';
 import {collectionToArray} from '../../utils/Dhis2Helpers';
 

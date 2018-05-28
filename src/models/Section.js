@@ -68,7 +68,7 @@ export const getDataSetInfo = (d2, config, sections) => {
         categoryCombo: dataElement.categoryCombo,
         dataElement: {
             id: dataElement.id,
-            displayName: dataElement.name,
+            displayName: dataElement.displayName,
             categoryCombo: dataElement.categoryCombo,
         },
     }));
@@ -76,7 +76,7 @@ export const getDataSetInfo = (d2, config, sections) => {
     const dataElementErrors = _(dataElements)
         .map("id").countBy().map((count, deId) => count > 1 ? deId : null).compact()
         .map(repeatedId => {
-            const deName = dataElementsById[repeatedId].name;
+            const deName = dataElementsById[repeatedId].displayName;
             const invalidSections = d2Sections
                 .filter(d2Section => d2Section.dataElements.has(repeatedId))
                 .map(d2Section => d2Section.name);
@@ -207,10 +207,10 @@ const getD2Section = (d2, section) => {
     const items = _(section.items).values().filter("selected").value();
     const dataElements = _(items)
         .flatMap(item => item.type === "dataElement" ? [item] : item.dataElements)
-        .map(de => ({id: de.id, name: de.name, categoryCombo: de.categoryCombo}))
+        .map(de => ({id: de.id, name: de.name, displayName: de.displayName, categoryCombo: de.categoryCombo}))
         .uniqBy("id").value();
     const indicators = _(items).flatMap(item => item.type === "indicator" ? [item] : [])
-        .map(ind => ({id: ind.id, name: ind.name}))
+        .map(ind => ({id: ind.id, displayName: ind.displayName, name: ind.name}))
         .uniqBy("id").value();
 
     return d2.models.sections.create({
@@ -247,18 +247,18 @@ const getOutputSection = (opts) => {
             id: dataElement.id,
             code: dataElement.code,
             name: dataElement.name,
-            displayName: dataElement.name,
+            displayName: dataElement.displayName,
             description: dataElement.description,
             sectionName: sectionName,
             coreCompetency: coreCompetency,
-            theme: theme ? theme.name : null,
+            theme: theme ? theme.displayName : null,
             group: group ? group.value : null,
             categoryCombo: dataElement.categoryCombo,
             selected: degSetOrigin && degSetOrigin.id === mandatoryIndicatorId && statusKey === "active",
-            origin: degSetOrigin ? degSetOrigin.name : null,
+            origin: degSetOrigin ? degSetOrigin.displayName : null,
             status: status,
             hidden: attributes[config.hideInDataSetAppAttributeId] === "true",
-            disaggregation: dataElement.categoryCombo.name !== "default" ? dataElement.categoryCombo.name : "None",
+            disaggregation: dataElement.categoryCombo.name !== "default" ? dataElement.categoryCombo.displayName : "None",
         };
     };
     const indexedDataElementsInfo = _(dataElements)
@@ -297,19 +297,19 @@ const getOutcomeSection = (opts) => {
 
         return {
             type: "indicator",
-            dataElements: dataElements.map(getOwnedPropertyJSON),
+            dataElements: dataElements.map(de => _.assign(getOwnedPropertyJSON(de), {displayName: de.displayName})),
             id: indicator.id,
             code: indicator.code,
             name: indicator.name,
-            displayName: indicator.name,
+            displayName: indicator.displayName,
             description: indicator.description,
             sectionName: sectionName,
             coreCompetency: coreCompetency,
-            theme: theme ? theme.name : null,
-            group: group ? group.value : indicator.code,
+            theme: theme ? theme.displayName : null,
+            group: group ? group.value : indicator.displayName,
             categoryCombo: null,
             selected: origin && origin.id === mandatoryIndicatorId && statusKey === "active",
-            origin: origin ? origin.name : null,
+            origin: origin ? origin.displayName : null,
             status: status,
             disaggregation: null,
             hidden: attributes[config.hideInDataSetAppAttributeId] === "true",
@@ -424,6 +424,7 @@ const getDataElements = (d2, dataElementFilters) => {
     const fields = [
         "id",
         "name",
+        "displayName",
         "code",
         "description",
         "valueType",

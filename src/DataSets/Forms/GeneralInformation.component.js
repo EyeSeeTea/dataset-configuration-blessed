@@ -2,11 +2,10 @@ import React from 'react';
 import Translate from 'd2-ui/lib/i18n/Translate.mixin';
 import FormBuilder from 'd2-ui/lib/forms/FormBuilder.component';
 import Validators from 'd2-ui/lib/forms/Validators';
-import periodTypes from '../../config/periodTypes';
 import DataInputPeriods from '../../forms/DataInputPeriods.component';
 import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
 import FormHelpers from '../../forms/FormHelpers';
-import Settings from '../../models/Settings';
+import {currentUserHasAdminRole} from '../../utils/Dhis2Helpers';
 
 const GeneralInformation = React.createClass({
     mixins: [Translate],
@@ -19,22 +18,24 @@ const GeneralInformation = React.createClass({
     },
 
     getInitialState() {
-        const settings = new Settings(this.context.d2);
-        return {isLoading: true, currentUserHasAdminRole: settings.currentUserHasAdminRole()};
+        return {
+            isLoading: true,
+            currentUserHasAdminRole: currentUserHasAdminRole(this.context.d2),
+        };
     },
 
     componentDidMount() {
         this.context.d2
             .models.categoryCombos
             .list({
-                filter: ["dataDimensionType:eq:ATTRIBUTE", "name:eq:default"], 
-                fields: "id,name", 
-                paging: false, 
+                filter: ["dataDimensionType:eq:ATTRIBUTE", "name:eq:default"],
+                fields: "id,name",
+                paging: false,
                 rootJunction: "OR",
             })
             .then(collection => collection.toArray())
             .then(categoryCombinations => this.setState({
-                isLoading: false, 
+                isLoading: false,
                 categoryCombinations,
             }));
     },
@@ -49,7 +50,7 @@ const GeneralInformation = React.createClass({
             FormHelpers.getTextField({
                 name: "dataset.name",
                 label: this.getTranslation("name"),
-                value: dataset.name, 
+                value: dataset.name,
                 isRequired: true,
                 validators: [{
                     validator: Validators.isRequired,
@@ -77,14 +78,6 @@ const GeneralInformation = React.createClass({
                 label: this.getTranslation("open_future_periods"),
                 value: dataset.openFuturePeriods,
                 type: "number",
-            }),
-
-            this.state.currentUserHasAdminRole && FormHelpers.getSelectField({
-                name: "dataset.periodType",
-                label: this.getTranslation("period_type"),
-                isRequired: true,
-                options: periodTypes.map(pt => ({text: pt, value: pt})),
-                value: dataset.periodType,
             }),
 
             FormHelpers.getDateField({
