@@ -67,33 +67,35 @@ const getGroupedItems = (sections) =>
     .fromPairs()
     .value();
 
-const getOrderedCategoryOptionCombos  = (categoryCombos) =>
+const getKey = (cos) => _a(cos).map("id").sortBy().uniq().join("-");
+
+const getOrderedCategoryOptionCombos = (categoryCombos) =>
   _a(categoryCombos)
       .map(categoryCombo => {
-        const orderedCatOptsIds = _.cartesianProduct(
-          ...a(categoryCombo.categories).map(cat => a(cat.categoryOptions).map(co => co.id))
-        ).map(coIds => coIds.sort().join("."));
-        const orderedCocs = _a(categoryCombo.categoryOptionCombos)
-          .sortBy(coc => orderedCatOptsIds.indexOf(_a(coc.categoryOptions).map("id").sortBy().join(".")))
-          .value();
+        const categoryOptionsForCategories = _.cartesianProduct(
+          ...a(categoryCombo.categories).map(category => a(category.categoryOptions))
+        );
+        const cocByCosKey = _.keyBy(a(categoryCombo.categoryOptionCombos), coc => getKey(coc.categoryOptions));
+        const orderedCocs = a(categoryOptionsForCategories).map(cos => cocByCosKey[getKey(cos)]);
+
         return [categoryCombo.id, orderedCocs];
       })
       .fromPairs()
       .value();
 
-const getHeaders = (categories, visibleOptionCombos) => {
-  // coc.categoryOptionCombo.categoryOptions from API is not sorted by categories, force sorting
-  const indexes = _a(categories)
-    .flatMap((cat, idx) => a(cat.categoryOptions).map(co => [co.id, idx]))
-    .fromPairs()
-    .value();
+// coc.categoryOptionCombo.categoryOptions return an unorder set, so it cannot be used to
+// univocaly relate a coc with its categoryOptions. Use sets comparison.
+const getHeaders = (categories, categoryOptionCombos) => {
+  const categoryOptionsForCategories = a(categories).map(category => a(category.categoryOptions));
+  const allCategoryOptions = _.cartesianProduct(...categoryOptionsForCategories)
+  const categoryOptionsByCategoryOptionKey = _.keyBy(allCategoryOptions, getKey);
 
   return a(categories).map((category, catIndex) =>
-    _a(visibleOptionCombos)
-      .map(coc => _a(coc.categoryOptions).sortBy(co => indexes[co.id]).value())
+    _a(categoryOptionCombos)
+      .map(coc => categoryOptionsByCategoryOptionKey[getKey(coc.categoryOptions)])
       .groupConsecutiveBy(cos => _a(cos).map(co => co.id).take(catIndex + 1).value())
       .map(group => {
-        const categoryOption = group[0][catIndex] || {displayName: "not found"};
+        const categoryOption = group[0][catIndex];
         return {
           colSpan: group.length,
           name: categoryOption.name,
