@@ -171,11 +171,6 @@ const getSectionName = (d2Section) => {
 
 const updateSectionsFromD2Sections = (sections, d2Sections, initialCoreCompetencies) => {
     const d2SectionsByName = _(d2Sections).groupBy(getSectionName).value();
-    const getItemIds = (d2Sections) =>
-         _(d2Sections)
-            .flatMap(d2s => [d2s.dataElements, d2s.indicators])
-            .flatMap(collection => collectionToArray(collection).map(obj => obj.id))
-            .value();
     const updateSection = section => {
         const d2SectionsForSection = d2SectionsByName[section.name];
         const sectionWasInInitialCoreCompetencies =
@@ -183,12 +178,18 @@ const updateSectionsFromD2Sections = (sections, d2Sections, initialCoreCompetenc
 
         if (d2SectionsForSection) {
             const d2Section = d2SectionsForSection[0];
-            const itemsIds = new Set(getItemIds(d2SectionsForSection));
+            const itemsIds = new Set(_(d2SectionsForSection)
+                .flatMap(d2s => [
+                    collectionToArray(d2s.dataElements).map(de => "dataElement-" + de.id),
+                    collectionToArray(d2s.indicators).map(ind => "indicator-" + ind.id),
+                ])
+                .flatten()
+                .value());
 
             section.showRowTotals = d2Section.showRowTotals;
             section.showColumnTotals = d2Section.showColumnTotals;
             section.items = _.mapValues(section.items,
-                obj => fp.merge(obj, {selected: itemsIds.has(obj.id)}));
+                item => fp.merge(item, {selected: itemsIds.has(item.type + "-" + item.id)}));
         } else if (sectionWasInInitialCoreCompetencies) {
             // This section was not persisted, but its core compentency was amongst the initial ones,
             // meaning that no items were selected. So clear all default _selected_ values.
