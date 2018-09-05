@@ -625,6 +625,15 @@ export default class DataSetStore {
         }
     }
 
+    _getUserGroupsForNotifications() {
+        return _(this.associations.countries)
+            .map(getCountryCode)
+            .compact()
+            .map(countryCode => countryCode + "_M&EDatasetCompletion")
+            .concat(["GL_GlobalAdministrator"])
+            .value();
+    }
+
     _sendNotificationMessages(saving) {
         const {dataset, warnings} = saving;
         const d2 = this.d2;
@@ -637,10 +646,7 @@ export default class DataSetStore {
             body: `Dataset ${op}: ${dataset.name} by ${userName}.` +
                 (_(warnings).isEmpty() ? "" : `\n\nWarnings: \n\n${warningsList}`),
         };
-        const userGroupNames = _(saving.countryCodes)
-            .map(countryCode => countryCode + "_M&EDatasetCompletion")
-            .push("GL_M&E")
-            .value();
+        const userGroupNames = this._getUserGroupsForNotifications();
 
         return getUserGroups(d2, userGroupNames)
             .then(col => col.toArray())
@@ -668,8 +674,9 @@ export default class DataSetStore {
             currentUserInfo,
             stringErr,
         ].join("\n\n");
+        const userGroupNames = this._getUserGroupsForNotifications();
 
-        sendMessageToGroups(this.d2, feedbackOptions.sendToDhis2UserGroups, title, body);
+        sendMessageToGroups(this.d2, userGroupNames, title, body);
         throw err;
     }
 
