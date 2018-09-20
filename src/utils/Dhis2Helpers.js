@@ -356,32 +356,35 @@ function canUpdate(d2, datasets) {
 
 async function getFilteredDatasets(d2, config, page, sorting, filters) {
     const { searchValue, showOnlyCreatedByApp } = filters;
-    const allDataSets = d2.models.dataSets;
+    const model = d2.models.dataSets;
     const attributeByAppId = config.createdByDataSetConfigurationAttributeId;
+
     const filterByAppId = attributeByAppId && showOnlyCreatedByApp;
-    const filteredByNameDataSets = searchValue ?
-        allDataSets.filter().on('displayName').ilike(searchValue) :
-        allDataSets;
-    const filteredDataSets = filterByAppId ?
-        filteredByNameDataSets.filter().on('attributeValues.attribute.id').equals(attributeByAppId) :
-        filteredByNameDataSets;
     const order = sorting ? sorting.join(":") : "";
     const fields = "id,name,displayName,shortName,created,lastUpdated,externalAccess," +
         "publicAccess,userAccesses,userGroupAccesses,user,access,attributeValues";
+    const cleanOptions = (options) => _.omitBy(options, value => _.isArray(value) && _.isEmpty(value));
+    const baseFilters = _.compact([
+        searchValue ? `displayName:ilike:${searchValue}` : null,
+    ]);
 
     if (filterByAppId) {
         // The API does not allow to simultaneously filter by attributeValue.attribute.id AND attributeValue.value,
         // so we need to make a double request: first get non-paginated datasets, filter manually by the attribute,
         // and finally make a query on paginated datasets filtering by those datasets.
         const attributeFields = "id,attributeValues[value,attribute[id]]"
-        const dataSetsCollectionNoPaging = await filteredDataSets.list({fields: attributeFields, paging: false});
+        const dataSetsCollectionNoPaging = await model.list({fields: attributeFields, paging: false});
         const datasetsByApp = dataSetsCollectionNoPaging.toArray().filter(dataset =>
-            _(dataset.attributeValues).some(av => av.attribute.id === attributeByAppId && av.value.toString() === "true"));
+            _(dataset.attributeValues).some(av => av.attribute.id === attributeByAppId && av.value.toString() === "true")
+        );
         const maxUids = (8192 - 1000) / (11 + 3); // To avoid 413 URL too large
-        const filter = `id:in:[${_(datasetsByApp).take(maxUids).map("id").join(",")}]`;
-        return allDataSets.list({order, fields, filter, page});
+        const filters = [
+            ...baseFilters,
+            `id:in:[${_(datasetsByApp).take(maxUids).map("id").join(",")}]`,
+        ];
+        return model.list(cleanOptions({order, fields, filter: filters, page}));
     } else {
-        return filteredDataSets.list({order, fields, page});
+        return model.list(cleanOptions({order, fields, filter: baseFilters, page}));
     }
 }
 
