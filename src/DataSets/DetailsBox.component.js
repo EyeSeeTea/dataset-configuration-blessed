@@ -74,7 +74,8 @@ export default React.createClass({
 
         return {
             coreCompetencies: () =>
-                getCoreCompetencies(d2, this.props.config, this.props.source),
+                getCoreCompetencies(d2, this.props.config, this.props.source)
+                    .then(coreCompetencies => _(coreCompetencies).toArray().map("name").join(", ") || "-"),
             linkedProject: () =>
                 getProject(d2, this.props.config, this.props.source)
                     .then(project => project ? project.name : this.getTranslation("no_project_linked")),
