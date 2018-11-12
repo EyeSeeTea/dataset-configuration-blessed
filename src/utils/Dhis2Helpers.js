@@ -366,7 +366,7 @@ async function getFilteredDatasets(d2, config, page, sorting, filters) {
         filteredByNameDataSets.filter().on('attributeValues.attribute.id').equals(attributeByAppId) :
         filteredByNameDataSets;
     const order = sorting ? sorting.join(":") : "";
-    const fields = "id,name,displayName,shortName,created,lastUpdated,externalAccess," +
+    const fields = "id,name,displayName,displayDescription,shortName,created,lastUpdated,externalAccess," +
         "publicAccess,userAccesses,userGroupAccesses,user,access,attributeValues";
 
     if (filterByAppId) {
