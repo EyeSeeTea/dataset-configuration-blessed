@@ -23,7 +23,7 @@ import {getCategoryCombos,
         sendMessageToGroups,
        } from '../utils/Dhis2Helpers';
 
-import { getCoreCompetencies } from './dataset';
+import { getCoreCompetencies, getProject } from './dataset';
 import * as Section from './Section';
 import getCustomForm from './CustomForm';
 
@@ -115,18 +115,6 @@ class Factory {
         });
     }
 
-    getProject(dataset) {
-        if (dataset.name) {
-            return this.d2.models.categoryOptions
-                .filter().on("categories.id").equals(this.config.categoryProjectsId)
-                .list({fields: "id,name", paging: false})
-                .then(collection => collection.toArray())
-                .then(projects => _(projects).find(project => _.includes(dataset.name, project.name)));
-        } else {
-            return Promise.resolve(null);
-        }
-    }
-
     getCountriesFromSharing(dataset, countries) {
         const datasetId = dataset.id || dataset._sourceId;
 
@@ -156,7 +144,7 @@ class Factory {
 
     getAssociations(dataset, countries) {
         const promises = [
-            this.getProject(dataset),
+            getProject(this.d2, this.config, dataset),
             getCoreCompetencies(this.d2, this.config, dataset),
             this.getCountriesFromSharing(dataset, countries),
             this.getUserRolesForCurrentUser(),

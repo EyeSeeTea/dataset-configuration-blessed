@@ -3,9 +3,10 @@ import classes from 'classnames';
 import FontIcon from 'material-ui/FontIcon';
 import Translate from 'd2-ui/lib/i18n/Translate.mixin';
 import camelCaseToUnderscores from 'd2-utilizr/lib/camelCaseToUnderscores';
+import _ from 'lodash';
 
 import { mapPromise } from '../utils/Dhis2Helpers';
-import { getCoreCompetencies } from '../models/dataset';
+import { getCoreCompetencies, getProject } from '../models/dataset';
 
 export default React.createClass({
     propTypes: {
@@ -22,16 +23,9 @@ export default React.createClass({
         ul: { marginTop: 3, paddingLeft: 20 },
     },
 
-    asyncFields: {
-        coreCompetencies: function() {
-            const dataset = this.props.source;
-            return dataset.sections
-                ? getCoreCompetencies(this.context.d2, this.props.config, dataset)
-                : Promise.resolve(null);
-        },
-    },
-
     getInitialState() {
+        this.asyncFields = this.getAsyncFields();
+
         return _(this.asyncFields)
             .keys()
             .map(asyncField => [asyncField, { loaded: false, value: null }])
@@ -50,6 +44,7 @@ export default React.createClass({
                 'lastUpdated',
                 'id',
                 'href',
+                'linkedProject',
                 'coreCompetencies',
             ],
             showDetailBox: false,
@@ -71,6 +66,18 @@ export default React.createClass({
             const value = await getValue.bind(this)(asyncField);
             this.setState({ [asyncField]: { loaded: true, value } });
         });
+    },
+
+    getAsyncFields() {
+        const { d2 } = this.context;
+
+        return {
+            coreCompetencies: () =>
+                getCoreCompetencies(d2, this.props.config, this.props.source),
+            linkedProject: () =>
+                getProject(d2, this.props.config, this.props.source)
+                    .then(project => project ? project.name : this.getTranslation("no_project_linked")),
+        }
     },
 
     getValues() {
@@ -116,6 +123,10 @@ export default React.createClass({
 
             return stringifiedDate === 'Invalid Date' ? dateValue : stringifiedDate;
         };
+
+        if (_.isPlainObject(value) || value.modelDefinition) {
+            return value.displayName || value.name || "-";
+        }
 
         if (Array.isArray(value) && value.length) {
             const namesToDisplay = value
