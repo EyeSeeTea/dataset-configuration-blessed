@@ -493,6 +493,7 @@ const DataSets = React.createClass({
                                 detailsObject={this.state.detailsObject}
                                 onClose={listActions.hideDetailsBox}
                                 config={this.state.config}
+                                scroll={false}
                             />
                         : null }
                     {

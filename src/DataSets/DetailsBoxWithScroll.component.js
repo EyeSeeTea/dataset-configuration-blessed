@@ -8,7 +8,7 @@ export default class DetailsBoxWithScroll extends Component {
         this.disposable = Observable
             .fromEvent(global, 'scroll')
             .debounce(200)
-            .subscribe(() => this.forceUpdate());
+            .subscribe(() => this.props.scroll && this.forceUpdate());
     }
 
     componentWillUnmount() {
@@ -16,8 +16,13 @@ export default class DetailsBoxWithScroll extends Component {
     }
 
     render() {
-        const appOffsetTop = document.querySelector('main').offsetTop;
-        const marginTop = Math.max(document.scrollingElement.scrollTop - appOffsetTop, 0);
+        let marginTop
+        if (this.props.scroll) {
+            const appOffsetTop = document.querySelector('main').offsetTop;
+            marginTop = Math.max(document.scrollingElement.scrollTop - appOffsetTop, 0);
+        } else {
+            marginTop = 0
+        }
 
         return (
             <div style={this.props.style}>
