@@ -1,10 +1,11 @@
 import React from 'react';
 import classes from 'classnames';
-
 import FontIcon from 'material-ui/FontIcon';
-
 import Translate from 'd2-ui/lib/i18n/Translate.mixin';
 import camelCaseToUnderscores from 'd2-utilizr/lib/camelCaseToUnderscores';
+
+import { mapPromise } from '../utils/Dhis2Helpers';
+import { getCoreCompetencies } from '../models/dataset';
 
 export default React.createClass({
     propTypes: {
@@ -12,9 +13,31 @@ export default React.createClass({
         showDetailBox: React.PropTypes.bool,
         source: React.PropTypes.object,
         onClose: React.PropTypes.func,
+        config: React.PropTypes.object,
     },
 
     mixins: [Translate],
+
+    styles: {
+        ul: { marginTop: 3, paddingLeft: 20 },
+    },
+
+    asyncFields: {
+        coreCompetencies: function() {
+            const dataset = this.props.source;
+            return dataset.sections
+                ? getCoreCompetencies(this.context.d2, this.props.config, dataset)
+                : Promise.resolve(null);
+        },
+    },
+
+    getInitialState() {
+        return _(this.asyncFields)
+            .keys()
+            .map(asyncField => [asyncField, { loaded: false, value: null }])
+            .fromPairs()
+            .value()
+    },
 
     getDefaultProps() {
         return {
@@ -27,10 +50,42 @@ export default React.createClass({
                 'lastUpdated',
                 'id',
                 'href',
+                'coreCompetencies',
             ],
             showDetailBox: false,
             onClose: () => {},
         };
+    },
+
+    componentWillReceiveProps(newProps) {
+        const datasetChanged = this.props.source.id !== newProps.source.id;
+
+        if (datasetChanged) {
+            this.setState(this.getInitialState())
+            this.componentDidMount();
+        }
+    },
+
+    componentDidMount() {
+        mapPromise(_.toPairs(this.asyncFields), async ([asyncField, getValue]) => {
+            const value = await getValue.bind(this)(asyncField);
+            this.setState({ [asyncField]: { loaded: true, value } });
+        });
+    },
+
+    getValues() {
+        const getAsyncValue = fieldName => (
+            this.state[fieldName].loaded
+                ? this.state[fieldName].value
+                : this.getTranslation("loading")
+        );
+
+        return _(this.props.fields).map(fieldName => {
+            const rawValue = _(this.asyncFields).has(fieldName)
+                ? getAsyncValue(fieldName)
+                : this.props.source[fieldName];
+            return rawValue ? [fieldName, this.getValueToRender(fieldName, rawValue)] : null;
+        }).compact().value();
     },
 
     getDetailBoxContent() {
@@ -40,18 +95,19 @@ export default React.createClass({
             );
         }
 
-        return this.props.fields
-            .filter(fieldName => this.props.source[fieldName])
-            .map(fieldName => {
-                const valueToRender = this.getValueToRender(fieldName, this.props.source[fieldName]);
-
-                return (
-                    <div key={fieldName} className="detail-field">
-                        <div className={`detail-field__label detail-field__${fieldName}-label`}>{this.getTranslation(camelCaseToUnderscores(fieldName))}</div>
-                        <div className={`detail-field__value detail-field__${fieldName}`}>{valueToRender}</div>
+        return this.getValues().map(([fieldName, valueToRender]) => {
+            return (
+                <div key={fieldName} className="detail-field">
+                    <div className={`detail-field__label detail-field__${fieldName}-label`}>
+                        {this.getTranslation(camelCaseToUnderscores(fieldName))}
                     </div>
-                );
-            });
+
+                    <div className={`detail-field__value detail-field__${fieldName}`}>
+                        {valueToRender}
+                    </div>
+                </div>
+            );
+        });
     },
 
     getValueToRender(fieldName, value) {
@@ -67,7 +123,7 @@ export default React.createClass({
                 .filter(name => name);
 
             return (
-                <ul>
+                <ul style={this.styles.ul}>
                     {namesToDisplay.map(name => <li key={name}>{name}</li>)}
                 </ul>
             );

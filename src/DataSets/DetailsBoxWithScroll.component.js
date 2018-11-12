@@ -25,6 +25,7 @@ export default class DetailsBoxWithScroll extends Component {
                         source={this.props.detailsObject}
                         showDetailBox={!!this.props.detailsObject}
                         onClose={this.props.onClose}
+                        config={this.props.config}
                     />
                 </Paper>
             </div>

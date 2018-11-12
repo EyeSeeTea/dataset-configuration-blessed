@@ -367,7 +367,7 @@ async function getFilteredDatasets(d2, config, page, sorting, filters) {
         filteredByNameDataSets;
     const order = sorting ? sorting.join(":") : "";
     const fields = "id,name,displayName,displayDescription,shortName,created,lastUpdated,externalAccess," +
-        "publicAccess,userAccesses,userGroupAccesses,user,access,attributeValues";
+        "publicAccess,userAccesses,userGroupAccesses,user,access,attributeValues,sections[id,name]";
 
     if (filterByAppId) {
         // The API does not allow to simultaneously filter by attributeValue.attribute.id AND attributeValue.value,
@@ -384,7 +384,6 @@ async function getFilteredDatasets(d2, config, page, sorting, filters) {
         return filteredDataSets.list({order, fields, page});
     }
 }
-
 
 export {
     redirectToLogin,

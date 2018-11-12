@@ -492,6 +492,7 @@ const DataSets = React.createClass({
                                 style={styles.detailsBoxWrap}
                                 detailsObject={this.state.detailsObject}
                                 onClose={listActions.hideDetailsBox}
+                                config={this.state.config}
                             />
                         : null }
                     {
