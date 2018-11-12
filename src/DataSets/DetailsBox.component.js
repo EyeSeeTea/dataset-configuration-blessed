@@ -4,6 +4,7 @@ import FontIcon from 'material-ui/FontIcon';
 import Translate from 'd2-ui/lib/i18n/Translate.mixin';
 import camelCaseToUnderscores from 'd2-utilizr/lib/camelCaseToUnderscores';
 import _ from 'lodash';
+import moment from 'moment';
 
 import { mapPromise } from '../utils/Dhis2Helpers';
 import { getCoreCompetencies, getProject } from '../models/dataset';
@@ -119,9 +120,7 @@ export default React.createClass({
 
     getValueToRender(fieldName, value) {
         const getDateString = dateValue => {
-            const stringifiedDate = new Date(dateValue).toString();
-
-            return stringifiedDate === 'Invalid Date' ? dateValue : stringifiedDate;
+            return moment(dateValue).format('LLLL');
         };
 
         if (_.isPlainObject(value) || value.modelDefinition) {
