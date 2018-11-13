@@ -2,6 +2,12 @@ import { generateUid } from 'd2/lib/uid';
 import { getOwnedPropertyJSON } from 'd2/lib/model/helpers/json';
 import _ from './lodash-mixins';
 
+const accesses = {
+    none: '--------',
+    read: 'r-------',
+    write: 'rw------',
+};
+
 function update(obj1, obj2) {
     const obj1c = obj1;
     _(obj2).each((value, key) => { obj1c[key] = value; });
@@ -386,6 +392,7 @@ async function getFilteredDatasets(d2, config, page, sorting, filters) {
 }
 
 export {
+    accesses,
     redirectToLogin,
     getCategoryCombos,
     collectionToArray,

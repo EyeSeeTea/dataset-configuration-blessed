@@ -6,7 +6,7 @@ import camelCaseToUnderscores from 'd2-utilizr/lib/camelCaseToUnderscores';
 import _ from 'lodash';
 import moment from 'moment';
 
-import { mapPromise } from '../utils/Dhis2Helpers';
+import { mapPromise, accesses } from '../utils/Dhis2Helpers';
 import { getCoreCompetencies, getProject } from '../models/dataset';
 
 export default React.createClass({
@@ -23,6 +23,8 @@ export default React.createClass({
     styles: {
         ul: { marginTop: 3, paddingLeft: 20 },
     },
+
+    virtualFields: new Set(["sharing"]),
 
     getInitialState() {
         this.asyncFields = this.getAsyncFields();
@@ -47,6 +49,7 @@ export default React.createClass({
                 'href',
                 'linkedProject',
                 'coreCompetencies',
+                'sharing',
             ],
             showDetailBox: false,
             onClose: () => {},
@@ -83,18 +86,27 @@ export default React.createClass({
     },
 
     getValues() {
-        const getAsyncValue = fieldName => (
-            this.state[fieldName].loaded
-                ? this.state[fieldName].value
-                : this.getTranslation("loading")
-        );
+        const getRawValue = fieldName => {
+            if (_(this.asyncFields).has(fieldName)) {
+                return this.state[fieldName].loaded
+                    ? this.state[fieldName].value
+                    : this.getTranslation("loading");
+            } else if (this.virtualFields.has(fieldName)) {
+                return this.props.source;
+            } else {
+                return this.props.source[fieldName];
+            }
+        };
 
-        return _(this.props.fields).map(fieldName => {
-            const rawValue = _(this.asyncFields).has(fieldName)
-                ? getAsyncValue(fieldName)
-                : this.props.source[fieldName];
-            return rawValue ? [fieldName, this.getValueToRender(fieldName, rawValue)] : null;
-        }).compact().value();
+        return _(this.props.fields)
+            .map(fieldName => {
+                const rawValue = getRawValue(fieldName);
+                return rawValue
+                    ? { fieldName, valueToRender: this.getValueToRender(fieldName, rawValue) }
+                    : null;
+            })
+            .compact()
+            .value();
     },
 
     getDetailBoxContent() {
@@ -104,14 +116,17 @@ export default React.createClass({
             );
         }
 
-        return this.getValues().map(([fieldName, valueToRender]) => {
+        return this.getValues().map(({ fieldName, valueToRender }) => {
+            const classNameLabel = `detail-field__label detail-field__${fieldName}-label`;
+            const classNameValue = `detail-field__value detail-field__${fieldName}`
+
             return (
                 <div key={fieldName} className="detail-field">
-                    <div className={`detail-field__label detail-field__${fieldName}-label`}>
+                    <div className={classNameLabel}>
                         {this.getTranslation(camelCaseToUnderscores(fieldName))}
                     </div>
 
-                    <div className={`detail-field__value detail-field__${fieldName}`}>
+                    <div className={classNameValue}>
                         {valueToRender}
                     </div>
                 </div>
@@ -119,10 +134,42 @@ export default React.createClass({
         });
     },
 
+    renderSharing(object) {
+        const i18nSubKeys = {
+            [accesses.none]: "none",
+            [accesses.read]: "can_view",
+            [accesses.write]: "can_edit",
+        };
+        const i18nSubKey = i18nSubKeys[object.publicAccess];
+        const publicAccess = i18nSubKey ? this.getTranslation(`public_${i18nSubKey}`) : null;
+        const getNames = objs => _(objs).map("displayName").join(", ") || this.getTranslation("none");
+
+        const sharingString = [
+            publicAccess,
+            this.getTranslation("user_accesses") + ": " + getNames(object.userAccesses),
+            this.getTranslation("user_group_accesses") + ": " + getNames(object.userGroupAccesses),
+        ];
+
+        return _(sharingString).compact().join('. ');
+    },
+
     getValueToRender(fieldName, value) {
         const getDateString = dateValue => {
             return moment(dateValue).format('LLLL');
         };
+
+        if (fieldName === 'sharing') {
+            return this.renderSharing(value);
+        }
+
+        if (fieldName === 'created' || fieldName === 'lastUpdated') {
+            return getDateString(value);
+        }
+
+        if (fieldName === 'href') {
+            // Suffix the url with the .json extension to always get the json representation of the api resource
+            return <a style={{ wordBreak: 'break-all' }} href={`${value}.json`} target="_blank">{value}</a>;
+        }
 
         if (_.isPlainObject(value) || value.modelDefinition) {
             return value.displayName || value.name || "-";
@@ -138,15 +185,6 @@ export default React.createClass({
                     {namesToDisplay.map(name => <li key={name}>{name}</li>)}
                 </ul>
             );
-        }
-
-        if (fieldName === 'created' || fieldName === 'lastUpdated') {
-            return getDateString(value);
-        }
-
-        if (fieldName === 'href') {
-            // Suffix the url with the .json extension to always get the json representation of the api resource
-            return <a style={{ wordBreak: 'break-all' }} href={`${value}.json`} target="_blank">{value}</a>;
         }
 
         return value;
@@ -168,5 +206,4 @@ export default React.createClass({
             </div>
         );
     },
-
 });
