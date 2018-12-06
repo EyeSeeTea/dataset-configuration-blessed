@@ -22,6 +22,8 @@ import {getCategoryCombos,
         update,
         sendMessageToGroups,
        } from '../utils/Dhis2Helpers';
+
+import { getCoreCompetencies, getProject } from './dataset';
 import * as Section from './Section';
 import getCustomForm from './CustomForm';
 
@@ -113,34 +115,6 @@ class Factory {
         });
     }
 
-    getProject(dataset) {
-        if (dataset.name) {
-            return this.d2.models.categoryOptions
-                .filter().on("categories.id").equals(this.config.categoryProjectsId)
-                .list({fields: "id,name", paging: false})
-                .then(collection => collection.toArray())
-                .then(projects => _(projects).find(project => _.includes(dataset.name, project.name)));
-        } else {
-            return Promise.resolve(null);
-        }
-    }
-
-    getCoreCompetencies(dataset) {
-        const extractCoreCompetenciesFromSection = section => {
-            const match = section.name.match(/^(.*) (Outputs|Outcomes)(@|$)/);
-            return match ? match[1] : null;
-        };
-        const coreCompetencyNames = _(dataset.sections.toArray())
-            .map(extractCoreCompetenciesFromSection)
-            .compact()
-            .uniq()
-
-        return this.d2.models.dataElementGroups
-            .filter().on("dataElementGroupSet.id").equals(this.config.dataElementGroupSetCoreCompetencyId)
-            .list({filter: `name:in:[${coreCompetencyNames.join(',')}]`, fields: "*"})
-            .then(collection => collection.toArray())
-    }
-
     getCountriesFromSharing(dataset, countries) {
         const datasetId = dataset.id || dataset._sourceId;
 
@@ -170,8 +144,8 @@ class Factory {
 
     getAssociations(dataset, countries) {
         const promises = [
-            this.getProject(dataset),
-            this.getCoreCompetencies(dataset),
+            getProject(this.d2, this.config, dataset),
+            getCoreCompetencies(this.d2, this.config, dataset),
             this.getCountriesFromSharing(dataset, countries),
             this.getUserRolesForCurrentUser(),
         ];
