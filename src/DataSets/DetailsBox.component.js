@@ -23,6 +23,7 @@ export default React.createClass({
     styles: {
         ul: { marginTop: 3, paddingLeft: 20 },
         ulSharing: { marginTop: 3, paddingLeft: 0, listStyleType: 'none' },
+        liSharing: {fontStyle: 'italic', fontWeight: 500}
     },
 
     virtualFields: new Set(["sharing"]),
@@ -146,9 +147,9 @@ export default React.createClass({
         const getNames = objs => _(objs).map("displayName").join(", ") || this.getTranslation("none");
 
         return [
-            <div><i>{this.getTranslation("public_access")}</i>: {publicAccess}</div>,
-            <div><i>{this.getTranslation("user_accesses")}</i>: {getNames(object.userAccesses)}</div>,
-            <div><i>{this.getTranslation("user_group_accesses")}</i>: {getNames(object.userGroupAccesses)}</div>,
+            <div><span style={this.styles.liSharing}>{this.getTranslation("public_access")}</span>: {publicAccess}</div>,
+            <div><span style={this.styles.liSharing}>{this.getTranslation("user_access")}</span>: {getNames(object.userAccesses)}</div>,
+            <div><span style={this.styles.liSharing}>{this.getTranslation("user_group_access")}</span>: {getNames(object.userGroupAccesses)}</div>,
         ];
     },
 
@@ -159,9 +160,10 @@ export default React.createClass({
 
         if (fieldName === 'sharing') {
             // return this.renderSharing(value);
-            const sharingItems = this.renderSharing(value).map((sharingItem, index)=> {
-                return (<li key={'sharing_' + index}>{sharingItem}</li>)
-            })
+            const sharingItems = this.renderSharing(value)
+                .map((sharingItem, index)=> {
+                    return (<li key={'sharing_' + index}>{sharingItem}</li>)
+                });
             return (<ul style={this.styles.ulSharing}>
                 {sharingItems}
             </ul>);
