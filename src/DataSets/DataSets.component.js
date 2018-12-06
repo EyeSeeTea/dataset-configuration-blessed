@@ -411,6 +411,11 @@ const DataSets = React.createClass({
             </div>
         );
 
+        const { detailsObject, dataRows } = this.state;
+        const detailsObjectToShow = detailsObject
+            ? (dataRows.find(dataRow => dataRow.id === detailsObject.id) || detailsObject)
+            : null;
+
         return (
             <div>
                 <Dialog
@@ -490,8 +495,10 @@ const DataSets = React.createClass({
                         this.state.detailsObject ?
                             <DetailsBoxWithScroll
                                 style={styles.detailsBoxWrap}
-                                detailsObject={this.state.detailsObject}
+                                detailsObject={detailsObjectToShow}
                                 onClose={listActions.hideDetailsBox}
+                                config={this.state.config}
+                                scroll={false}
                             />
                         : null }
                     {

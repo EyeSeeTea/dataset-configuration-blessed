@@ -190,7 +190,7 @@ export default class Settings {
         switch (fieldDefinition.type) {
             case "d2-object":
                 return this.d2.models[fieldDefinition.model]
-                    .list({filter: fieldDefinition.defaultFilter})
+                    .list({filter: fieldDefinition.defaultFilter, fields: "id"})
                     .then(collection => collection.toArray().map(obj => obj.id)[0])
             case "value":
                 return Promise.resolve(fieldDefinition.defaultValue);
