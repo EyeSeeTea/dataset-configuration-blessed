@@ -1,22 +1,22 @@
-import React from 'react';
-import ObservedEvents from '../utils/ObservedEvents.mixin';
-import Translate from 'd2-ui/lib/i18n/Translate.mixin';
-import Dialog from 'material-ui/Dialog/Dialog';
-import FlatButton from 'material-ui/FlatButton/FlatButton';
-import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
-import RaisedButton from 'material-ui/RaisedButton/RaisedButton';
-import Card from 'material-ui/Card/Card';
-import CardText from 'material-ui/Card/CardText';
-import {Tabs, Tab} from 'material-ui/Tabs';
-import FormBuilder from 'd2-ui/lib/forms/FormBuilder.component';
-import Settings from '../models/Settings';
-import Validators from 'd2-ui/lib/forms/Validators';
-import FormHelpers from '../forms/FormHelpers';
-import fp from 'lodash/fp';
-import _ from 'lodash';
+import React from "react";
+import ObservedEvents from "../utils/ObservedEvents.mixin";
+import Translate from "d2-ui/lib/i18n/Translate.mixin";
+import Dialog from "material-ui/Dialog/Dialog";
+import FlatButton from "material-ui/FlatButton/FlatButton";
+import LinearProgress from "material-ui/LinearProgress/LinearProgress";
+import RaisedButton from "material-ui/RaisedButton/RaisedButton";
+import Card from "material-ui/Card/Card";
+import CardText from "material-ui/Card/CardText";
+import { Tabs, Tab } from "material-ui/Tabs";
+import FormBuilder from "d2-ui/lib/forms/FormBuilder.component";
+import Settings from "../models/Settings";
+import Validators from "d2-ui/lib/forms/Validators";
+import FormHelpers from "../forms/FormHelpers";
+import fp from "lodash/fp";
+import _ from "lodash";
 
-const TabCard = ({fields, onUpdateFormStatus, onUpdateField}) =>
-    <Card style={{padding: 10, margin: 10}}>
+const TabCard = ({ fields, onUpdateFormStatus, onUpdateField }) => (
+    <Card style={{ padding: 10, margin: 10 }}>
         <CardText>
             <FormBuilder
                 fields={fields}
@@ -25,7 +25,8 @@ const TabCard = ({fields, onUpdateFormStatus, onUpdateField}) =>
                 onUpdateField={onUpdateField}
             />
         </CardText>
-    </Card>;
+    </Card>
+);
 
 const SettingsDialog = React.createClass({
     propTypes: {
@@ -65,7 +66,7 @@ const SettingsDialog = React.createClass({
 
     getInitialState() {
         this.settings = new Settings(this.context.d2);
-        return {loaded: false};
+        return { loaded: false };
     },
 
     componentWillReceiveProps(newProps) {
@@ -96,9 +97,12 @@ const SettingsDialog = React.createClass({
     },
 
     getFields(key) {
-        const {fields, config} = this.state;
+        const { fields, config } = this.state;
         const keys = _.get(this.tabs, key);
-        const tabFields = _(fields).keyBy("name").at(keys).value();
+        const tabFields = _(fields)
+            .keyBy("name")
+            .at(keys)
+            .value();
 
         return tabFields.map(field => {
             if (field.options) {
@@ -115,43 +119,53 @@ const SettingsDialog = React.createClass({
                     label: this.getTranslation(field.i18n_key),
                     isRequired: true,
                     value: config[field.name],
-                    validators: [{
-                        validator: Validators.isRequired,
-                        message: this.getTranslation(Validators.isRequired.message),
-                    }],
+                    validators: [
+                        {
+                            validator: Validators.isRequired,
+                            message: this.getTranslation(Validators.isRequired.message),
+                        },
+                    ],
                 });
             }
         });
     },
 
     onChangeTab(value) {
-        this.setState({currentTab: value});
+        this.setState({ currentTab: value });
     },
 
     onUpdateFormStatus(section, status) {
-        const newFormStatuses = _(_.clone(this.state.formStatuses)).set(section, status.valid).value();
-        this.setState({formStatuses: newFormStatuses});
+        const newFormStatuses = _(_.clone(this.state.formStatuses))
+            .set(section, status.valid)
+            .value();
+        this.setState({ formStatuses: newFormStatuses });
     },
 
     render() {
-        const {loaded, fields, config, formStatuses} = this.state;
-        const saveIsEnabled = loaded && _(formStatuses).values().every();
+        const { loaded, fields, config, formStatuses } = this.state;
+        const saveIsEnabled =
+            loaded &&
+            _(formStatuses)
+                .values()
+                .every();
 
         const actions = [
             <FlatButton
-                label={this.getTranslation('cancel')}
+                label={this.getTranslation("cancel")}
                 onTouchTap={this.props.onRequestClose}
-                style={{marginRight: 16}}
+                style={{ marginRight: 16 }}
             />,
-            loaded ? <RaisedButton
-                primary
-                label={this.getTranslation('save')}
-                disabled={!saveIsEnabled}
-                onTouchTap={this.save}
-            /> : null,
+            loaded ? (
+                <RaisedButton
+                    primary
+                    label={this.getTranslation("save")}
+                    disabled={!saveIsEnabled}
+                    onTouchTap={this.save}
+                />
+            ) : null,
         ];
 
-        const getTabCardProps = (section) => ({
+        const getTabCardProps = section => ({
             fields: this.getFields(section),
             onUpdateFormStatus: status => _.defer(this.onUpdateFormStatus, section, status),
             onUpdateField: this.onUpdateField,
@@ -162,15 +176,21 @@ const SettingsDialog = React.createClass({
                 autoScrollBodyContent
                 autoDetectWindowHeight
                 repositionOnUpdate
-                title={this.getTranslation('settings')}
-                style={{maxWidth: 'none'}}
-                contentStyle={{maxWidth: 'none'}}
+                title={this.getTranslation("settings")}
+                style={{ maxWidth: "none" }}
+                contentStyle={{ maxWidth: "none" }}
                 open={this.props.open}
                 onRequestClose={this.props.onRequestClose}
                 actions={_.compact(actions)}
             >
-                {!loaded ? <LinearProgress /> :
-                    <Tabs style={{paddingTop: 10}} value={this.state.currentTab} onChange={this.onChangeTab}>
+                {!loaded ? (
+                    <LinearProgress />
+                ) : (
+                    <Tabs
+                        style={{ paddingTop: 10 }}
+                        value={this.state.currentTab}
+                        onChange={this.onChangeTab}
+                    >
                         <Tab value="general" label={this.getTranslation("config_tab_general")}>
                             <TabCard {...getTabCardProps("general")} />
                         </Tab>
@@ -180,7 +200,7 @@ const SettingsDialog = React.createClass({
                             <TabCard {...getTabCardProps("sections.other")} />
                         </Tab>
                     </Tabs>
-                }
+                )}
             </Dialog>
         );
     },

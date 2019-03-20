@@ -27,3 +27,5 @@ chrome-user-data
 .idea
 *.iml
 .vscode
+*.code-workspace
+manifest.webapp

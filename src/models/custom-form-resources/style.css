@@ -1,8 +1,8 @@
-.formSection  {
+.formSection {
     border: 1px solid #cacaca;
     border-radius: 3px;
     margin: 0;
-    padding: 1px 4px 1px 4px ;
+    padding: 1px 4px 1px 4px;
 }
 
 .formSection h3 {
@@ -40,7 +40,8 @@
     text-align: left !important;
 }
 
-.entryfield, .indicator {
+.entryfield,
+.indicator {
     max-width: 75px;
 }
 
@@ -72,14 +73,15 @@
 }
 
 #contentDiv tr.derow {
-    background-color: #FFF;
+    background-color: #fff;
 }
 
 #contentDiv tr.focus {
     background-color: #e5f5e5;
 }
 
-#contentDiv tr.hover, #contentDiv tr:hover {
+#contentDiv tr.hover,
+#contentDiv tr:hover {
     background-color: #e5e5e5;
 }
 
@@ -162,7 +164,9 @@
     cursor: pointer;
 }
 
-.ui-state-active a, .ui-state-active a:link, .ui-state-active a:visited {
+.ui-state-active a,
+.ui-state-active a:link,
+.ui-state-active a:visited {
     color: #053e21;
 }
 
@@ -175,7 +179,7 @@
     color: white;
     cursor: pointer;
 }
- 
+
 #contentDiv .accordion-toggle:after {
     font-family: FontAwesome;
     content: "\f077";
@@ -192,7 +196,12 @@
     margin-top: 5px;
 }
 
-.page p,.page td,.page th,.page input,.page select,.page textarea {
+.page p,
+.page td,
+.page th,
+.page input,
+.page select,
+.page textarea {
     font-size: 9pt;
 }
 

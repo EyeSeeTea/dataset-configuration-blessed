@@ -1,8 +1,8 @@
-import React, { PropTypes } from 'react';
-import Translate from 'd2-ui/lib/i18n/Translate.mixin';
-import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
-import GreyFieldsTable from '../../forms/GreyFieldsTable.component';
-import {collectionToArray} from '../../utils/Dhis2Helpers';
+import React, { PropTypes } from "react";
+import Translate from "d2-ui/lib/i18n/Translate.mixin";
+import LinearProgress from "material-ui/LinearProgress/LinearProgress";
+import GreyFieldsTable from "../../forms/GreyFieldsTable.component";
+import { collectionToArray } from "../../utils/Dhis2Helpers";
 
 const GreyFields = React.createClass({
     mixins: [Translate],
@@ -12,16 +12,15 @@ const GreyFields = React.createClass({
     },
 
     componentWillReceiveProps(props) {
-        if (props.validateOnRender)
-            props.formStatus(true);
+        if (props.validateOnRender) props.formStatus(true);
     },
 
     _save(greyedFields) {
-        this.props.store.setGreyedFields(greyedFields)
+        this.props.store.setGreyedFields(greyedFields);
     },
 
     render() {
-        const {dataset} = this.props.store;
+        const { dataset } = this.props.store;
         const sections = collectionToArray(dataset.sections);
 
         return (

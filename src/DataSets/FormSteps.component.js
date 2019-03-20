@@ -1,20 +1,20 @@
-import React from 'react';
-import Translate from 'd2-ui/lib/i18n/Translate.mixin';
-import Wizard from '../Wizard/Wizard.component';
-import { goToRoute } from '../router';
-import InitialConfig from './Forms/InitialConfig.component';
-import GeneralInformation from './Forms/GeneralInformation.component';
-import OrganisationUnit from './Forms/OrganisationUnit.component';
-import Sections from './Forms/Sections.component';
-import Disaggregation from './Forms/Disaggregation.component';
-import Sharing from './Forms/Sharing.component';
-import GreyFields from './Forms/GreyFields.component';
-import Save from './Forms/Save.component';
-import snackActions from '../Snackbar/snack.actions';
-import LoadingMask from '../LoadingMask/LoadingMask.component';
-import Heading from 'd2-ui/lib/headings/Heading.component';
-import DataSetStore from '../models/DataSetStore';
-import Settings from '../models/Settings';
+import React from "react";
+import Translate from "d2-ui/lib/i18n/Translate.mixin";
+import Wizard from "../Wizard/Wizard.component";
+import { goToRoute } from "../router";
+import InitialConfig from "./Forms/InitialConfig.component";
+import GeneralInformation from "./Forms/GeneralInformation.component";
+import OrganisationUnit from "./Forms/OrganisationUnit.component";
+import Sections from "./Forms/Sections.component";
+import Disaggregation from "./Forms/Disaggregation.component";
+import Sharing from "./Forms/Sharing.component";
+import GreyFields from "./Forms/GreyFields.component";
+import Save from "./Forms/Save.component";
+import snackActions from "../Snackbar/snack.actions";
+import LoadingMask from "../LoadingMask/LoadingMask.component";
+import Heading from "d2-ui/lib/headings/Heading.component";
+import DataSetStore from "../models/DataSetStore";
+import Settings from "../models/Settings";
 
 const DataSetFormSteps = React.createClass({
     mixins: [Translate],
@@ -31,11 +31,11 @@ const DataSetFormSteps = React.createClass({
     },
 
     componentDidMount() {
-        const {d2} = this.context;
+        const { d2 } = this.context;
         const settings = new Settings(d2);
-        const {action, id: datasetId} = this.props;
+        const { action, id: datasetId } = this.props;
 
-        const getStore = (config) => {
+        const getStore = config => {
             if (action === "add") {
                 return DataSetStore.add(d2, config);
             } else if (action === "edit") {
@@ -47,14 +47,20 @@ const DataSetFormSteps = React.createClass({
             }
         };
 
-        settings.get()
+        settings
+            .get()
             .then(config => {
                 return getStore(config)
-                    .then(store => this.setState({store}))
-                    .catch(err => snackActions.show({route: "/", message: `Cannot edit dataset: ${JSON.stringify(err)}`}));
+                    .then(store => this.setState({ store }))
+                    .catch(err =>
+                        snackActions.show({
+                            route: "/",
+                            message: `Cannot edit dataset: ${JSON.stringify(err)}`,
+                        })
+                    );
             })
             .catch(err => {
-                snackActions.show({route: "/", message: `Error: settings not found: ${err}`});
+                snackActions.show({ route: "/", message: `Error: settings not found: ${err}` });
             });
     },
 
@@ -77,9 +83,9 @@ const DataSetFormSteps = React.createClass({
 
     _onStepChange(newIndex) {
         if (newIndex > this.state.active) {
-            this.setState({stepAfterValidation: newIndex});
+            this.setState({ stepAfterValidation: newIndex });
         } else {
-            this.setState({active: newIndex, doneUntil: newIndex});
+            this.setState({ active: newIndex, doneUntil: newIndex });
         }
     },
 
@@ -91,16 +97,15 @@ const DataSetFormSteps = React.createClass({
         const newIndex = this.state.stepAfterValidation;
 
         if (isValid && newIndex) {
-            this.setState({stepAfterValidation: null, active: newIndex, doneUntil: newIndex});
+            this.setState({ stepAfterValidation: null, active: newIndex, doneUntil: newIndex });
         } else {
-            this.setState({stepAfterValidation: null});
+            this.setState({ stepAfterValidation: null });
         }
     },
 
     render() {
-        const {store} = this.state;
-        if (!store)
-            return (<LoadingMask />);
+        const { store } = this.state;
+        if (!store) return <LoadingMask />;
 
         const props = {
             config: store.config,
@@ -111,63 +116,63 @@ const DataSetFormSteps = React.createClass({
 
         const buttons = [
             {
-                id: 'cancel',
+                id: "cancel",
                 label: this.getTranslation("cancel"),
                 onClick: this._onCancel,
             },
             {
-                id: 'save',
+                id: "save",
                 label: this.getTranslation("save"),
-                onClick: () => this.setState({saving: true}),
+                onClick: () => this.setState({ saving: true }),
                 showFunc: this._showButtonFunc,
             },
         ];
 
         const steps = [
             {
-                id: 'initialConfig',
+                id: "initialConfig",
                 title: this.getTranslation("step_initial_configuration"),
                 component: InitialConfig,
                 props: props,
                 help: this.getTranslation("help_initial_configuration"),
             },
             {
-                id: 'generalInformation',
+                id: "generalInformation",
                 title: this.getTranslation("step_general_information"),
                 component: GeneralInformation,
                 props: props,
                 help: this.getTranslation("help_general_information"),
             },
             {
-                id: 'organisationUnit',
+                id: "organisationUnit",
                 title: this.getTranslation("organisation_unit"),
                 component: OrganisationUnit,
                 props: props,
                 help: this.getTranslation("help_organisation_unit"),
             },
             {
-                id: 'sections',
+                id: "sections",
                 title: this.getTranslation("step_sections"),
                 component: Sections,
                 props: props,
                 help: this.getTranslation("help_sections"),
             },
             {
-                id: 'disaggregation',
+                id: "disaggregation",
                 title: this.getTranslation("step_disaggregation"),
                 component: Disaggregation,
                 props: props,
                 help: this.getTranslation("help_disaggregation"),
             },
             {
-                id: 'grey_fields',
+                id: "grey_fields",
                 title: this.getTranslation("step_grey_fields"),
                 component: GreyFields,
                 props: props,
                 help: this.getTranslation("help_grey_fields"),
             },
             {
-                id: 'sharing',
+                id: "sharing",
                 title: this.getTranslation("step_sharing"),
                 component: Sharing,
                 visible: store.isSharingStepVisible(),
@@ -175,16 +180,15 @@ const DataSetFormSteps = React.createClass({
                 help: this.getTranslation("help_sharing"),
             },
             {
-                id: 'save',
+                id: "save",
                 title: this.getTranslation("save"),
                 component: Save,
-                props: _.merge(props,
-                    {saving: this.state.saving, afterSave: this._afterSave}),
+                props: _.merge(props, { saving: this.state.saving, afterSave: this._afterSave }),
                 help: this.getTranslation("help_save"),
             },
         ].filter(step => !step.disabled);
 
-        const {dataset} = this.state.store;
+        const { dataset } = this.state.store;
         const actionTitle = this.getTranslation("action_" + this.props.action, {
             title: dataset.name || "-",
             sourceTitle: dataset._sourceName || "-",
@@ -192,9 +196,7 @@ const DataSetFormSteps = React.createClass({
 
         return (
             <div>
-                <Heading style={{fontSize: 18}}>
-                    {actionTitle}
-                </Heading>
+                <Heading style={{ fontSize: 18 }}>{actionTitle}</Heading>
 
                 <Wizard
                     steps={steps}

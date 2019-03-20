@@ -1,7 +1,7 @@
-import React from 'react';
-import Store from 'd2-ui/lib/store/Store';
-import Translate from 'd2-ui/lib/i18n/Translate.mixin';
-import GroupEditor from 'd2-ui/lib/group-editor/GroupEditor.component';
+import React from "react";
+import Store from "d2-ui/lib/store/Store";
+import Translate from "d2-ui/lib/i18n/Translate.mixin";
+import GroupEditor from "d2-ui/lib/group-editor/GroupEditor.component";
 
 const MultiSelect = React.createClass({
     propTypes: {
@@ -17,7 +17,7 @@ const MultiSelect = React.createClass({
         const assignedStore = Store.create();
         availableStore.setState(this.props.options);
         assignedStore.setState(this.props.selected);
-        return {availableStore, assignedStore};
+        return { availableStore, assignedStore };
     },
 
     componentWillReceiveProps(nextProps) {
@@ -26,7 +26,7 @@ const MultiSelect = React.createClass({
     },
 
     getDefaultProps() {
-        return {height: 300, options: [], selected: []};
+        return { height: 300, options: [], selected: [] };
     },
 
     _onItemAssigned(newItems) {
@@ -46,27 +46,29 @@ const MultiSelect = React.createClass({
     render() {
         const styles = {
             labelStyle: {
-                display: 'block',
-                width: 'calc(100% - 60px)',
-                lineHeight: '24px',
-                color: 'rgba(0,0,0,0.3)',
-                marginTop: '1rem',
+                display: "block",
+                width: "calc(100% - 60px)",
+                lineHeight: "24px",
+                color: "rgba(0,0,0,0.3)",
+                marginTop: "1rem",
                 fontSize: 16,
             },
             errorStyle: {
                 color: "red",
             },
         };
-        const {errors, label, ...otherProps} = this.props;
+        const { errors, label, ...otherProps } = this.props;
 
         return (
             <div>
-                <label style={styles.labelStyle}>
-                    {label}
-                </label>
+                <label style={styles.labelStyle}>{label}</label>
 
                 <div>
-                    {(errors || []).map((error, idx) => <p key={idx} style={styles.errorStyle}>{error}</p>)}
+                    {(errors || []).map((error, idx) => (
+                        <p key={idx} style={styles.errorStyle}>
+                            {error}
+                        </p>
+                    ))}
                 </div>
 
                 <GroupEditor

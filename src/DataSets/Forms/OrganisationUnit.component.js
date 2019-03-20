@@ -1,12 +1,12 @@
-import React from 'react';
-import Translate from 'd2-ui/lib/i18n/Translate.mixin';
-import FormBuilder from 'd2-ui/lib/forms/FormBuilder.component';
-import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
-import Card from 'material-ui/Card/Card';
-import CardText from 'material-ui/Card/CardText';
-import OrganisationUnitTreeMultiSelect from 'd2-ui/lib/org-unit-select/orgunit-tree-multi-select';
-import scrollToComponent from 'react-scroll-to-component';
-import {collectionToArray} from '../../utils/Dhis2Helpers';
+import React from "react";
+import Translate from "d2-ui/lib/i18n/Translate.mixin";
+import FormBuilder from "d2-ui/lib/forms/FormBuilder.component";
+import LinearProgress from "material-ui/LinearProgress/LinearProgress";
+import Card from "material-ui/Card/Card";
+import CardText from "material-ui/Card/CardText";
+import OrganisationUnitTreeMultiSelect from "d2-ui/lib/org-unit-select/orgunit-tree-multi-select";
+import scrollToComponent from "react-scroll-to-component";
+import { collectionToArray } from "../../utils/Dhis2Helpers";
 
 const OrganisationUnit = React.createClass({
     mixins: [Translate],
@@ -17,14 +17,14 @@ const OrganisationUnit = React.createClass({
     },
 
     getInitialState() {
-        return {errors: null};
+        return { errors: null };
     },
 
     componentWillReceiveProps(props) {
         if (props.validateOnRender) {
             const organisationUnits = collectionToArray(this.props.store.dataset.organisationUnits);
             if (_(organisationUnits).isEmpty()) {
-                this.setState({errors: this.getTranslation('select_one_organisation_unit')});
+                this.setState({ errors: this.getTranslation("select_one_organisation_unit") });
                 scrollToComponent(this.refs.errors);
             } else {
                 props.formStatus(true);
@@ -33,14 +33,18 @@ const OrganisationUnit = React.createClass({
     },
 
     _renderSharingWarning() {
-        const {project, countries} = this.props.store.associations;
+        const { project, countries } = this.props.store.associations;
         if (!project && !_.isEmpty(countries)) {
-            return (<p>{this.getTranslation('sharing_warning')}</p>);
+            return <p>{this.getTranslation("sharing_warning")}</p>;
         }
     },
 
     _renderErrors() {
-        return <p ref="errors" style={{color: 'red'}}>{this.state.errors}</p>;
+        return (
+            <p ref="errors" style={{ color: "red" }}>
+                {this.state.errors}
+            </p>
+        );
     },
 
     _onChange(orgUnits) {
@@ -48,7 +52,7 @@ const OrganisationUnit = React.createClass({
     },
 
     render() {
-        const modelDefinition = {plural: "dataSets"};
+        const modelDefinition = { plural: "dataSets" };
         const model = this.props.store.dataset;
 
         return (
@@ -60,7 +64,7 @@ const OrganisationUnit = React.createClass({
                     model={model}
                     value={model.organisationUnits || []}
                     onChange={this._onChange}
-                    filters={{levels: "name:in:[Area,Facility Level]"}}
+                    filters={{ levels: "name:in:[Area,Facility Level]" }}
                 />
             </div>
         );

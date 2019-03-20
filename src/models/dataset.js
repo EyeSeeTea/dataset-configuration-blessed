@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import _ from "lodash";
 
 export function getCoreCompetencies(d2, config, dataset) {
     const extractCoreCompetenciesFromSection = section => {
@@ -9,22 +9,26 @@ export function getCoreCompetencies(d2, config, dataset) {
     const coreCompetencyNames = _(dataset.sections.toArray())
         .map(extractCoreCompetenciesFromSection)
         .compact()
-        .uniq()
+        .uniq();
 
     return d2.models.dataElementGroups
-        .filter().on("dataElementGroupSet.id").equals(config.dataElementGroupSetCoreCompetencyId)
+        .filter()
+        .on("dataElementGroupSet.id")
+        .equals(config.dataElementGroupSetCoreCompetencyId)
         .list({
             paging: false,
-            filter: `name:in:[${coreCompetencyNames.join(',')}]`,
+            filter: `name:in:[${coreCompetencyNames.join(",")}]`,
             fields: "id,name,displayName",
         })
-        .then(collection => collection.toArray())
+        .then(collection => collection.toArray());
 }
 
 export function getProject(d2, config, dataset) {
     if (dataset.name) {
         return d2.models.categoryOptions
-            .filter().on("categories.id").equals(config.categoryProjectsId)
+            .filter()
+            .on("categories.id")
+            .equals(config.categoryProjectsId)
             .list({ fields: "id,name", paging: false })
             .then(collection => collection.toArray())
             .then(projects => _(projects).find(project => _.includes(dataset.name, project.name)));

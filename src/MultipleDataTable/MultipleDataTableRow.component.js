@@ -1,34 +1,42 @@
-import React, { isValidElement } from 'react';
-import classes from 'classnames';
-import isObject from 'd2-utilizr/lib/isObject';
-import isString from 'd2-utilizr/lib/isString';
-import moment from 'moment';
-import IconButton from 'material-ui/IconButton';
-import MoreVert from 'material-ui/svg-icons/navigation/more-vert';
-import Color from 'd2-ui/lib/data-table/data-value/Color.component';
-import Translate from 'd2-ui/lib/i18n/Translate.mixin';
+import React, { isValidElement } from "react";
+import classes from "classnames";
+import isObject from "d2-utilizr/lib/isObject";
+import isString from "d2-utilizr/lib/isString";
+import moment from "moment";
+import IconButton from "material-ui/IconButton";
+import MoreVert from "material-ui/svg-icons/navigation/more-vert";
+import Color from "d2-ui/lib/data-table/data-value/Color.component";
+import Translate from "d2-ui/lib/i18n/Translate.mixin";
 
-import './MultipleDataTableRow.scss';
+import "./MultipleDataTableRow.scss";
 
 function valueTypeGuess(valueType, value) {
     switch (valueType) {
-    case 'DATE':
-        return moment(new Date(value)).fromNow();
-    case 'TEXT':
-        if (/#([a-z0-9]{6})$/i.test(value)) {
-            return (<Color value={value} />);
-        }
-        return value;
-    default:
-        break;
+        case "DATE":
+            return moment(new Date(value)).fromNow();
+        case "TEXT":
+            if (/#([a-z0-9]{6})$/i.test(value)) {
+                return <Color value={value} />;
+            }
+            return value;
+        default:
+            break;
     }
 
     return value;
 }
 
 function getValueAfterValueTypeGuess(dataSource, columnName) {
-    if (dataSource && dataSource.modelDefinition && dataSource.modelDefinition.modelValidations && dataSource.modelDefinition.modelValidations[columnName]) {
-        return valueTypeGuess(dataSource.modelDefinition.modelValidations[columnName].type, dataSource[columnName]);
+    if (
+        dataSource &&
+        dataSource.modelDefinition &&
+        dataSource.modelDefinition.modelValidations &&
+        dataSource.modelDefinition.modelValidations[columnName]
+    ) {
+        return valueTypeGuess(
+            dataSource.modelDefinition.modelValidations[columnName].type,
+            dataSource[columnName]
+        );
     }
 
     return dataSource[columnName];
@@ -50,30 +58,27 @@ const MultipleDataTableRow = React.createClass({
     mixins: [Translate],
 
     render() {
-        const classList = classes(
-            'data-table__rows__row',
-            {
-                'data-table__rows__row--even': !this.props.isOdd,
-                'data-table__rows__row--odd': this.props.isOdd,
-                'selected':this.props.isActive  
-            });
+        const classList = classes("data-table__rows__row", {
+            "data-table__rows__row--even": !this.props.isOdd,
+            "data-table__rows__row--odd": this.props.isOdd,
+            selected: this.props.isActive,
+        });
 
         const dataSource = this.props.dataSource;
 
         const textWrapStyle = {
-            width: '100%',
-            textOverflow: 'ellipsis',
-            overflow: 'hidden',
-            whiteSpace: 'nowrap',
-            position: 'absolute',
-            wordBreak: 'break-all',
-            wordWrap: 'break-word',
+            width: "100%",
+            textOverflow: "ellipsis",
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+            position: "absolute",
+            wordBreak: "break-all",
+            wordWrap: "break-word",
             top: 0,
             bottom: 0,
-            lineHeight: '50px',
-            paddingRight: '1rem',
+            lineHeight: "50px",
+            paddingRight: "1rem",
         };
-
 
         const columns = this.props.columns.map((columnName, index) => {
             const rowValue = getValueAfterValueTypeGuess(dataSource, columnName);
@@ -88,18 +93,18 @@ const MultipleDataTableRow = React.createClass({
             }
 
             // TODO: PublicAccess Hack - need to make it so that value transformers can be registered
-            if (columnName === 'publicAccess') {
+            if (columnName === "publicAccess") {
                 if (dataSource[columnName]) {
-                    if (dataSource[columnName] === 'rw------') {
-                        displayValue = this.getTranslation('public_can_edit');
+                    if (dataSource[columnName] === "rw------") {
+                        displayValue = this.getTranslation("public_can_edit");
                     }
 
-                    if (dataSource[columnName] === 'r-------') {
-                        displayValue = this.getTranslation('public_can_view');
+                    if (dataSource[columnName] === "r-------") {
+                        displayValue = this.getTranslation("public_can_view");
                     }
 
-                    if (dataSource[columnName] === '--------') {
-                        displayValue = this.getTranslation('public_none');
+                    if (dataSource[columnName] === "--------") {
+                        displayValue = this.getTranslation("public_none");
                     }
                 }
             }
@@ -107,23 +112,32 @@ const MultipleDataTableRow = React.createClass({
             return (
                 <div
                     key={index}
-                    className={'data-table__rows__row__column'}
+                    className={"data-table__rows__row__column"}
                     onContextMenu={this.handleContextClick}
                     onClick={this.handleClick}
                 >
-                    {isString(displayValue) ? <span title={displayValue} style={textWrapStyle} >{displayValue}</span> : displayValue}
+                    {isString(displayValue) ? (
+                        <span title={displayValue} style={textWrapStyle}>
+                            {displayValue}
+                        </span>
+                    ) : (
+                        displayValue
+                    )}
                 </div>
             );
         });
         return (
             <div className={classList} style={this.props.style}>
                 {columns}
-                <div className={'data-table__rows__row__column'} style={{width: '1%'}}>
-                    {this.props.hideActionsIcon ? null : 
-                        <IconButton tooltip={this.getTranslation('actions')} onClick={this.iconMenuClick}>
+                <div className={"data-table__rows__row__column"} style={{ width: "1%" }}>
+                    {this.props.hideActionsIcon ? null : (
+                        <IconButton
+                            tooltip={this.getTranslation("actions")}
+                            onClick={this.iconMenuClick}
+                        >
                             <MoreVert />
                         </IconButton>
-                    }
+                    )}
                 </div>
             </div>
         );
@@ -132,7 +146,7 @@ const MultipleDataTableRow = React.createClass({
     iconMenuClick(event) {
         event && event.preventDefault() && event.stopPropagation();
         event.isIconMenuClick = true;
-        this.props.itemClicked(event, this.props.dataSource);                
+        this.props.itemClicked(event, this.props.dataSource);
     },
 
     handleContextClick(event) {
