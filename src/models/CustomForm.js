@@ -3,6 +3,7 @@ import htmlencode from "htmlencode";
 import I18n from "d2/lib/i18n/I18n";
 import _ from "../utils/lodash-mixins";
 
+/* eslint import/no-webpack-loader-syntax: off */
 import customFormTemplate from "!!raw-loader!./custom-form-resources/sectionForm.vm";
 import customFormJs from "!!raw-loader!./custom-form-resources/script.js";
 import customFormCss from "!!raw-loader!./custom-form-resources/style.css";
@@ -188,7 +189,7 @@ const getContext = (d2, i18n, dataset, richSections, allCategoryCombos) => {
         },
         auth: {
             // Used in automatic form, cannot be calculated for a static custom form, leave it as true
-            hasAccess: (app, key) => true,
+            hasAccess: (_app, _key) => true,
         },
         dataSet: {
             renderAsTabs: dataset.renderAsTabs,

@@ -1,10 +1,8 @@
 import React from "react";
-import { Router, Route, IndexRoute, hashHistory, IndexRedirect } from "react-router";
-import log from "loglevel";
+import { Router, Route, hashHistory, IndexRedirect } from "react-router";
 import App from "./App/App.component";
 import DataSets from "./DataSets/DataSets.component";
 import DataSetFormSteps from "./DataSets/FormSteps.component";
-import snackActions from "./Snackbar/snack.actions";
 
 const wizard = action => props => <DataSetFormSteps action={action} id={props.params.id} />;
 

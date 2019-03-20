@@ -60,7 +60,7 @@ const SectionsSearchBox = props => {
 };
 
 const SectionsSidebar = props => {
-    if (props.visible == false) return null;
+    if (props.visible === false) return null;
     const { open, sections, currentSection, width, onSectionChange, onCollapsibleToggle } = props;
     const sidebarSections = sections.map(section => ({
         key: section,
@@ -277,7 +277,7 @@ const Sections = React.createClass({
                 filters,
                 (items_, val, key) =>
                     items_.filter(
-                        de => !key || val === null || val === undefined || de[key] == val
+                        de => !key || val === null || val === undefined || de[key] === val
                     ),
                 items
             );
@@ -403,7 +403,7 @@ const Sections = React.createClass({
                     </div>
                 );
             case "status":
-                if (getItemStatus(item) == "phased-out") {
+                if (getItemStatus(item) === "phased-out") {
                     return (
                         <span
                             style={{
@@ -589,7 +589,7 @@ const Sections = React.createClass({
                         </div>
                     </div>
 
-                    {rows.length == 0 ? (
+                    {rows.length === 0 ? (
                         <div>{this.getTranslation("no_elements_found")}</div>
                     ) : (
                         <MultipleDataTable

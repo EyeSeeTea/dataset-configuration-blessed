@@ -1,8 +1,6 @@
-import React, { PropTypes } from "react";
+import React from "react";
+import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
-import LinearProgress from "material-ui/LinearProgress/LinearProgress";
-import RichDropdown from "../../forms/RichDropdown.component";
-import Validators from "d2-ui/lib/forms/Validators";
 import FormBuilder from "d2-ui/lib/forms/FormBuilder.component";
 import FormHelpers from "../../forms/FormHelpers";
 import { getCountryCode } from "../../utils/Dhis2Helpers";

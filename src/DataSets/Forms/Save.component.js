@@ -1,10 +1,9 @@
 import React from "react";
+import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import LinearProgress from "material-ui/LinearProgress/LinearProgress";
-import Card from "material-ui/Card/Card";
-import CardText from "material-ui/Card/CardText";
 import snackActions from "../../Snackbar/snack.actions";
-import { collectionToArray, collectionString } from "../../utils/Dhis2Helpers";
+import { collectionString } from "../../utils/Dhis2Helpers";
 import { log } from "../log";
 
 const Save = React.createClass({
@@ -47,14 +46,14 @@ const Save = React.createClass({
     },
 
     _redirectAfterSave() {
-        const { dataset, associations } = this.props.store;
+        const { dataset } = this.props.store;
         log(this._getLoggingMessage(), "success", dataset);
         snackActions.show({ message: "dataset_saved", action: "ok", translate: true });
         this.props.afterSave();
     },
 
     _saveErrors(error) {
-        const { dataset, associations } = this.props.store;
+        const { dataset } = this.props.store;
         log(this._getLoggingMessage(), "failed", dataset);
         console.trace(error);
         const message = _.isEmpty(error) ? error.toString() : JSON.stringify(error, null, 2);

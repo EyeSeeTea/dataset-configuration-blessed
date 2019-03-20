@@ -1,9 +1,6 @@
 import React from "react";
+import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
-import FormBuilder from "d2-ui/lib/forms/FormBuilder.component";
-import LinearProgress from "material-ui/LinearProgress/LinearProgress";
-import Card from "material-ui/Card/Card";
-import CardText from "material-ui/Card/CardText";
 import OrganisationUnitTreeMultiSelect from "d2-ui/lib/org-unit-select/orgunit-tree-multi-select";
 import scrollToComponent from "react-scroll-to-component";
 import { collectionToArray } from "../../utils/Dhis2Helpers";

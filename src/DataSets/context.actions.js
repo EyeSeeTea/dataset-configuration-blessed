@@ -26,9 +26,9 @@ const setupActions = actions => {
         const action = actionsByName[actionName];
         const arg = action && !action.multiple && _.isArray(selection) ? selection[0] : selection;
 
-        if (!action || !selection || selection.length == 0) {
+        if (!action || !selection || selection.length === 0) {
             return false;
-        } else if (!action.multiple && selection.length != 1) {
+        } else if (!action.multiple && selection.length !== 1) {
             return false;
         } else if (action.isActive && !action.isActive(d2, arg)) {
             return false;

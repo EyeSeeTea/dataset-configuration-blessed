@@ -1,4 +1,5 @@
 import React from "react";
+import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import FormBuilder from "d2-ui/lib/forms/FormBuilder.component";
 import LinearProgress from "material-ui/LinearProgress/LinearProgress";
@@ -110,7 +111,7 @@ const InitialConfig = React.createClass({
     },
 
     _renderForm() {
-        const { dataset, associations } = this.props.store;
+        const { associations } = this.props.store;
         const fields = [
             FormHelpers.getRichSelectField({
                 name: "associations.project",
@@ -146,7 +147,7 @@ const InitialConfig = React.createClass({
     },
 
     _onUpdateField(fieldPath, newValue) {
-        if (fieldPath == "associations.project") {
+        if (fieldPath === "associations.project") {
             const project = this.state.projects[newValue];
             this.props.onFieldsChange(fieldPath, project);
         } else {

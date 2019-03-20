@@ -274,7 +274,7 @@ const validStrategies = new Set(["create_and_update", "create", "update", "delet
 function deepMerge(obj1, obj2) {
     const isModel = obj => obj && obj.modelDefinition;
     const cloneCustomizer = value => (isModel(value) ? value : undefined);
-    const mergeCustomizer = (objValue, srcValue, key, object, source, stack) => {
+    const mergeCustomizer = (objValue, srcValue, _key, _object, _source, _stack) => {
         if (isModel(srcValue)) {
             return srcValue;
         } else if (_(objValue).isArray()) {
@@ -328,7 +328,7 @@ function postMetadata(d2, metadata) {
             } else {
                 return _(payload)
                     .toPairs()
-                    .partition(([modelName, objs]) => modelName !== "sections")
+                    .partition(([modelName, _objs]) => modelName !== "sections")
                     .map(pairs => ({ strategy, payload: _.fromPairs(pairs) }))
                     .value();
             }
@@ -350,7 +350,7 @@ function getUids(d2, length) {
 function sendMessageToGroups(d2, userGroupNames, title, body) {
     return getUserGroups(d2, userGroupNames)
         .then(userGroups => sendMessage(d2, title, body, userGroups.toArray()))
-        .catch(err => {
+        .catch(_err => {
             alert("Could not send DHIS2 message");
         });
 }

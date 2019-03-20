@@ -1,5 +1,4 @@
 import React from "react";
-import log from "loglevel";
 
 import headerBarStore$ from "d2-ui/lib/app-header/headerBar.store";
 import withStateFrom from "d2-ui/lib/component-helpers/withStateFrom";
@@ -14,8 +13,6 @@ import appTheme from "./app.theme";
 import SnackbarContainer from "../Snackbar/SnackbarContainer.component";
 import SessionDialog from "../SessionDialog/SessionDialog.component";
 import feedbackOptions from "../config/feedback";
-import { sendMessageToGroups } from "../utils/Dhis2Helpers";
-import _ from "../utils/lodash-mixins";
 
 const HeaderBar = withStateFrom(headerBarStore$, HeaderBarComponent);
 
@@ -26,7 +23,8 @@ class App extends AppWithD2 {
 
     componentDidMount() {
         super.componentDidMount();
-        $.feedbackDhis2(d2, "dataset-configuration", feedbackOptions);
+        /*eslint-env jquery*/
+        this.props.d2.then(d2 => $.feedbackDhis2(d2, "dataset-configuration", feedbackOptions));
     }
 
     render() {

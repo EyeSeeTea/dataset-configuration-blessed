@@ -58,7 +58,6 @@ _.mixin({
     cartesianProduct,
     groupConsecutiveBy,
     transpose,
-    imerge,
     groupByKeys,
 });
 

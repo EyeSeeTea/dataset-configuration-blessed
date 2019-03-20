@@ -3,8 +3,6 @@ import detailsStore from "./details.store";
 import sharingStore from "./sharing.store";
 import orgUnitsStore from "./orgUnits.store";
 import logsStore from "./logs.store";
-import { getInstance } from "d2/lib/d2";
-import { Observable } from "rx";
 
 const listActions = Action.createActionsFromNames([
     "hideDetailsBox",

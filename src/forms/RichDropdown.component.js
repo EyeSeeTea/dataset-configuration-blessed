@@ -1,5 +1,5 @@
 import React from "react";
-import SelectField from "material-ui/SelectField/SelectField";
+import _ from "lodash";
 import TextField from "material-ui/TextField";
 import isString from "d2-utilizr/lib/isString";
 import Dialog from "material-ui/Dialog";
@@ -41,7 +41,7 @@ class RichDropdown extends React.Component {
         });
     }
 
-    getOptions(options, required = false) {
+    getOptions(options, _required = false) {
         let opts = options.map(option => {
             return {
                 value: option.value,
@@ -234,7 +234,7 @@ RichDropdown.propTypes = {
 };
 RichDropdown.defaultProps = {
     controls: [],
-    filterOptions: (options, controls) => options,
+    filterOptions: (options, _controls) => options,
 };
 RichDropdown.contextTypes = {
     d2: React.PropTypes.any,

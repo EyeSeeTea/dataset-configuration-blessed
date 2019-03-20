@@ -1,3 +1,5 @@
+import _ from "lodash";
+
 const sharingFields = ["externalAccess", "publicAccess", "userAccesses", "userGroupAccesses"];
 
 function normalizeAccesses(accesses) {

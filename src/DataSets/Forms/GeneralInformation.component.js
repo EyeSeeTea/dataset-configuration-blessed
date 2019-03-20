@@ -1,8 +1,8 @@
 import React from "react";
+import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import FormBuilder from "d2-ui/lib/forms/FormBuilder.component";
 import Validators from "d2-ui/lib/forms/Validators";
-import DataInputPeriods from "../../forms/DataInputPeriods.component";
 import LinearProgress from "material-ui/LinearProgress/LinearProgress";
 import FormHelpers from "../../forms/FormHelpers";
 import { currentUserHasAdminRole } from "../../utils/Dhis2Helpers";

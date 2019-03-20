@@ -158,43 +158,6 @@ export default React.createClass({
         );
     },
 
-    renderQuickAddLink() {
-        const sectionForReferenceType = getSectionForType(this.props.referenceType);
-
-        if (!sectionForReferenceType) {
-            return null;
-        }
-
-        const styles = {
-            quickAddWrap: {
-                display: "flex",
-            },
-        };
-
-        return (
-            <div style={styles.quickAddWrap}>
-                <Link
-                    tooltip="Add some related object"
-                    tooltipPosition="top-left"
-                    to={`/edit/${sectionForReferenceType}/${this.props.referenceType}/add`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    <IconButton tooltip="Add new" tooltipPosition="top-left">
-                        <AddCircleOutlineIcon />
-                    </IconButton>
-                </Link>
-                <IconButton
-                    tooltip="Refresh values"
-                    tooltipPosition="top-left"
-                    onClick={this._onRefreshClick}
-                >
-                    <RefreshIcon />
-                </IconButton>
-            </div>
-        );
-    },
-
     _onRefreshClick() {
         this.setState({
             isRefreshing: true,

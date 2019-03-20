@@ -1,8 +1,6 @@
 import React from "react";
 import classNames from "classnames";
 import IconButton from "material-ui/IconButton/IconButton";
-import ArrowUp from "material-ui/svg-icons/hardware/keyboard-arrow-up.js";
-import ArrowDown from "material-ui/svg-icons/hardware/keyboard-arrow-down.js";
 import ArrowRight from "material-ui/svg-icons/hardware/keyboard-arrow-right.js";
 import ArrowLeft from "material-ui/svg-icons/hardware/keyboard-arrow-left.js";
 import _ from "../../utils/lodash-mixins";
@@ -34,7 +32,7 @@ const CollapsibleBox = React.createClass({
     },
 
     componentWillReceiveProps: function(newProps) {
-        if (this.props.open != newProps.open) {
+        if (this.props.open !== newProps.open) {
             this.setState({ open: newProps.open });
         }
     },

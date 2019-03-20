@@ -1,7 +1,7 @@
 import React from "react";
 import DropDown from "../forms/form-fields/drop-down";
 import LinearProgress from "material-ui/LinearProgress/LinearProgress";
-import { getCategoryCombos, collectionToArray } from "../utils/Dhis2Helpers";
+import { getCategoryCombos } from "../utils/Dhis2Helpers";
 import FormHelpers from "./FormHelpers";
 import _ from "../utils/lodash-mixins";
 
@@ -75,15 +75,6 @@ class GreyFieldsTable extends React.Component {
                 .keyBy("id")
                 .merge(_.keyBy(persistedCategoryCombos.toArray(), "id"))
                 .value();
-            const categoryOptionsByCocId = _(categoryCombosById)
-                .values()
-                .flatMap(cc =>
-                    cc.categoryOptionCombos
-                        .toArray()
-                        .map(coc => [coc.id, coc.categoryOptions.toArray()])
-                )
-                .fromPairs()
-                .value();
 
             // greyedFields: {"dataElementId.categoryOptionComboId": true | false}
             const greyedFields = _(this._sectionsMap(section => section.greyedFields))
@@ -111,7 +102,6 @@ class GreyFieldsTable extends React.Component {
     }
 
     _getGreyedFieldsBySections() {
-        const { categoryCombosById } = this.state;
         const { sections } = this.props;
         const ids = _(this.state.greyedFields)
             .map((v, k) => (v ? k : null))

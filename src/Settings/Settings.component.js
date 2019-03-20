@@ -142,7 +142,7 @@ const SettingsDialog = React.createClass({
     },
 
     render() {
-        const { loaded, fields, config, formStatuses } = this.state;
+        const { loaded, formStatuses } = this.state;
         const saveIsEnabled =
             loaded &&
             _(formStatuses)

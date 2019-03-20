@@ -1,4 +1,5 @@
 import React from "react";
+import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import Toolbar from "material-ui/Toolbar/Toolbar";
 import ToolbarGroup from "material-ui/Toolbar/ToolbarGroup";
@@ -106,7 +107,7 @@ const Wizard = React.createClass({
                         currentStep,
                         showPrevious,
                         showNext,
-                        currentStep.help != ""
+                        currentStep.help !== ""
                     )}
 
                 <Card>

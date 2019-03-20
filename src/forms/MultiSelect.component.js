@@ -1,6 +1,6 @@
 import React from "react";
+import _ from "lodash";
 import Store from "d2-ui/lib/store/Store";
-import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import GroupEditor from "d2-ui/lib/group-editor/GroupEditor.component";
 
 const MultiSelect = React.createClass({

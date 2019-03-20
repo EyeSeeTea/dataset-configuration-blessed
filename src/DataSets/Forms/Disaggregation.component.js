@@ -1,4 +1,5 @@
-import React, { PropTypes } from "react";
+import React from "react";
+import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import ObserverRegistry from "../../utils/ObserverRegistry.mixin";
 import LinearProgress from "material-ui/LinearProgress/LinearProgress";
@@ -51,7 +52,7 @@ const Disaggregation = React.createClass({
 
     _onCategoriesSelected(dataSetElementId, categories) {
         const { dataSetElements } = this.props.store.dataset;
-        const dataSetElementToUpdate = _(dataSetElements).find(dse => dse.id == dataSetElementId);
+        const dataSetElementToUpdate = _(dataSetElements).find(dse => dse.id === dataSetElementId);
         const { dataElement } = dataSetElementToUpdate;
         const customCategoryCombo = getDisaggregationForCategories(
             this.context.d2,

@@ -6,7 +6,7 @@ export default {
         repository: "EyeSeeTea/dataset-configuration-blessed",
         renderTitle: title => `[User feedback] ${title}`,
         renderBody: body =>
-            ["## dhis2", "- Username: " + d2.currentUser.username, "", body].join("\n"),
+            ["## dhis2", "- Username: " + window.d2.currentUser.username, "", body].join("\n"),
     },
     snapshots: {
         repository: "EyeSeeTeaBotTest/snapshots",

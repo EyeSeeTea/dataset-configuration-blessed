@@ -1,3 +1,6 @@
+var _ = window._;
+var $ = window.$;
+
 (function() {
     _.mixin({
         cartesianProduct: function(args) {
@@ -66,7 +69,7 @@
         $(".sectionTable")
             .get()
             .map($)
-            .forEach((table, count) => {
+            .forEach((table, _count) => {
                 if (tableFitsInViewport(table)) return;
                 splitedTablesCount++;
                 var firstRow = table.find("tbody tr:first-child td .entryfield");
@@ -77,8 +80,6 @@
                             .attr("id")
                             .split("-")[1]
                 );
-                var tdInputs = table.find("tbody tr td .entryfield").get();
-
                 var allCategoryOptions = table
                     .find("thead tr")
                     .get()
@@ -117,6 +118,7 @@
                     .map(tr => {
                         var td = tr.find("td:first-child");
                         var tdId = td.attr("id");
+
                         if (tdId) {
                             var deId = tdId.split("-")[0];
                             var deName = td.text().trim();
@@ -132,6 +134,8 @@
                                 de: { id: deId, name: deName, td: td },
                                 valuesByCocId: valuesByCocId,
                             };
+                        } else {
+                            return null;
                         }
                     })
                     .compact()
@@ -273,7 +277,7 @@
 
     var tableFitsInViewport = function(table) {
         // TODO: get input size and use tableWidth
-        var tableWidth = table.width();
+        // var tableWidth = table.width();
         return table.find("thead tr:last th").size() - 1 <= 16;
     };
 

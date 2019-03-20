@@ -21,7 +21,7 @@ const SessionDialog = React.createClass({
     },
 
     checkServer() {
-        this.context.d2.system.configuration.get("systemId", true).catch(err => {
+        this.context.d2.system.configuration.get("systemId", true).catch(_err => {
             this.setState({ open: true });
         });
     },

@@ -3,8 +3,6 @@ import _ from "../utils/lodash-mixins";
 import { generateUid } from "d2/lib/uid";
 import moment from "moment";
 import { getOwnedPropertyJSON } from "d2/lib/model/helpers/json";
-import { map, pick, get, filter, flatten, compose, identity, head } from "lodash/fp";
-import feedbackOptions from "../config/feedback";
 import {
     getCategoryCombos,
     collectionToArray,
@@ -15,11 +13,9 @@ import {
     getOrgUnitsForLevel,
     getCountryCode,
     getSharing,
-    buildSharing,
     deepMerge,
     buildSharingFromUserGroupNames,
     postMetadata,
-    getUids,
     update,
     sendMessageToGroups,
 } from "../utils/Dhis2Helpers";
@@ -27,17 +23,6 @@ import {
 import { getCoreCompetencies, getProject } from "./dataset";
 import * as Section from "./Section";
 import getCustomForm from "./CustomForm";
-
-// From maintenance-app/src/EditModel/objectActions.js
-const extractErrorMessagesFromResponse = compose(
-    filter(identity),
-    map(get("message")),
-    flatten,
-    map("errorReports"),
-    flatten,
-    map("objectReports"),
-    get("typeReports")
-);
 
 class Factory {
     constructor(d2, config) {
@@ -96,7 +81,7 @@ class Factory {
     getCountries() {
         const countryLevelId = this.config.organisationUnitLevelForCountriesId;
         return countryLevelId
-            ? getOrgUnitsForLevel(d2, countryLevelId)
+            ? getOrgUnitsForLevel(this.d2, countryLevelId)
             : Promise.reject("No country level configured");
     }
 
@@ -288,7 +273,6 @@ export default class DataSetStore {
         if (project) {
             const newDataset = dataset;
             const newAssociations = _.clone(associations);
-            const getOrgUnitIds = ds => ds.organisationUnits.toArray().map(ou => ou.id);
 
             newDataset.name = project.name ? `${project.name} DataSet` : "";
             newAssociations.dataInputStartDate = project.startDate
@@ -327,7 +311,7 @@ export default class DataSetStore {
     }
 
     getSharingCountries() {
-        const { dataset, associations, countriesByCode, countriesById, countryLevel } = this;
+        const { dataset, associations, countriesByCode, countriesById } = this;
         const { project } = associations;
         const projectCountryCode =
             project && project.code ? project.code.slice(0, 2).toUpperCase() : null;
@@ -347,7 +331,7 @@ export default class DataSetStore {
 
         switch (fieldPath) {
             case "associations.project":
-                if (!oldValue || confirm(this.getTranslation("confirm_project_updates"))) {
+                if (!oldValue || window.confirm(this.getTranslation("confirm_project_updates"))) {
                     const {
                         dataset: newDataset,
                         associations: newAssociations,
@@ -367,6 +351,8 @@ export default class DataSetStore {
                 break;
             case "associations.organisationUnits":
                 this.associations.countries = this.getSharingCountries();
+                break;
+            default:
                 break;
         }
     }
@@ -525,11 +511,11 @@ export default class DataSetStore {
         const projectCode = project ? project.code : null;
 
         if (projectCode) {
-            const datasetCode = projectCode + " " + "Data Set";
+            const datasetCode = projectCode + " Data Set";
             const codeValidator = getAsyncUniqueValidator(this.d2.models.dataSet, "code");
             return codeValidator(datasetCode)
                 .then(() => _.imerge(saving, { dataset: update(dataset, { code: datasetCode }) }))
-                .catch(err =>
+                .catch(_err =>
                     _.imerge(saving, {
                         warnings: warnings.concat(["Dataset code already used: " + datasetCode]),
                     })
@@ -563,11 +549,10 @@ export default class DataSetStore {
     }
 
     _addDataSetToUserRoles(saving) {
-        const { dataset, warnings } = saving;
-        const { coreCompetencies } = this.associations;
+        const { dataset } = saving;
         const getAssociatedUserRoles = userRoleNames => {
             const filter = "name:in:[" + userRoleNames.join(",") + "]";
-            return d2.models.userRoles
+            return this.d2.models.userRoles
                 .list({ paging: false, filter })
                 .then(collection => collection.toArray())
                 .then(userRoles =>

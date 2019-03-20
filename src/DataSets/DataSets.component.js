@@ -4,11 +4,8 @@ import _ from "lodash";
 
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import ObserverRegistry from "../utils/ObserverRegistry.mixin";
-import MainContent from "d2-ui/lib/layout/main-content/MainContent.component";
-import SinglePanelLayout from "d2-ui/lib/layout/SinglePanel.component";
 import LoadingStatus from "../LoadingStatus/LoadingStatus.component";
 import ListActionBar from "../ListActionBar/ListActionBar.component";
-import Sidebar from "d2-ui/lib/sidebar/Sidebar.component";
 import SearchBox from "../SearchBox/SearchBox.component";
 import Pagination from "d2-ui/lib/pagination/Pagination.component";
 import OrgUnitsDialog from "d2-ui/lib/org-unit-dialog/OrgUnitsDialog.component";
@@ -96,7 +93,7 @@ const DataSets = React.createClass({
             helpOpen: false,
             logs: null,
             logsHasMore: null,
-            logsFilter: log => true,
+            logsFilter: _log => true,
             logsPageLast: 0,
             logsOldestDate: null,
             sharing: null,
@@ -114,13 +111,15 @@ const DataSets = React.createClass({
         this.registerDisposable(
             detailsStore.subscribe(detailsObject => this.setState({ detailsObject }))
         );
-        this.registerDisposable(deleteStore.subscribe(deleteObjects => this.getDataSets()));
+        this.registerDisposable(deleteStore.subscribe(_deleteObjects => this.getDataSets()));
         this.registerDisposable(this.subscribeToModelStore(sharingStore, "sharing"));
         this.registerDisposable(this.subscribeToModelStore(orgUnitsStore, "orgUnits"));
         this.registerDisposable(logsStore.subscribe(datasets => this.openLogs(datasets)));
     },
 
     subscribeToModelStore(store, modelName) {
+        const d2 = this.context.d2;
+
         return store.subscribe(datasets => {
             if (datasets) {
                 const d2Datasets = datasets.map(dataset => d2.models.dataSets.create(dataset));
@@ -187,7 +186,7 @@ const DataSets = React.createClass({
     openAllLogs() {
         const title = `${this.tr("logs")} (${this.tr("all")})`;
         this.setState({
-            logsFilter: log => true,
+            logsFilter: _log => true,
             logsObject: title,
             logs: null,
         });
@@ -496,7 +495,7 @@ const DataSets = React.createClass({
                         />
                     )}
 
-                    {this.tr("help_landing_page") != "" && renderHelp()}
+                    {this.tr("help_landing_page") !== "" && renderHelp()}
 
                     {this.state.currentUserHasAdminRole && renderLogsButton()}
 

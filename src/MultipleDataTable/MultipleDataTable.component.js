@@ -1,4 +1,3 @@
-import isArrayOfStrings from "d2-utilizr/lib/isArrayOfStrings";
 import isIterable from "d2-utilizr/lib/isIterable";
 import React from "react";
 import update from "immutability-helper";
@@ -81,8 +80,8 @@ const MultipleDataTable = React.createClass({
 
     _onColumnSortingToggle(headerName) {
         const newSortingDirection =
-            this.state.sorting && this.state.sorting[0] == headerName
-                ? this.state.sorting[1] == "asc"
+            this.state.sorting && this.state.sorting[0] === headerName
+                ? this.state.sorting[1] === "asc"
                     ? "desc"
                     : "asc"
                 : "asc";
@@ -92,7 +91,6 @@ const MultipleDataTable = React.createClass({
     },
 
     renderHeaders() {
-        const sortableColumns = this.props.sortableColumns || [];
         const [currentSortedColumn, currentSortedDirection] = this.state.sorting || [];
 
         return this.state.columns.map((column, index) => (
@@ -104,7 +102,7 @@ const MultipleDataTable = React.createClass({
                 contents={column.contents}
                 text={column.text}
                 sortable={!!column.sortable}
-                sorting={currentSortedColumn == column.name ? currentSortedDirection : null}
+                sorting={currentSortedColumn === column.name ? currentSortedDirection : null}
                 onSortingToggle={this._onColumnSortingToggle.bind(this, column.name)}
             />
         ));

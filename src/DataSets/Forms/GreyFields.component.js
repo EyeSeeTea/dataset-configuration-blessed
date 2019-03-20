@@ -1,6 +1,5 @@
-import React, { PropTypes } from "react";
+import React from "react";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
-import LinearProgress from "material-ui/LinearProgress/LinearProgress";
 import GreyFieldsTable from "../../forms/GreyFieldsTable.component";
 import { collectionToArray } from "../../utils/Dhis2Helpers";
 

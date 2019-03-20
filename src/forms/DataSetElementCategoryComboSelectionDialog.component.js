@@ -3,19 +3,13 @@ import withState from "recompose/withState";
 import withHandlers from "recompose/withHandlers";
 import compose from "recompose/compose";
 import getContext from "recompose/getContext";
-import IconButton from "material-ui/IconButton/IconButton";
-import BuildIcon from "material-ui/svg-icons/action/build";
-import Dialog from "material-ui/Dialog/Dialog";
-import FlatButton from "material-ui/FlatButton/FlatButton";
 import Column from "d2-ui/lib/layout/Column.component";
 import Row from "d2-ui/lib/layout/Row.component";
 import SelectField from "material-ui/SelectField/SelectField";
 import MenuItem from "material-ui/MenuItem/MenuItem";
-import { map, memoize } from "lodash/fp";
 import Translate from "d2-ui/lib/i18n/Translate.component";
 import { collectionToArray } from "../utils/Dhis2Helpers";
 import _ from "lodash";
-import fp from "lodash/fp";
 
 const enhance = compose(
     getContext({ d2: PropTypes.object }),
@@ -181,21 +175,7 @@ DataSetElementList.contextTypes = {
 };
 
 export function DataSetElementCategoryComboSelection(props) {
-    const {
-        categoryCombos,
-        dataSetElements,
-        onCategoriesSelected,
-        canEdit,
-        d2: { i18n },
-    } = props;
-
-    const actions = [
-        <FlatButton
-            label={i18n.getTranslation("close")}
-            primary={true}
-            onTouchTap={props.onRequestClose}
-        />,
-    ];
+    const { categoryCombos, dataSetElements, onCategoriesSelected, canEdit } = props;
 
     return (
         <div>

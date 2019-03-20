@@ -2,8 +2,6 @@ import _ from "../utils/lodash-mixins";
 import { getExistingUserRoleByName } from "../utils/Dhis2Helpers";
 import camelCaseToUnderscores from "d2-utilizr/lib/camelCaseToUnderscores";
 
-const merge = (obj1, obj2) => Object.assign({}, obj1, obj2);
-
 export default class Settings {
     dataStoreNamespace = "dataset-configuration";
 
@@ -199,6 +197,8 @@ export default class Settings {
                     .then(collection => collection.toArray().map(obj => obj.id)[0]);
             case "value":
                 return Promise.resolve(fieldDefinition.defaultValue);
+            default:
+                throw new Error(`Unknown field type: ${fieldDefinition.type}`);
         }
     }
 
@@ -212,6 +212,8 @@ export default class Settings {
                 return _.imerge(base, { options: optionsForModel[fieldDefinition.model] });
             case "value":
                 return base;
+            default:
+                throw new Error(`Unknown field type: ${fieldDefinition.type}`);
         }
     }
 

@@ -1,4 +1,5 @@
 import React from "react";
+import _ from "lodash";
 import { getInstance as getD2 } from "d2/lib/d2";
 
 const maxLogsPerPage = 200; // TODO: maybe make it readable from the dataStore

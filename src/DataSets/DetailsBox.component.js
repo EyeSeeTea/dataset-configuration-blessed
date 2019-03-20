@@ -189,7 +189,12 @@ export default React.createClass({
         if (fieldName === "href") {
             // Suffix the url with the .json extension to always get the json representation of the api resource
             return (
-                <a style={{ wordBreak: "break-all" }} href={`${value}.json`} target="_blank">
+                <a
+                    style={{ wordBreak: "break-all" }}
+                    href={`${value}.json`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
                     {value}
                 </a>
             );

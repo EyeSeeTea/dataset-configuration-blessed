@@ -1,4 +1,5 @@
 import React from "react";
+import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import Wizard from "../Wizard/Wizard.component";
 import { goToRoute } from "../router";
@@ -43,7 +44,7 @@ const DataSetFormSteps = React.createClass({
             } else if (action === "clone") {
                 return DataSetStore.clone(d2, config, datasetId);
             } else {
-                throw `Unknown action: ${action}`;
+                throw new Error(`Unknown action: ${action}`);
             }
         };
 
@@ -76,7 +77,7 @@ const DataSetFormSteps = React.createClass({
     },
 
     _onCancel() {
-        if (confirm(this.getTranslation("confirm_wizard_cancel"))) {
+        if (window.confirm(this.getTranslation("confirm_wizard_cancel"))) {
             goToRoute("/");
         }
     },
