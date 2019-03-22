@@ -186,6 +186,7 @@ const Sections = React.createClass({
 
     propTypes: {
         validateOnRender: React.PropTypes.bool,
+        type: React.PropTypes.oneOf(["all", "core", "nonCore"]),
     },
 
     componentWillReceiveProps(props) {
@@ -272,6 +273,7 @@ const Sections = React.createClass({
 
     _getFilteredItems(items) {
         const { filters, filterName, sorting } = this.state;
+
         const getFiltered = items =>
             _.reduce(
                 filters,
@@ -383,7 +385,17 @@ const Sections = React.createClass({
     },
 
     _getItems() {
-        return _.flatMap(this._getVisibleSections(), section => _.values(section.items));
+        const { type } = this.props;
+
+        const itemPredicate = {
+            core: item => item.isCore,
+            nonCore: item => !item.isCore,
+            all: _item => true,
+        }[type || "all"];
+
+        return _.flatMap(this._getVisibleSections(), section =>
+            _.values(section.items).filter(itemPredicate)
+        );
     },
 
     _getCellValue(value, column, item) {
@@ -453,6 +465,7 @@ const Sections = React.createClass({
     },
 
     _renderTable() {
+        const { type } = this.props;
         const { sidebarOpen, currentSectionName, sections, filters } = this.state;
         const { dataset } = this.props.store;
         const currentSection = this.state.sections[currentSectionName];
@@ -508,10 +521,12 @@ const Sections = React.createClass({
                 name: "group",
                 sortable: true,
             },
-            {
-                name: "origin",
-                sortable: true,
-            },
+            type === "core"
+                ? null
+                : {
+                      name: "origin",
+                      sortable: true,
+                  },
             {
                 name: "status",
                 sortable: true,
@@ -575,7 +590,8 @@ const Sections = React.createClass({
 
                             {this._renderSelectFilter(itemsAll, "group", { width: "20%" })}
 
-                            {this._renderSelectFilter(itemsAll, "origin", { width: "20%" })}
+                            {type !== "core" &&
+                                this._renderSelectFilter(itemsAll, "origin", { width: "20%" })}
 
                             <FilterSelectField
                                 label={this.getTranslation("selected")}

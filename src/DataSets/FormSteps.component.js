@@ -6,7 +6,8 @@ import { goToRoute } from "../router";
 import InitialConfig from "./Forms/InitialConfig.component";
 import GeneralInformation from "./Forms/GeneralInformation.component";
 import OrganisationUnit from "./Forms/OrganisationUnit.component";
-import Sections from "./Forms/Sections.component";
+import CoreSections from "./Forms/CoreSections.component";
+import NonCoreSections from "./Forms/NonCoreSections.component";
 import Disaggregation from "./Forms/Disaggregation.component";
 import Sharing from "./Forms/Sharing.component";
 import GreyFields from "./Forms/GreyFields.component";
@@ -153,10 +154,17 @@ const DataSetFormSteps = React.createClass({
             },
             {
                 id: "sections",
-                title: this.getTranslation("step_sections"),
-                component: Sections,
+                title: this.getTranslation("step_core_indicators"),
+                component: CoreSections,
                 props: props,
-                help: this.getTranslation("help_sections"),
+                help: this.getTranslation("help_core_indicators"),
+            },
+            {
+                id: "sections",
+                title: this.getTranslation("step_non_core_indicators"),
+                component: NonCoreSections,
+                props: props,
+                help: this.getTranslation("help_non_core_indicators"),
             },
             {
                 id: "disaggregation",
