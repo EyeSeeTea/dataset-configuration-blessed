@@ -1,6 +1,6 @@
 import { generateUid } from "d2/lib/uid";
 import _ from "lodash";
-import { update, collectionToArray } from "../utils/Dhis2Helpers";
+import { update, collectionToArray, subQuery } from "../utils/Dhis2Helpers";
 import fp from "lodash/fp";
 import { getOwnedPropertyJSON } from "d2/lib/model/helpers/json";
 
@@ -108,6 +108,7 @@ export const getDataSetInfo = (d2, _config, sections) => {
             )}`;
         })
         .value();
+    console.log("current user, check condition for non-empty check", d2.currentUser);
     const emptyCoreCompetenciesErrors = _(sections)
         .groupBy(section => section.coreCompetency.name)
         .toPairs()
@@ -515,7 +516,7 @@ const getFilteredItems = (model, filters, listOptions) => {
     }
 };
 
-const getDataElements = (d2, dataElementFilters) => {
+const getDataElements = async (d2, dataElementFilters) => {
     const fields = [
         "id",
         "name",
@@ -523,14 +524,36 @@ const getDataElements = (d2, dataElementFilters) => {
         "code",
         "description",
         "valueType",
-        "categoryCombo[id,name,displayName,categoryOptionCombos[id,displayName,categoryOptions[id,displayName]]," +
-            "categories[id,name,displayName,categoryOptions[id,displayName]]]",
-        "dataElementGroups[id,name,displayName]",
+        "categoryCombo[id]",
+        "dataElementGroups[id]",
         "attributeValues[value,attribute]",
     ];
-    return getFilteredItems(d2.models.dataElements, dataElementFilters, {
+
+    const dataElementGroupsFields = "id,name,displayName";
+
+    const categoryComboFields =
+        "id,name,displayName,categoryOptionCombos[id,displayName,categoryOptions[id,displayName]]," +
+        "categories[id,name,displayName,categoryOptions[id,displayName]]";
+
+    const dataElements = await getFilteredItems(d2.models.dataElements, dataElementFilters, {
         fields: fields.join(","),
     });
+
+    const dataElementsWithCatCombos = await subQuery(
+        d2,
+        dataElements,
+        "categoryCombo",
+        categoryComboFields
+    );
+
+    const dataElementsWithGroups = await subQuery(
+        d2,
+        dataElementsWithCatCombos,
+        "dataElementGroups",
+        dataElementGroupsFields
+    );
+
+    return dataElementsWithGroups;
 };
 
 const getOutputDataElementsByCoreCompetencyId = (d2, config, coreCompetencies) => {

@@ -48,7 +48,7 @@ const InitialConfig = React.createClass({
             "displayName",
             "startDate",
             "endDate",
-            "organisationUnits[:all]",
+            "organisationUnits[id,path,displayName]",
         ];
         return this._getCategoryOptions(this.props.config.categoryProjectsId, fields);
     },

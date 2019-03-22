@@ -224,7 +224,6 @@ const Sections = React.createClass({
             sectionsArray => {
                 const sections = _.keyBy(sectionsArray, "name");
                 const sectionNames = sectionsArray.map(section => section.name);
-
                 this.setState({
                     isLoading: false,
                     sections: sections,

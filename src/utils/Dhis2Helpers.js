@@ -125,7 +125,6 @@ function getDisaggregationForCategories(d2, dataElement, categoryCombos, categor
             categories: categories,
             categoryOptionCombos: categoryOptionCombos,
         });
-        newCategoryCombo.dirty = true; // mark dirty so we know it must be saved
         cachedCategoryCombos[cacheKey] = newCategoryCombo;
         return newCategoryCombo;
     }
@@ -455,6 +454,35 @@ async function getFilteredDatasets(d2, config, page, sorting, filters) {
     }
 }
 
+async function subQuery(d2, objects, field, subfields) {
+    const filter =
+        "id:in:[" +
+        _(objects)
+            .map(obj => obj[field])
+            .flatMap(obj => (obj.toArray ? obj.toArray().map(o => o.id) : [obj.id]))
+            .uniq()
+            .join(",") +
+        "]";
+
+    const subObjects = await d2.models[field]
+        .list({
+            paging: false,
+            fields: subfields,
+            filter: filter,
+        })
+        .then(collection => collection.toArray());
+
+    const subObjectsById = _.keyBy(subObjects, "id");
+
+    return objects.map(obj => {
+        const value = obj[field];
+        obj[field] = value.toArray
+            ? { toArray: () => value.toArray().map(v => subObjectsById[v.id]) }
+            : subObjectsById[value.id];
+        return obj;
+    });
+}
+
 export {
     accesses,
     redirectToLogin,
@@ -484,4 +512,5 @@ export {
     canDelete,
     canUpdate,
     getFilteredDatasets,
+    subQuery,
 };

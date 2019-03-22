@@ -24,6 +24,8 @@ import { getCoreCompetencies, getProject } from "./dataset";
 import * as Section from "./Section";
 import getCustomForm from "./CustomForm";
 
+const toArray = collectionToArray;
+
 class Factory {
     constructor(d2, config) {
         this.d2 = d2;
@@ -54,7 +56,7 @@ class Factory {
                 dse.id = generateUid();
                 dse.dataSet = { id: undefined };
             });
-            dataset.sections.toArray().forEach(section => {
+            toArray(dataset.sections).forEach(section => {
                 section.id = undefined;
             });
             return this.getStore(dataset, "clone");
@@ -320,7 +322,7 @@ export default class DataSetStore {
             return [countriesByCode[projectCountryCode]];
         } else {
             return _(countriesById)
-                .at(dataset.organisationUnits.toArray().map(ou => ou.id))
+                .at(toArray(dataset.organisationUnits).map(ou => ou.id))
                 .compact()
                 .value();
         }
@@ -425,7 +427,7 @@ export default class DataSetStore {
                     warnings: [],
                     project: project,
                     countryCodes: countryCodes,
-                    userGroups: userGroups.toArray(),
+                    userGroups: toArray(userGroups),
                     metadata: {},
                     categoryCombos: categoryCombos,
                 };
@@ -434,12 +436,14 @@ export default class DataSetStore {
     }
 
     _processDisaggregation(saving) {
-        const { dataset } = saving;
+        const { dataset, categoryCombos } = saving;
+
+        const existingCategoryCombos = new Set(toArray(categoryCombos).map(cc => cc.id));
         const dataSetElements = collectionToArray(dataset.dataSetElements);
         const removeUnusedGreyedFields = (sections, newCategoryCombos) => {
             const categoryComboOptionsByCCId = _(collectionToArray(saving.categoryCombos))
                 .concat(newCategoryCombos)
-                .map(cc => [cc.id, cc.categoryOptionCombos.toArray().map(coc => coc.id)])
+                .map(cc => [cc.id, toArray(cc.categoryOptionCombos).map(coc => coc.id)])
                 .fromPairs()
                 .value();
 
@@ -468,11 +472,11 @@ export default class DataSetStore {
         const newCategoryCombos = _(dataSetElements)
             .map(dse => dse.categoryCombo)
             .uniqBy(cc => cc.id)
-            .filter(cc => cc.dirty)
+            .filter(cc => !existingCategoryCombos.has(cc.id))
             .map(cc => this._addSharingToCategoryCombo(saving, cc))
             .value();
         const newCategoryComboOptions = _(newCategoryCombos)
-            .flatMap(cc => cc.categoryOptionCombos.toArray())
+            .flatMap(cc => toArray(cc.categoryOptionCombos))
             .value();
 
         dataset.sections = removeUnusedGreyedFields(dataset.sections, newCategoryCombos);
@@ -554,7 +558,7 @@ export default class DataSetStore {
             const filter = "name:in:[" + userRoleNames.join(",") + "]";
             return this.d2.models.userRoles
                 .list({ paging: false, filter })
-                .then(collection => collection.toArray())
+                .then(toArray)
                 .then(userRoles =>
                     _(userRoles)
                         .keyBy("name")
@@ -713,7 +717,7 @@ export default class DataSetStore {
         const userGroupNames = this._getUserGroupsForNotifications();
 
         return getUserGroups(d2, userGroupNames)
-            .then(col => col.toArray())
+            .then(toArray)
             .then(userGroups => sendMessage(d2, msg.subject, msg.body, userGroups))
             .then(() => saving)
             .catch(err => {
