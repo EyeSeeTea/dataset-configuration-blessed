@@ -241,8 +241,7 @@ const Sections = React.createClass({
             const errorsLimited = _.take(errors, maxMessages);
             const diff = errors.length - errorsLimited.length;
             const items = [
-                [this.getTranslation("validation_error")],
-                errorsLimited.map(s => "- " + s),
+                errorsLimited.length > 1 ? errorsLimited.map(s => "- " + s) : errorsLimited,
                 diff > 0 ? [this.getTranslation("more_errors", { n: diff })] : [],
             ];
             return _(items)

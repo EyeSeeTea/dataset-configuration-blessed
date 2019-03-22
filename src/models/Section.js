@@ -119,7 +119,7 @@ export const getDataSetInfo = (d2, _config, sections) => {
         )
         .map(
             ([coreCompetencyName, _sectionsForCC]) =>
-                `Core competency has no selected dataElement/indicators: ${coreCompetencyName}`
+                `Core competency ${coreCompetencyName} has no data elements or indicators selected`
         )
         .value();
 
