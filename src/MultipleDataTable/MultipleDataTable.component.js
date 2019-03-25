@@ -66,6 +66,8 @@ const MultipleDataTable = React.createClass({
                 return availableActions;
             }, {});
 
+        if (Object.keys(actionsToShow).length === 0) return null;
+
         return (
             <MultipleDataTableContextMenu
                 target={this.state.contextMenuTarget}
