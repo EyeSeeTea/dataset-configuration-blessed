@@ -99,6 +99,7 @@ const Wizard = React.createClass({
                         main: { fontFamily: "Roboto, sans-serif", fontSize: "1.2em" },
                         doneItemNumber: { background: "#3162C5" },
                         activeItemNumber: { background: "#FF9800" },
+                        item: { display: "inline-table" },
                     }}
                 />
 

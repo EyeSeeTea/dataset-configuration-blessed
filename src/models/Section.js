@@ -69,7 +69,7 @@ export const getSections = (d2, config, dataset, initialCoreCompetencies, coreCo
         errors: [String]
     }
 */
-export const getDataSetInfo = (d2, config, sections) => {
+export const getDataSetInfo = (d2, _config, sections) => {
     const d2Sections = _(sections)
         .map(section => getD2Section(d2, section))
         .map((d2s, index) => _.set(d2s, "sortOrder", index))
@@ -119,7 +119,7 @@ export const getDataSetInfo = (d2, config, sections) => {
         )
         .map(
             ([coreCompetencyName, _sectionsForCC]) =>
-                `Core competency has no selected dataElement/indicators: ${coreCompetencyName}`
+                `Core competency ${coreCompetencyName} has no data elements or indicators selected`
         )
         .value();
 
@@ -308,7 +308,6 @@ const getOutputSection = opts => {
         const mandatoryIndicatorId = config.dataElementGroupGlobalIndicatorMandatoryId;
         const degSetStatus = groupSets[config.dataElementGroupSetStatusId];
         const status = degSetStatus ? degSetStatus.name : null;
-        const statusKey = getItemStatus({ status });
 
         return {
             type: "dataElement",
@@ -322,8 +321,8 @@ const getOutputSection = opts => {
             theme: theme ? theme.displayName : null,
             group: group ? group.value : null,
             categoryCombo: dataElement.categoryCombo,
-            selected:
-                degSetOrigin && degSetOrigin.id === mandatoryIndicatorId && statusKey === "active",
+            isCore: degSetOrigin && degSetOrigin.id === mandatoryIndicatorId,
+            selected: false,
             origin: degSetOrigin ? degSetOrigin.displayName : null,
             status: status,
             hidden: attributes[config.hideInDataSetAppAttributeId] === "true",
@@ -371,7 +370,6 @@ const getOutcomeSection = opts => {
         const mandatoryIndicatorId = config.indicatorGroupGlobalIndicatorMandatoryId;
         const igSetStatus = indicatorGroupSets[config.indicatorGroupSetStatusId];
         const status = igSetStatus ? igSetStatus.name : null;
-        const statusKey = getItemStatus({ status });
 
         return {
             type: "indicator",
@@ -388,7 +386,8 @@ const getOutcomeSection = opts => {
             theme: theme ? theme.displayName : null,
             group: group ? group.value : indicator.displayName,
             categoryCombo: null,
-            selected: origin && origin.id === mandatoryIndicatorId && statusKey === "active",
+            selected: false,
+            isCore: origin && origin.id === mandatoryIndicatorId,
             origin: origin ? origin.displayName : null,
             status: status,
             disaggregation: null,

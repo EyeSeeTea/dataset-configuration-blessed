@@ -66,6 +66,8 @@ const MultipleDataTable = React.createClass({
                 return availableActions;
             }, {});
 
+        if (Object.keys(actionsToShow).length === 0) return null;
+
         return (
             <MultipleDataTableContextMenu
                 target={this.state.contextMenuTarget}
@@ -159,10 +161,10 @@ const MultipleDataTable = React.createClass({
         this.props.onActiveRowsChange(this.state.activeRows);
     },
 
-    handleRowClick(event, rowSource) {
+    handleRowClick(event, rowSource, isIconMenuClick) {
         //Update activeRows according to click|ctlr+click
         var newActiveRows;
-        if (event.isIconMenuClick) {
+        if (isIconMenuClick) {
             newActiveRows = [rowSource];
         } else if (this.isEventCtrlClick(event) || this.isRowActive(rowSource)) {
             //Remain selection + rowSource if not already selected

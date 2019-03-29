@@ -145,14 +145,12 @@ const MultipleDataTableRow = React.createClass({
 
     iconMenuClick(event) {
         event && event.preventDefault() && event.stopPropagation();
-        event.isIconMenuClick = true;
-        this.props.itemClicked(event, this.props.dataSource);
+        this.props.itemClicked(event, this.props.dataSource, true);
     },
 
     handleContextClick(event) {
         event && event.preventDefault();
-        event.isIconMenuClick = false;
-        this.props.itemClicked(event, this.props.dataSource);
+        this.props.itemClicked(event, this.props.dataSource, false);
     },
 
     handleClick(event) {
