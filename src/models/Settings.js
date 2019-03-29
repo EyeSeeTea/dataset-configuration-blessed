@@ -1,21 +1,16 @@
-import _ from '../utils/lodash-mixins';
-import {getExistingUserRoleByName} from '../utils/Dhis2Helpers';
-import camelCaseToUnderscores from 'd2-utilizr/lib/camelCaseToUnderscores';
-
-const merge = (obj1, obj2) => Object.assign({}, obj1, obj2);
+import _ from "../utils/lodash-mixins";
+import { getExistingUserRoleByName } from "../utils/Dhis2Helpers";
+import camelCaseToUnderscores from "d2-utilizr/lib/camelCaseToUnderscores";
 
 export default class Settings {
-    dataStoreNamespace = "dataset-configuration"
+    dataStoreNamespace = "dataset-configuration";
 
     dataStoreSettingsKey = "settings";
 
     adminRoleAttributes = {
         name: "DataSet Configuration admin",
         description: "Can change settings of the DataSet Configuration app",
-        authorities: [
-            "See DataSet Configuration",
-            "M_dhis-web-maintenance-appmanager",
-        ],
+        authorities: ["See DataSet Configuration", "M_dhis-web-maintenance-appmanager"],
     };
 
     fieldDefinitions = [
@@ -147,17 +142,23 @@ export default class Settings {
     }
 
     getFields() {
-        const models = _(this.fieldDefinitions).filter(fd => fd.type === "d2-object").map("model").uniq();
+        const models = _(this.fieldDefinitions)
+            .filter(fd => fd.type === "d2-object")
+            .map("model")
+            .uniq();
         const optionsForModelPairs$ = models.map(model =>
             this.d2.models[model]
-                .list({paging: false, fields: "id,displayName"})
+                .list({ paging: false, fields: "id,displayName" })
                 .then(collection => collection.toArray())
-                .then(objects => objects.map(obj => ({text: obj.displayName, value: obj.id})))
+                .then(objects => objects.map(obj => ({ text: obj.displayName, value: obj.id })))
                 .then(options => [model, options])
-        )
+        );
 
-        return Promise.all(optionsForModelPairs$).then(_.fromPairs).then(optionsForModel =>
-            this.fieldDefinitions.map(fd => this._getField(fd, optionsForModel)));
+        return Promise.all(optionsForModelPairs$)
+            .then(_.fromPairs)
+            .then(optionsForModel =>
+                this.fieldDefinitions.map(fd => this._getField(fd, optionsForModel))
+            );
     }
 
     _getStoreNamespace() {
@@ -168,7 +169,8 @@ export default class Settings {
         const names = this.fieldDefinitions.map(fd => fd.name);
 
         return this._getStoreNamespace().then(namespace => {
-            return namespace.get(this.dataStoreSettingsKey)
+            return namespace
+                .get(this.dataStoreSettingsKey)
                 .catch(() => ({}))
                 .then(saved => {
                     const newConfig = _.pick(merger(saved), names);
@@ -182,18 +184,21 @@ export default class Settings {
     }
 
     _saveInitialConfig() {
-        return this._getDefaultValues()
-            .then(defaults => this._save(saved => _.imerge(defaults, saved)));
+        return this._getDefaultValues().then(defaults =>
+            this._save(saved => _.imerge(defaults, saved))
+        );
     }
 
     _getDefaultValue(fieldDefinition) {
         switch (fieldDefinition.type) {
             case "d2-object":
                 return this.d2.models[fieldDefinition.model]
-                    .list({filter: fieldDefinition.defaultFilter, fields: "id"})
-                    .then(collection => collection.toArray().map(obj => obj.id)[0])
+                    .list({ filter: fieldDefinition.defaultFilter, fields: "id" })
+                    .then(collection => collection.toArray().map(obj => obj.id)[0]);
             case "value":
                 return Promise.resolve(fieldDefinition.defaultValue);
+            default:
+                throw new Error(`Unknown field type: ${fieldDefinition.type}`);
         }
     }
 
@@ -204,15 +209,18 @@ export default class Settings {
 
         switch (fieldDefinition.type) {
             case "d2-object":
-                return _.imerge(base, {options: optionsForModel[fieldDefinition.model]});
+                return _.imerge(base, { options: optionsForModel[fieldDefinition.model] });
             case "value":
                 return base;
+            default:
+                throw new Error(`Unknown field type: ${fieldDefinition.type}`);
         }
     }
 
     _getDefaultValues() {
-        const defaultValuesPairs$ = this.fieldDefinitions
-            .map(field => this._getDefaultValue(field).then(defaultValue => [field.name, defaultValue]));
+        const defaultValuesPairs$ = this.fieldDefinitions.map(field =>
+            this._getDefaultValue(field).then(defaultValue => [field.name, defaultValue])
+        );
         return Promise.all(defaultValuesPairs$).then(_.fromPairs);
     }
 
@@ -221,13 +229,16 @@ export default class Settings {
 
         return getExistingUserRoleByName(this.d2, attrs.name).then(existingUserRole => {
             if (existingUserRole) {
-                const existingUserRoleHasRequiredAuthorities =
-                    _(attrs.authorities).difference(existingUserRole.authorities).isEmpty();
+                const existingUserRoleHasRequiredAuthorities = _(attrs.authorities)
+                    .difference(existingUserRole.authorities)
+                    .isEmpty();
                 if (existingUserRoleHasRequiredAuthorities) {
                     return true;
                 } else {
-                    existingUserRole.authorities =
-                        _.union(existingUserRole.authorities, attrs.authorities);
+                    existingUserRole.authorities = _.union(
+                        existingUserRole.authorities,
+                        attrs.authorities
+                    );
                     existingUserRole.dirty = true;
                     return existingUserRole.save();
                 }

@@ -1,12 +1,12 @@
-import React, { Component } from 'react';
-import TextField from 'material-ui/TextField/TextField';
-import Action from 'd2-ui/lib/action/Action';
+import React, { Component } from "react";
+import TextField from "material-ui/TextField/TextField";
+import Action from "d2-ui/lib/action/Action";
 
 export default class TextFormField extends Component {
     constructor(props, ...args) {
         super(props, ...args);
         this.state = {
-            fieldValue: props.value || '',
+            fieldValue: props.value || "",
         };
 
         this.updateOnChange = Action.create(`updateOnKeyUp - ${props.name}`);
@@ -19,7 +19,7 @@ export default class TextFormField extends Component {
             .debounce(300)
             .map(action => action.data)
             .distinctUntilChanged()
-            .subscribe((value) => {
+            .subscribe(value => {
                 this.props.onChange({
                     target: {
                         value,
@@ -60,7 +60,7 @@ export default class TextFormField extends Component {
             ...rest
         } = this.props;
         const errorStyle = {
-            lineHeight: multiLine ? '48px' : '12px',
+            lineHeight: multiLine ? "48px" : "12px",
             marginTop: multiLine ? -16 : -12,
         };
 
