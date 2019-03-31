@@ -1,65 +1,59 @@
-import React from 'react';
-import Store from 'd2-ui/lib/store/Store';
-import { getInstance } from 'd2/lib/d2';
-import GroupEditor from 'd2-ui/lib/group-editor/GroupEditor.component';
-import GroupEditorWithOrdering from 'd2-ui/lib/group-editor/GroupEditorWithOrdering.component';
-import Action from 'd2-ui/lib/action/Action';
-import Translate from 'd2-ui/lib/i18n/Translate.mixin';
-import TextField from 'material-ui/TextField/TextField';
-import log from 'loglevel';
-import QuickAddLink from './helpers/QuickAddLink.component';
-import RefreshMask from './helpers/RefreshMask.component';
+import React from "react";
+import Store from "d2-ui/lib/store/Store";
+import { getInstance } from "d2/lib/d2";
+import GroupEditor from "d2-ui/lib/group-editor/GroupEditor.component";
+import GroupEditorWithOrdering from "d2-ui/lib/group-editor/GroupEditorWithOrdering.component";
+import Action from "d2-ui/lib/action/Action";
+import Translate from "d2-ui/lib/i18n/Translate.mixin";
+import TextField from "material-ui/TextField/TextField";
+import log from "loglevel";
+import QuickAddLink from "./helpers/QuickAddLink.component";
+import RefreshMask from "./helpers/RefreshMask.component";
 
 export const multiSelectActions = Action.createActionsFromNames([
-    'addItemsToModelCollection',
-    'removeItemsFromModelCollection',
+    "addItemsToModelCollection",
+    "removeItemsFromModelCollection",
 ]);
 
 function unique(values) {
-    return Array.from((new Set(values)).values());
+    return Array.from(new Set(values).values());
 }
 
 function filterModelsMapOnItemIds(map, items) {
-    return Array
-        .from(map.values())
-        .filter(model => items.indexOf(model.id) !== -1);
+    return Array.from(map.values()).filter(model => items.indexOf(model.id) !== -1);
 }
 
-multiSelectActions.addItemsToModelCollection
-    .subscribe(({ data, complete, error }) => {
-        try {
-            const [modelsToAdd, propertyName, model] = data;
-
-            if (!model[propertyName]) {
-                error(`Model does not have property called '${propertyName}'`);
-            }
-
-            modelsToAdd
-                .forEach(itemToAdd => {
-                    model[propertyName].add(itemToAdd);
-                });
-
-            complete();
-        } catch (e) {
-            log.error(e);
-        }
-    });
-
-multiSelectActions.removeItemsFromModelCollection
-    .subscribe(({ data, complete, error }) => {
-        const [modelsToRemove, propertyName, model] = data;
+multiSelectActions.addItemsToModelCollection.subscribe(({ data, complete, error }) => {
+    try {
+        const [modelsToAdd, propertyName, model] = data;
 
         if (!model[propertyName]) {
             error(`Model does not have property called '${propertyName}'`);
         }
 
-        modelsToRemove
-            .forEach(itemToRemove => {
-                model[propertyName].remove(itemToRemove);
-            });
+        modelsToAdd.forEach(itemToAdd => {
+            model[propertyName].add(itemToAdd);
+        });
 
         complete();
+    } catch (e) {
+        log.error(e);
+    }
+});
+
+multiSelectActions.removeItemsFromModelCollection.subscribe(({ data, complete, error }) => {
+    const [modelsToRemove, propertyName, model] = data;
+
+    if (!model[propertyName]) {
+        error(`Model does not have property called '${propertyName}'`);
+    }
+
+    modelsToRemove.forEach(itemToRemove => {
+        model[propertyName].remove(itemToRemove);
     });
+
+    complete();
+});
 
 export default React.createClass({
     propTypes: {
@@ -70,7 +64,7 @@ export default React.createClass({
         onChange: React.PropTypes.func.isRequired,
         value: React.PropTypes.oneOfType([
             React.PropTypes.shape({ values: React.PropTypes.func.isRequired }),
-            React.PropTypes.arrayOf(React.PropTypes.func)
+            React.PropTypes.arrayOf(React.PropTypes.func),
         ]),
     },
 
@@ -86,7 +80,7 @@ export default React.createClass({
         return {
             itemStore,
             assignedItemStore,
-            filterText: '',
+            filterText: "",
             isRefreshing: false,
             canCreate: false,
         };
@@ -105,9 +99,13 @@ export default React.createClass({
     },
 
     renderGroupEditor() {
-        if (this.props.model.modelDefinition.modelValidations[this.props.referenceProperty] &&
-            this.props.model.modelDefinition.modelValidations[this.props.referenceProperty].ordered &&
-            this.props.referenceProperty !== 'aggregationLevels' /* TODO: The aggregation levels should either not be "ordered" or should be returned from the API properly */) {
+        if (
+            this.props.model.modelDefinition.modelValidations[this.props.referenceProperty] &&
+            this.props.model.modelDefinition.modelValidations[this.props.referenceProperty]
+                .ordered &&
+            this.props.referenceProperty !==
+                "aggregationLevels" /* TODO: The aggregation levels should either not be "ordered" or should be returned from the API properly */
+        ) {
             return (
                 <GroupEditorWithOrdering
                     itemStore={this.state.itemStore}
@@ -136,29 +134,29 @@ export default React.createClass({
     render() {
         const styles = {
             labelStyle: {
-                float: 'left',
-                position: 'relative',
-                display: 'block',
-                width: 'calc(100% - 60px)',
-                lineHeight: '24px',
-                color: 'rgba(0,0,0,0.3)',
-                marginTop: '1rem',
+                float: "left",
+                position: "relative",
+                display: "block",
+                width: "calc(100% - 60px)",
+                lineHeight: "24px",
+                color: "rgba(0,0,0,0.3)",
+                marginTop: "1rem",
                 fontSize: 16,
             },
 
             labelWrap: {
-                display: 'flex',
+                display: "flex",
             },
             fieldWrap: {
-                position: 'relative',
+                position: "relative",
             },
         };
 
         return (
             <div style={styles.fieldWrap}>
-                {this.state.isRefreshing ? <RefreshMask /> : null }
+                {this.state.isRefreshing ? <RefreshMask /> : null}
                 <div style={styles.labelWrap}>
-                    <label style={styles.labelStyle}>{this.props.labelText || ''}</label>
+                    <label style={styles.labelStyle}>{this.props.labelText || ""}</label>
                     {this.state.canCreate ? (
                         <QuickAddLink
                             referenceType={this.props.referenceType}
@@ -168,12 +166,12 @@ export default React.createClass({
                 </div>
                 <TextField
                     fullWidth
-                    hintText={this.getTranslation('search_available_selected_items')}
+                    hintText={this.getTranslation("search_available_selected_items")}
                     defaultValue={this.state.filterText}
                     onChange={this._setFilterText}
                 />
                 {this.renderGroupEditor()}
-                <div style={{ clear: 'both', height: '2rem', width: '100%' }} />
+                <div style={{ clear: "both", height: "2rem", width: "100%" }} />
             </div>
         );
     },
@@ -193,12 +191,18 @@ export default React.createClass({
         });
 
         // Set the state to the store to emit the value to all subscribers
-        this.state.assignedItemStore.setState(this.props.model[this.props.referenceProperty].toArray().map(value => value.id));
+        this.state.assignedItemStore.setState(
+            this.props.model[this.props.referenceProperty].toArray().map(value => value.id)
+        );
     },
 
     _assignItems(items) {
-        if (this.props.referenceProperty === 'aggregationLevels') {
-            const newList = Array.from((new Set((this.props.model[this.props.referenceProperty] || []).concat(items.map(Number)))).values());
+        if (this.props.referenceProperty === "aggregationLevels") {
+            const newList = Array.from(
+                new Set(
+                    (this.props.model[this.props.referenceProperty] || []).concat(items.map(Number))
+                ).values()
+            );
 
             this.props.onChange({
                 target: {
@@ -212,7 +216,12 @@ export default React.createClass({
         return new Promise((resolve, reject) => {
             const modelsToAdd = filterModelsMapOnItemIds(this.state.itemStore.state, items);
 
-            multiSelectActions.addItemsToModelCollection(modelsToAdd, this.props.referenceProperty, this.props.model)
+            multiSelectActions
+                .addItemsToModelCollection(
+                    modelsToAdd,
+                    this.props.referenceProperty,
+                    this.props.model
+                )
                 .subscribe(() => {
                     const newAssignedItems = []
                         .concat(this.state.assignedItemStore.getState())
@@ -233,8 +242,14 @@ export default React.createClass({
     },
 
     _removeItems(items) {
-        if (this.props.referenceProperty === 'aggregationLevels') {
-            const newList = Array.from((new Set((this.props.model[this.props.referenceProperty] || []).filter(v => items.map(Number).indexOf(v) === -1))).values());
+        if (this.props.referenceProperty === "aggregationLevels") {
+            const newList = Array.from(
+                new Set(
+                    (this.props.model[this.props.referenceProperty] || []).filter(
+                        v => items.map(Number).indexOf(v) === -1
+                    )
+                ).values()
+            );
 
             this.props.onChange({
                 target: {
@@ -248,7 +263,12 @@ export default React.createClass({
         return new Promise((resolve, reject) => {
             const modelsToRemove = filterModelsMapOnItemIds(this.state.itemStore.state, items);
 
-            multiSelectActions.removeItemsFromModelCollection(modelsToRemove, this.props.referenceProperty, this.props.model)
+            multiSelectActions
+                .removeItemsFromModelCollection(
+                    modelsToRemove,
+                    this.props.referenceProperty,
+                    this.props.model
+                )
                 .subscribe(() => {
                     const newAssignedItems = []
                         .concat(this.state.assignedItemStore.getState())
@@ -308,24 +328,27 @@ export default React.createClass({
             // the items. An array of filters can be passed to the filter property of the options to the .list() call
             // As the default should always be filtered out we concat the set filters with default filter that filters
             // out anything with the name 'default'
-            const filters = ['name:ne:default']
-                .concat(this.props.queryParamFilter)
-                .filter(f => f);
+            const filters = ["name:ne:default"].concat(this.props.queryParamFilter).filter(f => f);
 
-            return multiSelectSourceModelDefinition
-                .list({ paging: false, fields: 'displayName|rename(name),id,level', filter: filters });
+            return multiSelectSourceModelDefinition.list({
+                paging: false,
+                fields: "displayName|rename(name),id,level",
+                filter: filters,
+            });
         }
         return Promise.reject(`${this.props.referenceType} is not a model on d2.models`);
     },
 
     populateItemStore(availableItems) {
-        if (this.props.referenceProperty === 'aggregationLevels') {
-            this.state.itemStore.setState(Array.from(availableItems.values()).map((model) => {
-                return {
-                    value: model.level,
-                    text: model.displayName || model.name,
-                };
-            }));
+        if (this.props.referenceProperty === "aggregationLevels") {
+            this.state.itemStore.setState(
+                Array.from(availableItems.values()).map(model => {
+                    return {
+                        value: model.level,
+                        text: model.displayName || model.name,
+                    };
+                })
+            );
             return;
         }
 
@@ -340,7 +363,9 @@ export default React.createClass({
         if (Array.isArray(this.props.value)) {
             this.state.assignedItemStore.setState(Array.from(this.props.value));
         } else {
-            this.state.assignedItemStore.setState(Array.from(this.props.value.values()).map(value => value.id));
+            this.state.assignedItemStore.setState(
+                Array.from(this.props.value.values()).map(value => value.id)
+            );
         }
     },
 });

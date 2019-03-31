@@ -1,8 +1,8 @@
-import React from 'react';
-import Checkbox from 'material-ui/Checkbox/Checkbox';
+import React from "react";
+import Checkbox from "material-ui/Checkbox/Checkbox";
 
 function isTrueOrTheStringTrue(value) {
-    return value === true || value === 'true';
+    return value === true || value === "true";
 }
 
 export default React.createClass({
@@ -30,15 +30,17 @@ export default React.createClass({
             isRequired,
             options,
             model,
-            ...otherProps,
+            ...otherProps
         } = this.props;
 
         return (
             <div style={{ marginTop: 12, marginBottom: 12 }}>
-                <Checkbox onClick={this._onClick}
-                          {...otherProps}
-                          label={this.props.labelText}
-                          defaultChecked={isTrueOrTheStringTrue(this.props.value)} />
+                <Checkbox
+                    onClick={this._onClick}
+                    {...otherProps}
+                    label={this.props.labelText}
+                    defaultChecked={isTrueOrTheStringTrue(this.props.value)}
+                />
             </div>
         );
     },

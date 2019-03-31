@@ -1,9 +1,7 @@
-import React from 'react';
-import ObservedEvents from '../utils/ObservedEvents.mixin';
-import Translate from 'd2-ui/lib/i18n/Translate.mixin';
-import TextField from 'material-ui/TextField';
-import { config } from 'd2/lib/d2';
-// import { currentSubSection$ } from '../App/appStateStore';
+import React from "react";
+import ObservedEvents from "../utils/ObservedEvents.mixin";
+import Translate from "d2-ui/lib/i18n/Translate.mixin";
+import TextField from "material-ui/TextField";
 
 const SearchBox = React.createClass({
     propTypes: {
@@ -15,18 +13,18 @@ const SearchBox = React.createClass({
 
     getInitialState() {
         return {
-            value: ''
+            value: "",
         };
     },
 
     componentWillMount() {
-        this.searchBoxCb = this.createEventObserver('searchBox');
+        this.searchBoxCb = this.createEventObserver("searchBox");
     },
 
     componentDidMount() {
         const searchObserver = this.events.searchBox
             .debounce(this.props.debounce || 400)
-            .map(event => event && event.target && event.target.value ? event.target.value : '')
+            .map(event => (event && event.target && event.target.value ? event.target.value : ""))
             .distinctUntilChanged();
 
         this.props.searchObserverHandler(searchObserver);
@@ -48,7 +46,7 @@ const SearchBox = React.createClass({
                     fullWidth
                     type="search"
                     onChange={this._onKeyUp}
-                    hintText={`${this.getTranslation('search_by_name')}`}
+                    hintText={`${this.getTranslation("search_by_name")}`}
                 />
             </div>
         );
@@ -59,7 +57,7 @@ const SearchBox = React.createClass({
             value: event.target.value,
         });
         this.searchBoxCb(event);
-    }
+    },
 });
 
 export default SearchBox;

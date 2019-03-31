@@ -1,17 +1,19 @@
-import React from 'react';
+import React from "react";
 
 // Material UI
-import Checkbox from 'material-ui/Checkbox/Checkbox';
+import Checkbox from "material-ui/Checkbox/Checkbox";
 
 export default React.createClass({
     propTypes: {
         label: React.PropTypes.string.isRequired,
         onChange: React.PropTypes.func.isRequired,
-        items: React.PropTypes.arrayOf(React.PropTypes.shape({
-            name: React.PropTypes.string.isRequired,
-            value: React.PropTypes.bool,
-            text: React.PropTypes.string.isRequired,
-        })),
+        items: React.PropTypes.arrayOf(
+            React.PropTypes.shape({
+                name: React.PropTypes.string.isRequired,
+                value: React.PropTypes.bool,
+                text: React.PropTypes.string.isRequired,
+            })
+        ),
         style: React.PropTypes.object,
     },
 
@@ -45,7 +47,8 @@ export default React.createClass({
                             label={item.text}
                             onCheck={this._handleToggle.bind(this, item.name)}
                             style={style}
-                            labelPosition="right" />
+                            labelPosition="right"
+                        />
                     );
                 })}
             </div>
@@ -53,19 +56,22 @@ export default React.createClass({
     },
 
     _handleToggle(value, event, checked) {
-        this.setState(oldState => {
-            if (checked) {
-                if (oldState.values.indexOf(value) === -1) {
-                    oldState.values.push(value);
+        this.setState(
+            oldState => {
+                if (checked) {
+                    if (oldState.values.indexOf(value) === -1) {
+                        oldState.values.push(value);
+                    }
+                } else {
+                    if (oldState.values.indexOf(value) !== -1) {
+                        oldState.values.splice(oldState.values.indexOf(value), 1);
+                    }
                 }
-            } else {
-                if (oldState.values.indexOf(value) !== -1) {
-                    oldState.values.splice(oldState.values.indexOf(value), 1);
-                }
+                return oldState;
+            },
+            () => {
+                this.props.onChange({ target: { value: this.state.values } });
             }
-            return oldState;
-        }, () => {
-            this.props.onChange({ target: { value: this.state.values } });
-        });
+        );
     },
 });

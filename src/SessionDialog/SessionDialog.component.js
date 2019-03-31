@@ -1,19 +1,19 @@
-import React from 'react';
-import Dialog from 'material-ui/Dialog';
-import FlatButton from 'material-ui/FlatButton';
-import Translate from 'd2-ui/lib/i18n/Translate.mixin';
-import {redirectToLogin} from '../utils/Dhis2Helpers';
+import React from "react";
+import Dialog from "material-ui/Dialog";
+import FlatButton from "material-ui/FlatButton";
+import Translate from "d2-ui/lib/i18n/Translate.mixin";
+import { redirectToLogin } from "../utils/Dhis2Helpers";
 
 const SessionDialog = React.createClass({
     mixins: [Translate],
 
     getInitialState() {
-        return {open: false, checkServerIntervalId: null};
+        return { open: false, checkServerIntervalId: null };
     },
 
     componentDidMount() {
-        const checkServerIntervalId = setInterval(this.checkServer, 1000*60*15);
-        this.setState({checkServerIntervalId});
+        const checkServerIntervalId = setInterval(this.checkServer, 1000 * 60 * 15);
+        this.setState({ checkServerIntervalId });
     },
 
     componentWillUnmount() {
@@ -21,13 +21,13 @@ const SessionDialog = React.createClass({
     },
 
     checkServer() {
-        this.context.d2.system.configuration.get("systemId", true).catch(err => {
-            this.setState({open: true});
+        this.context.d2.system.configuration.get("systemId", true).catch(_err => {
+            this.setState({ open: true });
         });
     },
 
     close() {
-        this.setState({open: false});
+        this.setState({ open: false });
     },
 
     render() {
