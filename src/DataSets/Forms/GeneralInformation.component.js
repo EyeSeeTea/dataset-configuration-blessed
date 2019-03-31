@@ -1,11 +1,11 @@
-import React from 'react';
-import Translate from 'd2-ui/lib/i18n/Translate.mixin';
-import FormBuilder from 'd2-ui/lib/forms/FormBuilder.component';
-import Validators from 'd2-ui/lib/forms/Validators';
-import DataInputPeriods from '../../forms/DataInputPeriods.component';
-import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
-import FormHelpers from '../../forms/FormHelpers';
-import {currentUserHasAdminRole} from '../../utils/Dhis2Helpers';
+import React from "react";
+import _ from "lodash";
+import Translate from "d2-ui/lib/i18n/Translate.mixin";
+import FormBuilder from "d2-ui/lib/forms/FormBuilder.component";
+import Validators from "d2-ui/lib/forms/Validators";
+import LinearProgress from "material-ui/LinearProgress/LinearProgress";
+import FormHelpers from "../../forms/FormHelpers";
+import { currentUserHasAdminRole } from "../../utils/Dhis2Helpers";
 
 const GeneralInformation = React.createClass({
     mixins: [Translate],
@@ -25,8 +25,7 @@ const GeneralInformation = React.createClass({
     },
 
     componentDidMount() {
-        this.context.d2
-            .models.categoryCombos
+        this.context.d2.models.categoryCombos
             .list({
                 filter: ["dataDimensionType:eq:ATTRIBUTE", "name:eq:default"],
                 fields: "id,name",
@@ -34,10 +33,12 @@ const GeneralInformation = React.createClass({
                 rootJunction: "OR",
             })
             .then(collection => collection.toArray())
-            .then(categoryCombinations => this.setState({
-                isLoading: false,
-                categoryCombinations,
-            }));
+            .then(categoryCombinations =>
+                this.setState({
+                    isLoading: false,
+                    categoryCombinations,
+                })
+            );
     },
 
     _onUpdateField(fieldPath, newValue) {
@@ -45,17 +46,19 @@ const GeneralInformation = React.createClass({
     },
 
     _renderForm() {
-        const {associations, dataset} = this.props.store;
+        const { associations, dataset } = this.props.store;
         const fields = [
             FormHelpers.getTextField({
                 name: "dataset.name",
                 label: this.getTranslation("name"),
                 value: dataset.name,
                 isRequired: true,
-                validators: [{
-                    validator: Validators.isRequired,
-                    message: this.getTranslation(Validators.isRequired.message),
-                }],
+                validators: [
+                    {
+                        validator: Validators.isRequired,
+                        message: this.getTranslation(Validators.isRequired.message),
+                    },
+                ],
             }),
 
             FormHelpers.getTextField({
@@ -65,33 +68,35 @@ const GeneralInformation = React.createClass({
                 multiLine: true,
             }),
 
-            this.state.currentUserHasAdminRole && FormHelpers.getTextField({
-                name: "dataset.expiryDays",
-                label: this.getTranslation("expiry_days"),
-                help: this.getTranslation("expiry_days_help"),
-                value: dataset.expiryDays,
-                type: "number",
-            }),
+            this.state.currentUserHasAdminRole &&
+                FormHelpers.getTextField({
+                    name: "dataset.expiryDays",
+                    label: this.getTranslation("expiry_days"),
+                    help: this.getTranslation("expiry_days_help"),
+                    value: dataset.expiryDays,
+                    type: "number",
+                }),
 
-            this.state.currentUserHasAdminRole && FormHelpers.getTextField({
-                name: "dataset.openFuturePeriods",
-                label: this.getTranslation("open_future_periods"),
-                value: dataset.openFuturePeriods,
-                type: "number",
-            }),
+            this.state.currentUserHasAdminRole &&
+                FormHelpers.getTextField({
+                    name: "dataset.openFuturePeriods",
+                    label: this.getTranslation("open_future_periods"),
+                    value: dataset.openFuturePeriods,
+                    type: "number",
+                }),
 
             FormHelpers.getDateField({
                 name: "associations.dataInputStartDate",
                 value: associations.dataInputStartDate,
                 label: FormHelpers.getLabel(this.getTranslation("data_input_start_date")),
-                onChange: (date) => this._onUpdateField("associations.dataInputStartDate", date),
+                onChange: date => this._onUpdateField("associations.dataInputStartDate", date),
             }),
 
             FormHelpers.getDateField({
                 name: "associations.dataInputEndDate",
                 value: associations.dataInputEndDate,
                 label: FormHelpers.getLabel(this.getTranslation("data_input_end_date")),
-                onChange: (date) => this._onUpdateField("associations.dataInputEndDate", date),
+                onChange: date => this._onUpdateField("associations.dataInputEndDate", date),
             }),
 
             FormHelpers.getBooleanField({
@@ -118,7 +123,7 @@ const GeneralInformation = React.createClass({
 
     render() {
         if (this.state.isLoading) {
-            return (<LinearProgress />);
+            return <LinearProgress />;
         } else {
             return this._renderForm();
         }

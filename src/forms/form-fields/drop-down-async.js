@@ -1,8 +1,8 @@
-import React from 'react';
-import DropDown from './drop-down';
-import { getInstance } from 'd2/lib/d2';
-import QuickAddLink from './helpers/QuickAddLink.component';
-import RefreshMask from './helpers/RefreshMask.component';
+import React from "react";
+import DropDown from "./drop-down";
+import { getInstance } from "d2/lib/d2";
+import QuickAddLink from "./helpers/QuickAddLink.component";
+import RefreshMask from "./helpers/RefreshMask.component";
 
 export default React.createClass({
     propTypes: {
@@ -21,55 +21,72 @@ export default React.createClass({
     },
 
     loadOptions() {
-        const fieldsForReferenceType = this.props.referenceType === 'optionSet'
-            ? 'id,displayName,name,valueType'
-            : 'id,displayName,name';
+        const fieldsForReferenceType =
+            this.props.referenceType === "optionSet"
+                ? "id,displayName,name,valueType"
+                : "id,displayName,name";
         const filter = this.props.queryParamFilter;
 
         return getInstance()
-            .then(d2 => d2.models[this.props.referenceType].list(Object.assign({
-                fields: fieldsForReferenceType,
-                paging: false,
-                filter,
-            }, filter && filter.length > 1 ? {
-                rootJunction: 'OR',
-            } : {})))
-            .then(modelCollection => modelCollection.toArray())
-            .then(values => values.map(model => {
-                return {
-                    text: model.displayName,
-                    value: model.id,
-                    model: model,
-                };
-            }))
-            .then(options => {
-                this.setState({
-                    // TODO: Behold the very special hack for renaming the very special 'default' cat combo to 'None'
-                    options: options.map(option => Object.assign(
-                        option,
-                        option.model &&
-                        option.model.modelDefinition &&
-                        option.model.modelDefinition.name === 'categoryCombo' &&
-                        option.text === 'default'
-                            ? { text: 'None' }
+            .then(d2 =>
+                d2.models[this.props.referenceType].list(
+                    Object.assign(
+                        {
+                            fields: fieldsForReferenceType,
+                            paging: false,
+                            filter,
+                        },
+                        filter && filter.length > 1
+                            ? {
+                                  rootJunction: "OR",
+                              }
                             : {}
-                    )),
-                }, () => {
-                    // TODO: Hack to default categoryCombo to 'default'
-                    const defaultOption = this.state.options.find(option => {
-                        return option.model.name === 'default';
-                    });
-
-                    if (!this.props.value && defaultOption) {
-                        this.props.onChange({
-                            target: {
-                                value: defaultOption.model,
-                            },
+                    )
+                )
+            )
+            .then(modelCollection => modelCollection.toArray())
+            .then(values =>
+                values.map(model => {
+                    return {
+                        text: model.displayName,
+                        value: model.id,
+                        model: model,
+                    };
+                })
+            )
+            .then(options => {
+                this.setState(
+                    {
+                        // TODO: Behold the very special hack for renaming the very special 'default' cat combo to 'None'
+                        options: options.map(option =>
+                            Object.assign(
+                                option,
+                                option.model &&
+                                    option.model.modelDefinition &&
+                                    option.model.modelDefinition.name === "categoryCombo" &&
+                                    option.text === "default"
+                                    ? { text: "None" }
+                                    : {}
+                            )
+                        ),
+                    },
+                    () => {
+                        // TODO: Hack to default categoryCombo to 'default'
+                        const defaultOption = this.state.options.find(option => {
+                            return option.model.name === "default";
                         });
-                    }
 
-                    this.forceUpdate();
-                });
+                        if (!this.props.value && defaultOption) {
+                            this.props.onChange({
+                                target: {
+                                    value: defaultOption.model,
+                                },
+                            });
+                        }
+
+                        this.forceUpdate();
+                    }
+                );
             });
     },
 
@@ -82,10 +99,15 @@ export default React.createClass({
     // It might be worth loading the categoryOption with name `default` just for this.
     componentWillReceiveProps(newProps) {
         const defaultOption = this.state.options.find(option => {
-            return option.model.name === 'default';
+            return option.model.name === "default";
         });
 
-        if (newProps.value && defaultOption && defaultOption.model.id !== newProps.value.id && this.props.model.domainType === 'TRACKER') {
+        if (
+            newProps.value &&
+            defaultOption &&
+            defaultOption.model.id !== newProps.value.id &&
+            this.props.model.domainType === "TRACKER"
+        ) {
             this.props.onChange({
                 target: {
                     value: defaultOption.model,
@@ -109,12 +131,12 @@ export default React.createClass({
             options,
             model,
             queryParamFilter,
-            ...other,
+            ...other
         } = this.props;
         const styles = {
             wrap: {
-                display: 'flex',
-                alignItems: 'flex-end',
+                display: "flex",
+                alignItems: "flex-end",
             },
         };
 
@@ -136,46 +158,12 @@ export default React.createClass({
         );
     },
 
-    renderQuickAddLink() {
-        const sectionForReferenceType = getSectionForType(this.props.referenceType);
-
-        if (!sectionForReferenceType) {
-            return null;
-        }
-
-        const styles = {
-            quickAddWrap: {
-                display: 'flex',
-            },
-        };
-
-        return (
-            <div style={styles.quickAddWrap}>
-                <Link
-                    tooltip="Add some related object"
-                    tooltipPosition="top-left"
-                    to={`/edit/${sectionForReferenceType}/${this.props.referenceType}/add`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    <IconButton tooltip="Add new" tooltipPosition="top-left">
-                        <AddCircleOutlineIcon />
-                    </IconButton>
-                </Link>
-                <IconButton tooltip="Refresh values" tooltipPosition="top-left" onClick={this._onRefreshClick}>
-                    <RefreshIcon />
-                </IconButton>
-            </div>
-        );
-    },
-
     _onRefreshClick() {
         this.setState({
             isRefreshing: true,
         });
 
-        this.loadOptions()
-            .then(() => this.setState({ isRefreshing: false }));
+        this.loadOptions().then(() => this.setState({ isRefreshing: false }));
     },
 
     _onChange(event) {
@@ -188,7 +176,7 @@ export default React.createClass({
             return;
         }
 
-        const option = this.state.options.find((opt) => opt.model.id === event.target.value);
+        const option = this.state.options.find(opt => opt.model.id === event.target.value);
         if (option && option.model) {
             this.props.onChange({
                 target: {
