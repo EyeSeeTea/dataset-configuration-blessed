@@ -103,11 +103,15 @@ export const getDataSetInfo = (d2, _config, sections) => {
             const invalidSections = d2Sections
                 .filter(d2Section => d2Section.dataElements.has(repeatedId))
                 .map(d2Section => d2Section.name);
-            return `Data element '${deName}' is used in multiple sections: ${invalidSections.join(
-                ", "
-            )}`;
+            return {
+                key: "data_element_in_multiple_sections",
+                message: `Data element '${deName}' is used in multiple sections: ${invalidSections.join(
+                    ", "
+                )}`,
+            };
         })
         .value();
+
     const emptyCoreCompetenciesErrors = _(sections)
         .groupBy(section => section.coreCompetency.name)
         .toPairs()
@@ -117,13 +121,32 @@ export const getDataSetInfo = (d2, _config, sections) => {
                     .flatMap(section => _.values(section.items))
                     .some("selected")
         )
-        .map(
-            ([coreCompetencyName, _sectionsForCC]) =>
-                `Core competency ${coreCompetencyName} has no data elements or indicators selected`
-        )
+        .map(([coreCompetencyName, _sectionsForCC]) => ({
+            key: "core_competency_no_items",
+            message: `Core competency ${coreCompetencyName} has no data elements or indicators selected`,
+        }))
         .value();
 
-    const errors = _.concat(dataElementErrors, emptyCoreCompetenciesErrors);
+    const nonCoreItemsSelectedErrors = _(sections)
+        .groupBy(section => section.coreCompetency.name)
+        .toPairs()
+        .filter(
+            ([_coreCompetencyName, sectionsForCC]) =>
+                !_(sectionsForCC)
+                    .flatMap(section => _.values(section.items))
+                    .some(item => item.selected && item.isCore)
+        )
+        .map(([coreCompetencyName, _sectionsForCC]) => ({
+            key: "core_competency_no_core_items",
+            message: `Core competency ${coreCompetencyName} has no core data elements or indicators selected`,
+        }))
+        .value();
+
+    const errors = _.concat(
+        dataElementErrors,
+        emptyCoreCompetenciesErrors,
+        nonCoreItemsSelectedErrors
+    );
     return { sections: d2Sections, dataSetElements, indicators, errors };
 };
 

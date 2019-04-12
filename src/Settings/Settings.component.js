@@ -60,6 +60,7 @@ const SettingsDialog = React.createClass({
                 "dataElementGroupSetStatusId",
                 "indicatorGroupSetStatusId",
                 "hideInDataSetAppAttributeId",
+                "exclusionRuleCoreUserGroupId",
             ],
         },
     },
