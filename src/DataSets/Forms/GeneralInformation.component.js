@@ -63,6 +63,9 @@ const GeneralInformation = React.createClass({
         if (existsDataSetWithName) {
             throw this.getTranslation("dataset_name_exists");
         }
+        else{
+            this.setState({ error: null });
+        }
     },
 
     _renderForm() {
