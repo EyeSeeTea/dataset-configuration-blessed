@@ -10,6 +10,12 @@ import { currentUserHasAdminRole } from "../../utils/Dhis2Helpers";
 const GeneralInformation = React.createClass({
     mixins: [Translate],
 
+    styles: {
+        error: {
+            color: "red",
+        },
+    },
+
     propTypes: {
         config: React.PropTypes.object,
         store: React.PropTypes.object,
@@ -19,6 +25,7 @@ const GeneralInformation = React.createClass({
 
     getInitialState() {
         return {
+            error: null,
             isLoading: true,
             currentUserHasAdminRole: currentUserHasAdminRole(this.context.d2),
         };
@@ -45,8 +52,25 @@ const GeneralInformation = React.createClass({
         this.props.onFieldsChange(fieldPath, newValue);
     },
 
+    async _validateNameUniqueness(name) {
+        const dataSets = await this.context.d2.models.dataSets.list({
+            filter: "name:^ilike:" + name,
+        });
+        const existsDataSetWithName = dataSets
+            .toArray()
+            .some(ds => ds.name.toLowerCase() === name.toLowerCase());
+
+        if (existsDataSetWithName) {
+            throw this.getTranslation("dataset_name_exists");
+        }
+        else{
+            this.setState({ error: null });
+        }
+    },
+
     _renderForm() {
         const { associations, dataset } = this.props.store;
+        const { error } = this.state;
         const fields = [
             FormHelpers.getTextField({
                 name: "dataset.name",
@@ -59,6 +83,7 @@ const GeneralInformation = React.createClass({
                         message: this.getTranslation(Validators.isRequired.message),
                     },
                 ],
+                asyncValidators: [name => this._validateNameUniqueness(name)],
             }),
 
             FormHelpers.getTextField({
@@ -108,17 +133,39 @@ const GeneralInformation = React.createClass({
         ];
 
         return (
-            <FormBuilder
-                fields={_.compact(fields)}
-                onUpdateField={this._onUpdateField}
-                onUpdateFormStatus={this._onUpdateFormStatus}
-                validateOnRender={this.props.validateOnRender}
-            />
+            <div>
+                {error && <p style={this.styles.error}>{error}</p>}
+                <FormBuilder
+                    fields={_.compact(fields)}
+                    onUpdateField={this._onUpdateField}
+                    onUpdateFormStatus={this._onUpdateFormStatus}
+                    validateOnRender={this.props.validateOnRender}
+                />
+            </div>
         );
     },
 
-    _onUpdateFormStatus(status) {
-        this.props.formStatus(status.valid);
+    async validate() {
+        const { dataset } = this.props.store;
+
+        if (!dataset.name || !dataset.name.trim()) {
+            this.props.formStatus(false);
+        } else {
+            try {
+                await this._validateNameUniqueness(dataset.name);
+                this.props.formStatus(true);
+                this.setState({ error: null });
+            } catch (err) {
+                this.props.formStatus(false);
+                this.setState({ error: err.toString() });
+            }
+        }
+    },
+
+    async componentWillReceiveProps(props) {
+        if (props.validateOnRender) {
+            this.validate();
+        }
     },
 
     render() {
