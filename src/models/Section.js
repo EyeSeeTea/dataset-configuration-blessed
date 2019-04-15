@@ -60,6 +60,24 @@ export const getSections = (d2, config, dataset, initialCoreCompetencies, coreCo
     );
 };
 
+const validateCoreItemsSelectedForCurrentUser = (d2, config) => {
+    // d2.currentUser does not expose the user group IDs, get them by introspection
+    const userGroupsSymbol = Object.getOwnPropertySymbols(d2.currentUser).find(
+        symbol => symbol.toString() === "Symbol(userGroups)"
+    );
+
+    if (!userGroupsSymbol || !d2.currentUser[userGroupsSymbol]) {
+        console.error("Cannot get user groups for current user");
+        return true;
+    } else if (!config.exclusionRuleCoreUserGroupId) {
+        console.error("Exclusion user group id not configured");
+        return true;
+    } else {
+        const userGroupIds = d2.currentUser[userGroupsSymbol];
+        return !_(userGroupIds).includes(config.exclusionRuleCoreUserGroupId);
+    }
+};
+
 /* Return an object with the info of the sections and selected dataElements/indicators and errors:
 
     {
@@ -69,7 +87,9 @@ export const getSections = (d2, config, dataset, initialCoreCompetencies, coreCo
         errors: [String]
     }
 */
-export const getDataSetInfo = (d2, _config, sections) => {
+export const getDataSetInfo = (d2, config, sections) => {
+    const validateCoreSelected = validateCoreItemsSelectedForCurrentUser(d2, config);
+
     const d2Sections = _(sections)
         .map(section => getD2Section(d2, section))
         .map((d2s, index) => _.set(d2s, "sortOrder", index))
@@ -116,36 +136,37 @@ export const getDataSetInfo = (d2, _config, sections) => {
         .groupBy(section => section.coreCompetency.name)
         .toPairs()
         .filter(
-            ([_coreCompetencyName, sectionsForCC]) =>
+            ([_ccName, sectionsForCC]) =>
                 !_(sectionsForCC)
                     .flatMap(section => _.values(section.items))
                     .some("selected")
         )
-        .map(([coreCompetencyName, _sectionsForCC]) => ({
+        .map(([ccName, _sectionsForCC]) => ({
             key: "core_competency_no_items",
-            message: `Core competency ${coreCompetencyName} has no data elements or indicators selected`,
+            message: `Core competency ${ccName} has no data elements or indicators selected`,
         }))
         .value();
 
-    const nonCoreItemsSelectedErrors = _(sections)
-        .groupBy(section => section.coreCompetency.name)
-        .toPairs()
-        .filter(
-            ([_coreCompetencyName, sectionsForCC]) =>
-                !_(sectionsForCC)
-                    .flatMap(section => _.values(section.items))
-                    .some(item => item.selected && item.isCore)
-        )
-        .map(([coreCompetencyName, _sectionsForCC]) => ({
-            key: "core_competency_no_core_items",
-            message: `Core competency ${coreCompetencyName} has no core data elements or indicators selected`,
-        }))
-        .value();
+    const nonCoreItemsSelectedErrors = () =>
+        _(sections)
+            .groupBy(section => section.coreCompetency.name)
+            .toPairs()
+            .filter(
+                ([_ccName, sectionsForCC]) =>
+                    !_(sectionsForCC)
+                        .flatMap(section => _.values(section.items))
+                        .some(item => item.selected && item.isCore)
+            )
+            .map(([ccName, _sectionsForCC]) => ({
+                key: "core_competency_no_core_items",
+                message: `Core competency ${ccName} has no core data elements or indicators selected`,
+            }))
+            .value();
 
     const errors = _.concat(
         dataElementErrors,
         emptyCoreCompetenciesErrors,
-        nonCoreItemsSelectedErrors
+        validateCoreSelected ? nonCoreItemsSelectedErrors() : []
     );
     return { sections: d2Sections, dataSetElements, indicators, errors };
 };

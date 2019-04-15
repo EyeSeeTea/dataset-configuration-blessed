@@ -206,7 +206,6 @@ const Sections = React.createClass({
     getInitialState() {
         return {
             isLoading: true,
-            validateCoreSelected: null,
             sections: null, // loaded on componentDidMount
             sidebarOpen: true,
             filters: {},
@@ -215,17 +214,11 @@ const Sections = React.createClass({
         };
     },
 
-    async componentDidMount() {
+    componentDidMount() {
         const { d2 } = this.context;
         const { config } = this.props;
         const { dataset, associations } = this.props.store;
         const { coreCompetencies, initialCoreCompetencies } = associations;
-
-        const { userGroups } = await d2.Api.getApi().get("/me?fields=userGroups[id]");
-        const currentUserInExclusionGroup = userGroups.some(
-            userGroup => userGroup.id === config.exclusionRuleCoreUserGroupId
-        );
-        const validateCoreSelected = this.props.type === "core" && !currentUserInExclusionGroup;
 
         getSections(d2, config, dataset, initialCoreCompetencies, coreCompetencies).then(
             sectionsArray => {
@@ -237,7 +230,6 @@ const Sections = React.createClass({
                     sections: sections,
                     sectionNames: sectionNames,
                     currentSectionName: _.isEmpty(sectionsArray) ? null : sectionsArray[0].name,
-                    validateCoreSelected,
                 });
             }
         );
@@ -268,17 +260,13 @@ const Sections = React.createClass({
             );
             store.dataset = dataset;
 
-            const errors2 =
-                this.props.type === "nonCore"
-                    ? errors
-                    : errors.filter(error => error.key !== "core_competency_no_items");
-            const errors3 = this.state.validateCoreSelected
-                ? errors2
-                : errors2.filter(error => error.key !== "core_competency_no_core_items");
+            const errorsToShow = errors.filter(
+                error => !_(this.props.excludeErrors || []).includes(error.key)
+            );
 
-            const isValid = _(errors3).isEmpty();
+            const isValid = _(errorsToShow).isEmpty();
             if (showErrors && !isValid) {
-                snackActions.show({ message: getErrorMessage(errors3) });
+                snackActions.show({ message: getErrorMessage(errorsToShow) });
             }
             return isValid;
         }
