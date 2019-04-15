@@ -115,6 +115,12 @@ export default class Settings {
             model: "attributes",
             defaultFilter: "code:eq:GL_CREATED_BY_DATASET_CONFIGURATION",
         },
+        {
+            name: "exclusionRuleCoreUserGroupId",
+            type: "d2-object",
+            model: "userGroup",
+            defaultFilter: "name:eq:GL_AllAdmins",
+        },
     ];
 
     constructor(d2) {
