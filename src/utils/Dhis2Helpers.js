@@ -27,13 +27,15 @@ function redirectToLogin(baseUrl) {
     window.location.assign(loginUrl);
 }
 
-function getCategoryCombos(d2) {
+function getCategoryCombos(d2, { cocFields } = {}) {
     return d2.models.categoryCombos.list({
-        fields: [
+        fields: _([
             "id,name,displayName,dataDimensionType,isDefault",
             "categories[id,displayName,categoryOptions[id,name,displayName]]",
-            "categoryOptionCombos[id,displayName,categoryOptions[id,name,displayName]]",
-        ].join(","),
+            cocFields ? `categoryOptionCombos[${cocFields}]` : null,
+        ])
+            .compact()
+            .join(","),
         filter: "dataDimensionType:eq:DISAGGREGATION",
         paging: false,
     });

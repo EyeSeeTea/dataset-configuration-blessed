@@ -220,7 +220,8 @@ export default class DataSetStore {
 
     _saveCustomForm(saving) {
         const { richSections, dataset, project } = saving;
-        const categoryCombos$ = getCategoryCombos(this.d2);
+        const cocFields = "id,displayName,categoryOptions[id,displayName]";
+        const categoryCombos$ = getCategoryCombos(this.d2, { cocFields });
         const api = this.d2.Api.getApi();
 
         return categoryCombos$.then(categoryCombos => {
