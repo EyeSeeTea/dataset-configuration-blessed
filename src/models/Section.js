@@ -3,6 +3,7 @@ import _ from "lodash";
 import { update, collectionToArray, subQuery } from "../utils/Dhis2Helpers";
 import fp from "lodash/fp";
 import { getOwnedPropertyJSON } from "d2/lib/model/helpers/json";
+import memoize from "nano-memoize";
 
 /* Return an array of sections containing its data elements and associated indicators. Schema:
 
@@ -26,7 +27,9 @@ Notes:
     * DataElements can only be used within one section. Since we are getting DataElements from
       indicators, we can have duplicated items that must be removed.
 */
-export const getSections = (d2, config, dataset, initialCoreCompetencies, coreCompetencies) => {
+export const getSections = (d2_, config, dataset, initialCoreCompetencies, coreCompetencies) => {
+    const d2 = getCachedD2(d2_);
+
     const data$ = [
         getDataElementGroupRelations(d2),
         getIndicatorGroupRelations(d2),
@@ -58,6 +61,25 @@ export const getSections = (d2, config, dataset, initialCoreCompetencies, coreCo
             );
         }
     );
+};
+
+// Cache d2.models[].list()
+let cachedD2;
+
+const getCachedD2 = d2 => {
+    if (cachedD2) {
+        return cachedD2;
+    } else {
+        const models = _(d2.models)
+            .mapValues(model => {
+                const model2 = model.clone();
+                model2.list = memoize(opts => model.list(opts), { serializer: JSON.stringify });
+                return model2;
+            })
+            .value();
+        cachedD2 = { ...d2, models };
+        return cachedD2;
+    }
 };
 
 const validateCoreItemsSelectedForCurrentUser = (d2, config) => {
@@ -539,21 +561,16 @@ const getIndicatorGroupRelations = d2 => {
 
 /* Return a promise with an array of d2 items filtered by an array of [field, value] pairs */
 const getFilteredItems = (model, filters, listOptions) => {
-    // As d2 filtering does not implement operator <in> (see dhis2/d2/issues/60),
-    // we must use a reduce folding filtering with the <eq> operator and rootJunction=OR
     if (_.isEmpty(filters)) {
         return Promise.resolve([]);
     } else {
-        return _(filters)
-            .reduce(
-                (model_, [key, value]) =>
-                    model_
-                        .filter()
-                        .on(key)
-                        .equals(value),
-                model
-            )
-            .list(_.merge({ paging: false, rootJunction: "OR" }, listOptions))
+        return model
+            .list({
+                paging: false,
+                rootJunction: "OR",
+                filter: filters.map(([key, value]) => `${key}:eq:${value}`),
+                ...listOptions,
+            })
             .then(collection => collection.toArray());
     }
 };
