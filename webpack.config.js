@@ -18,7 +18,7 @@ try {
     console.warn(`\nWARNING! Failed to load DHIS config:`, e.message);
     console.info("Using default config");
     dhisConfig = {
-        baseUrl: "http://localhost:9026",
+        baseUrl: "http://localhost:8080",
         authorization: "Basic YWRtaW46ZGlzdHJpY3Q=", // admin:district
     };
 }
@@ -43,7 +43,7 @@ const webpackConfig = {
     output: {
         path: __dirname + "/build",
         filename: "app.js",
-        publicPath: "http://localhost:8083/",
+        publicPath: "http://localhost:8081/",
     },
     module: {
         loaders: [
@@ -79,23 +79,23 @@ const webpackConfig = {
     devServer: {
         progress: true,
         colors: true,
-        port: 8083,
+        port: 8081,
         inline: true,
         compress: true,
         proxy: [
             { path: "/api/*", target: dhisConfig.baseUrl, bypass: log },
             { path: "/dhis-web-commons/*", target: dhisConfig.baseUrl, bypass: log },
             { path: "/icons/*", target: dhisConfig.baseUrl, bypass: log },
-            { path: "/css/*", target: "http://localhost:8083/build", bypass: log },
-            { path: "/i18n/*", target: "http://localhost:8083/src", bypass: log },
+            { path: "/css/*", target: "http://localhost:8081/build", bypass: log },
+            { path: "/i18n/*", target: "http://localhost:8081/src", bypass: log },
             {
                 path: "/jquery.min.js",
-                target: "http://localhost:8083/node_modules/jquery/dist",
+                target: "http://localhost:8081/node_modules/jquery/dist",
                 bypass: log,
             },
             {
                 path: "/polyfill.min.js",
-                target: "http://localhost:8083/node_modules/babel-polyfill/dist",
+                target: "http://localhost:8081/node_modules/babel-polyfill/dist",
                 bypass: log,
             },
         ],

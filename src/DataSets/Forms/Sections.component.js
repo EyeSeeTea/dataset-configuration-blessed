@@ -240,12 +240,12 @@ const Sections = React.createClass({
             const errorsLimited = _.take(errors, maxMessages);
             const diff = errors.length - errorsLimited.length;
             const items = [
-                [this.getTranslation("validation_error")],
-                errorsLimited.map(s => "- " + s),
+                errorsLimited,
                 diff > 0 ? [this.getTranslation("more_errors", { n: diff })] : [],
             ];
             return _(items)
                 .flatten()
+                .map("message")
                 .join("\n");
         };
 
@@ -258,9 +258,14 @@ const Sections = React.createClass({
                 this.state.sections
             );
             store.dataset = dataset;
-            const isValid = _(errors).isEmpty();
+
+            const errorsToShow = errors.filter(
+                error => !_(this.props.excludeErrors || []).includes(error.key)
+            );
+
+            const isValid = _(errorsToShow).isEmpty();
             if (showErrors && !isValid) {
-                snackActions.show({ message: getErrorMessage(errors) });
+                snackActions.show({ message: getErrorMessage(errorsToShow) });
             }
             return isValid;
         }
