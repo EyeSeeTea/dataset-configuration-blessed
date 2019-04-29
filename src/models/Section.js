@@ -249,7 +249,7 @@ export const processDatasetSections = (d2, config, dataset, stateSections) => {
     // Don't override dataSetElements (disaggregation)
     const newDataSetElements = _.keyBy(dataSetElements, dse => dse.dataElement.id);
     const prevDataSetElements = _.keyBy(dataset.dataSetElements || [], dse => dse.dataElement.id);
-    const mergedDataSetElements = _(fp.merge(newDataSetElements, prevDataSetElements))
+    const mergedDataSetElements = _({ ...newDataSetElements, ...prevDataSetElements })
         .at(_.keys(newDataSetElements))
         .value();
 
