@@ -27,16 +27,19 @@ function redirectToLogin(baseUrl) {
     window.location.assign(loginUrl);
 }
 
-function getCategoryCombos(d2, { cocFields } = {}) {
+function getCategoryCombos(d2, { cocFields, filterIds } = {}) {
     return d2.models.categoryCombos.list({
         fields: _([
-            "id,name,displayName,dataDimensionType,isDefault",
-            "categories[id,displayName,categoryOptions[id,name,displayName]]",
+            "id,displayName,dataDimensionType,isDefault",
+            "categories[id,displayName,categoryOptions[id,displayName]]",
             cocFields ? `categoryOptionCombos[${cocFields}]` : null,
         ])
             .compact()
             .join(","),
-        filter: "dataDimensionType:eq:DISAGGREGATION",
+        filter: _.compact([
+            "dataDimensionType:eq:DISAGGREGATION",
+            filterIds ? `id:in:[${filterIds.join(",")}]` : null,
+        ]),
         paging: false,
     });
 }

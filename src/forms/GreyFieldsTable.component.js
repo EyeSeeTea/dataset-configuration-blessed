@@ -72,7 +72,13 @@ class GreyFieldsTable extends React.Component {
         const d2 = this.context.d2;
         const cocFields = "id,categoryOptions[id]";
 
-        getCategoryCombos(d2, { cocFields }).then(persistedCategoryCombos => {
+        const categoryComboIds = _(this.props.dataSet.dataSetElements)
+            .map(dse => dse.categoryCombo.id)
+            .uniq()
+            .value();
+        const options = { cocFields, filterIds: categoryComboIds };
+
+        getCategoryCombos(d2, options).then(persistedCategoryCombos => {
             const categoryCombosById = _(this.props.dataSet.dataSetElements)
                 .map(dse => dse.categoryCombo)
                 .keyBy("id")
