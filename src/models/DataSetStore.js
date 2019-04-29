@@ -415,7 +415,7 @@ export default class DataSetStore {
         const project$ = project
             ? this.d2.models.categoryOption.get(project.id)
             : Promise.resolve(null);
-        const categoryCombos$ = getCategoryCombos(this.d2);
+        const categoryCombos$ = getCategoryCombos(this.d2, { cocFields: "id" });
         const countryCodes = _(countries)
             .map(getCountryCode)
             .compact()
