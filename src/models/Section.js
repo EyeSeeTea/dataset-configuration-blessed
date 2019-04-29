@@ -329,7 +329,6 @@ const getD2Section = (d2, section) => {
         .flatMap(item => (item.type === "dataElement" ? [item] : item.dataElements))
         .map(de => ({
             id: de.id,
-            name: de.name,
             displayName: de.displayName,
             categoryCombo: de.categoryCombo,
         }))
@@ -337,7 +336,7 @@ const getD2Section = (d2, section) => {
         .value();
     const indicators = _(items)
         .flatMap(item => (item.type === "indicator" ? [item] : []))
-        .map(ind => ({ id: ind.id, displayName: ind.displayName, name: ind.name }))
+        .map(ind => ({ id: ind.id, displayName: ind.displayName, name: ind.displayName }))
         .uniqBy("id")
         .value();
 
@@ -372,7 +371,7 @@ const getOutputSection = opts => {
             .value();
         const mandatoryIndicatorId = config.dataElementGroupGlobalIndicatorMandatoryId;
         const degSetStatus = groupSets[config.dataElementGroupSetStatusId];
-        const status = degSetStatus ? degSetStatus.name : null;
+        const status = degSetStatus ? degSetStatus.displayName : null;
 
         return {
             type: "dataElement",
@@ -434,7 +433,7 @@ const getOutcomeSection = opts => {
             .value();
         const mandatoryIndicatorId = config.indicatorGroupGlobalIndicatorMandatoryId;
         const igSetStatus = indicatorGroupSets[config.indicatorGroupSetStatusId];
-        const status = igSetStatus ? igSetStatus.name : null;
+        const status = igSetStatus ? igSetStatus.displayName : null;
 
         return {
             type: "indicator",
@@ -532,7 +531,7 @@ const filterDataElements = (dataElements, requiredDegIds) => {
 /* Return object {dataElementGroupId: dataElementGroupSetId} */
 const getDataElementGroupRelations = d2 => {
     return d2.models.dataElementGroupSets
-        .list({ fields: "id,name,displayName,dataElementGroups[id,name,displayName]" })
+        .list({ fields: "id,displayName,dataElementGroups[id,displayName]" })
         .then(collection =>
             collection.toArray().map(degSet =>
                 _(degSet.dataElementGroups.toArray())
@@ -547,7 +546,7 @@ const getDataElementGroupRelations = d2 => {
 /* Return object {indicatorGroupId: indicatorGroupSetId} */
 const getIndicatorGroupRelations = d2 => {
     return d2.models.indicatorGroupSets
-        .list({ fields: "id,name,displayName,indicatorGroups[id,name,displayName]" })
+        .list({ fields: "id,displayName,indicatorGroups[id,displayName]" })
         .then(collection =>
             collection.toArray().map(igSet =>
                 _(igSet.indicatorGroups.toArray())
@@ -588,11 +587,11 @@ const getDataElements = async (d2, dataElementFilters) => {
         "attributeValues[value,attribute]",
     ];
 
-    const dataElementGroupsFields = "id,name,displayName";
+    const dataElementGroupsFields = "id,displayName";
 
     const categoryComboFields =
-        "id,name,displayName,categoryOptionCombos[id,displayName,categoryOptions[id,displayName]]," +
-        "categories[id,name,displayName,categoryOptions[id,displayName]]";
+        "id,displayName,categoryOptionCombos[id,displayName,categoryOptions[id,displayName]]," +
+        "categories[id,displayName,categoryOptions[id,displayName]]";
 
     const dataElements = await getFilteredItems(d2.models.dataElements, dataElementFilters, {
         fields: fields.join(","),
@@ -634,12 +633,12 @@ const getIndicatorsByGroupName = (d2, coreCompetencies) => {
         "id",
         "name",
         "displayName",
-        "indicators[id,name,displayName,code,numerator,denominator,indicatorGroups[id,name,displayName],attributeValues[value,attribute]]",
+        "indicators[id,displayName,code,numerator,denominator,indicatorGroups[id,displayName],attributeValues[value,attribute]]",
     ].join(",");
 
     return getFilteredItems(d2.models.indicatorGroups, filters, { fields }).then(indicatorGroups =>
         _(indicatorGroups)
-            .map(indGroup => [indGroup.name, indGroup.indicators.toArray()])
+            .map(indGroup => [indGroup.displayName, indGroup.indicators.toArray()])
             .fromPairs()
             .value()
     );

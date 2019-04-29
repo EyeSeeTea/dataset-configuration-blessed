@@ -74,7 +74,7 @@ class Factory {
 
     getDataset(id) {
         const fields = [
-            "*,dataSetElements[*,categoryCombo[*,categories[*,categoryOptions[*]]],dataElement[*,categoryCombo[*]]]",
+            "*,dataSetElements[*,categoryCombo[*,categories[id,displayName]],dataElement[*,categoryCombo[*]]]",
             "sections[*,href],organisationUnits[*]",
         ].join(",");
         return this.d2.models.dataSets.get(id, { fields });
@@ -220,7 +220,7 @@ export default class DataSetStore {
 
     _saveCustomForm(saving) {
         const { richSections, dataset, project } = saving;
-        const cocFields = "id,displayName,categoryOptions[id,displayName]";
+        const cocFields = "id,categoryOptions[id]";
         const categoryCombos$ = getCategoryCombos(this.d2, { cocFields });
         const api = this.d2.Api.getApi();
 
