@@ -74,9 +74,7 @@ const GeneralInformation = React.createClass({
 
     _onUpdateYearlyDatesFields(type, fieldPath, newDate, oldValue, year) {
         let newValue;
-        if (!oldValue) {
-            newValue = Object.assign({}, { [`${year}`]: { [type]: newDate } });
-        } else if (!oldValue[`${year}`]) {
+        if (!oldValue[`${year}`]) {
             newValue = Object.assign(oldValue, { [`${year}`]: { [type]: newDate } });
         } else {
             const yearlyValue = Object.assign(oldValue[`${year}`], { [type]: newDate });
@@ -104,6 +102,7 @@ const GeneralInformation = React.createClass({
         const { associations, dataset } = this.props.store;
         const { error } = this.state;
         const datesSet = associations.dataInputStartDate && associations.dataInputEndDate;
+
         const years = datesSet
             ? _.range(
                   moment(associations.dataInputStartDate).year(),
@@ -113,9 +112,29 @@ const GeneralInformation = React.createClass({
               )
             : null;
 
+        const getDateValue = (year, type, array, period) => {
+            // only being called for first year on checkbox click => BUG
+            if (associations[type][`${year}`] && year === 2020) {
+                console.log({
+                    sameDates: associations.sameDates[type],
+                    firstYear: array[0],
+                    realValue: associations[type][`${year}`][period],
+                });
+            }
+            return (
+                associations[type][`${year}`] &&
+                (associations.sameDates[type]
+                    ? associations[type][`${array[0]}`][period]
+                    : associations[type][`${year}`][period])
+            );
+        };
+
         const generateDateFieldPairs = (years, type) => {
             if (!years) return [];
-            return years.map((year, index) =>
+            // BUG: After clicking on the sameDates checkbox, values for years other than the first year don't update till touched.
+            // Updating key on checkbox mark doesn't solve it, but either if it did we'd be relying on the user entering first year dates
+            // before clicking on the checkbox.
+            return years.map((year, index, array) =>
                 _.compact([
                     FormHelpers.getFormLabel({
                         value: `${year}`,
@@ -124,8 +143,9 @@ const GeneralInformation = React.createClass({
                     }),
                     FormHelpers.getDateField({
                         name: `associations.${type}.${year}.start`,
-                        value: associations[type][`${year}`] && associations[type][`${year}`].start,
+                        value: getDateValue(year, type, array, "start"),
                         label: `Output Start Date ${year}`,
+                        disabled: false, // index === 0 ? false : associations.sameDates[type],
                         onChange: date =>
                             this._onUpdateYearlyDatesFields(
                                 "start",
@@ -137,8 +157,9 @@ const GeneralInformation = React.createClass({
                     }),
                     FormHelpers.getDateField({
                         name: `associations.${type}.${year}.end`,
-                        value: associations[type][`${year}`] && associations[type][`${year}`].end,
+                        value: getDateValue(year, type, array, "end"),
                         label: `Output End Date ${year}`,
+                        disabled: false, //index === 0 ? false : associations.sameDates[type],
                         onChange: date =>
                             this._onUpdateYearlyDatesFields(
                                 "end",
@@ -159,8 +180,8 @@ const GeneralInformation = React.createClass({
             );
         };
 
-        const outputDates = generateDateFieldPairs(years, "outputDates");
-        const outcomeDates = generateDateFieldPairs(years, "outcomeDates");
+        const outputDatesFields = generateDateFieldPairs(years, "outputDates");
+        const outcomeDatesFields = generateDateFieldPairs(years, "outcomeDates");
 
         const fields = _.compact([
             FormHelpers.getTextField({
@@ -216,9 +237,9 @@ const GeneralInformation = React.createClass({
             }),
 
             datesSet && FormHelpers.getFormLabel({ value: "Output Dates:", type: "title" }),
-            ..._.flatten(outputDates),
+            ..._.flatten(outputDatesFields),
             datesSet && FormHelpers.getFormLabel({ value: "Outcome Dates:", type: "title" }),
-            ..._.flatten(outcomeDates),
+            ..._.flatten(outcomeDatesFields),
 
             FormHelpers.getBooleanField({
                 name: "dataset.notifyCompletingUser",
@@ -229,7 +250,13 @@ const GeneralInformation = React.createClass({
         ]);
 
         const { yearsPeriod } = this.state;
-        const formKey = `${yearsPeriod}`;
+        const {
+            associations: {
+                sameDates: { outcomeDates, outputDates },
+            },
+        } = this.props.store;
+        const formKey = `${yearsPeriod}-${outcomeDates}-${outputDates}`;
+        console.log(formKey);
         return (
             <div>
                 {error && <p style={this.styles.error}>{error}</p>}

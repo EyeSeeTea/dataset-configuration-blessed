@@ -129,7 +129,14 @@ function getFormLabel({ value, type, forSection }) {
     };
 }
 
-function getDateField({ name, label, onChange, value = undefined, isRequired = false }) {
+function getDateField({
+    name,
+    label,
+    onChange,
+    value = undefined,
+    isRequired = false,
+    disabled = false,
+}) {
     return {
         name: name,
         component: DateSelect,
@@ -138,6 +145,7 @@ function getDateField({ name, label, onChange, value = undefined, isRequired = f
             labelText: getLabel(label, isRequired),
             onChange: data => onChange(data.target.value || undefined),
             fullWidth: true,
+            disabled,
         },
     };
 }

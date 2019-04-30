@@ -7,6 +7,11 @@ export default React.createClass({
         value: React.PropTypes.oneOfType([React.PropTypes.string, React.PropTypes.object]),
         labelText: React.PropTypes.string.isRequired,
         onChange: React.PropTypes.func.isRequired,
+        disabled: React.PropTypes.bool,
+    },
+
+    defaultProps: {
+        disabled: false,
     },
 
     renderDatePicker() {
@@ -21,6 +26,7 @@ export default React.createClass({
             model,
             models,
             modelDefinition,
+            disabled,
             ...other
         } = this.props;
         return (
@@ -29,6 +35,7 @@ export default React.createClass({
                 value={this.props.value && new Date(this.props.value)}
                 mode="portrait"
                 autoOk
+                disabled={disabled}
                 floatingLabelText={labelText}
                 onChange={this._onDateSelect}
             />
