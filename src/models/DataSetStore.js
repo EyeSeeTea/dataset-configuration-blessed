@@ -174,6 +174,8 @@ class Factory {
                 sections: collectionToArray(dataset.sections),
                 countries: sharingCountries,
                 userRoles,
+                outputDates: {},
+                outcomeDates: {},
             })
         );
     }

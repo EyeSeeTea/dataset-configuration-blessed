@@ -1,5 +1,6 @@
 import React from "react";
 import _ from "lodash";
+import moment from "moment";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import FormBuilder from "d2-ui/lib/forms/FormBuilder.component";
 import Validators from "d2-ui/lib/forms/Validators";
@@ -52,6 +53,19 @@ const GeneralInformation = React.createClass({
         this.props.onFieldsChange(fieldPath, newValue);
     },
 
+    _onUpdateYearlyDatesFields(type, fieldPath, newDate, oldValue, year) {
+        let newValue;
+        if (!oldValue) {
+            newValue = Object.assign({}, { [`${year}`]: { [type]: newDate } });
+        } else if (!oldValue[`${year}`]) {
+            newValue = Object.assign(oldValue, { [`${year}`]: { [type]: newDate } });
+        } else {
+            const yearlyValue = Object.assign(oldValue[`${year}`], { [type]: newDate });
+            newValue = Object.assign(oldValue, yearlyValue);
+        }
+        this.props.onFieldsChange(fieldPath, newValue);
+    },
+
     async _validateNameUniqueness(name) {
         const dataSets = await this.context.d2.models.dataSets.list({
             filter: "name:^ilike:" + name,
@@ -62,8 +76,7 @@ const GeneralInformation = React.createClass({
 
         if (existsDataSetWithName) {
             throw this.getTranslation("dataset_name_exists");
-        }
-        else{
+        } else {
             this.setState({ error: null });
         }
     },
@@ -71,6 +84,96 @@ const GeneralInformation = React.createClass({
     _renderForm() {
         const { associations, dataset } = this.props.store;
         const { error } = this.state;
+        const datesSet = associations.dataInputStartDate && associations.dataInputEndDate;
+        const years = datesSet
+            ? _.range(
+                  moment(associations.dataInputStartDate).year(),
+                  moment(associations.dataInputEndDate)
+                      .add(1, "y")
+                      .year()
+              )
+            : null;
+
+        const outputDates = years
+            ? years.map(year => [
+                  FormHelpers.getFormLabel({
+                      value: `${year}`,
+                      type: "subtitle",
+                      forSection: "output",
+                  }),
+                  FormHelpers.getDateField({
+                      name: `associations.outputDates.${year}.start`,
+                      value:
+                          associations.outputDates[`${year}`] &&
+                          associations.outputDates[`${year}`].start,
+                      label: `Output Start Date ${year}`,
+                      onChange: date =>
+                          this._onUpdateYearlyDatesFields(
+                              "start",
+                              `associations.outputDates`,
+                              date,
+                              associations.outputDates,
+                              year
+                          ),
+                  }),
+                  FormHelpers.getDateField({
+                      name: `associations.outputDates.${year}.end`,
+                      value:
+                          associations.outputDates[`${year}`] &&
+                          associations.outputDates[`${year}`].end,
+                      label: `Output End Date ${year}`,
+                      onChange: date =>
+                          this._onUpdateYearlyDatesFields(
+                              "end",
+                              `associations.outputDates`,
+                              date,
+                              associations.outputDates,
+                              year
+                          ),
+                  }),
+              ])
+            : [];
+
+        const outcomeDates = years
+            ? years.map(year => [
+                  FormHelpers.getFormLabel({
+                      value: `${year}`,
+                      type: "subtitle",
+                      forSection: "outcome",
+                  }),
+                  FormHelpers.getDateField({
+                      name: `associations.outcomeDates.${year}.start`,
+                      value:
+                          associations.outcomeDates[`${year}`] &&
+                          associations.outcomeDates[`${year}`].start,
+                      label: `Outcome Start Date ${year}`,
+                      onChange: date =>
+                          this._onUpdateYearlyDatesFields(
+                              "start",
+                              `associations.outcomeDates`,
+                              date,
+                              associations.outcomeDates,
+                              year
+                          ),
+                  }),
+                  FormHelpers.getDateField({
+                      name: `associations.outcomeDates.${year}.end`,
+                      value:
+                          associations.outcomeDates[`${year}`] &&
+                          associations.outcomeDates[`${year}`].end,
+                      label: `Outcome End Date ${year}`,
+                      onChange: date =>
+                          this._onUpdateYearlyDatesFields(
+                              "end",
+                              `associations.outcomeDates`,
+                              date,
+                              associations.outcomeDates,
+                              year
+                          ),
+                  }),
+              ])
+            : [];
+
         const fields = [
             FormHelpers.getTextField({
                 name: "dataset.name",
@@ -124,6 +227,11 @@ const GeneralInformation = React.createClass({
                 onChange: date => this._onUpdateField("associations.dataInputEndDate", date),
             }),
 
+            datesSet && FormHelpers.getFormLabel({ value: "Output Dates:", type: "title" }),
+            ..._.flatten(outputDates),
+            datesSet && FormHelpers.getFormLabel({ value: "Outcome Dates:", type: "title" }),
+            ..._.flatten(outcomeDates),
+
             FormHelpers.getBooleanField({
                 name: "dataset.notifyCompletingUser",
                 label: this.getTranslation("notify_completing_user"),
@@ -132,10 +240,12 @@ const GeneralInformation = React.createClass({
             }),
         ];
 
+        const formKey = datesSet ? "refreshForm" : "form";
         return (
             <div>
                 {error && <p style={this.styles.error}>{error}</p>}
                 <FormBuilder
+                    key={formKey}
                     fields={_.compact(fields)}
                     onUpdateField={this._onUpdateField}
                     onUpdateFormStatus={this._onUpdateFormStatus}

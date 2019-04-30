@@ -115,6 +115,20 @@ function getMultiSelect({ name, label, onChange, options = [], selected = [], er
     };
 }
 
+function getFormLabel({ value, type, forSection }) {
+    return {
+        name: `${value}_${forSection}`,
+        component: FormLabel,
+        props: {
+            value,
+            style:
+                type === "title"
+                    ? { fontSize: 20, marginTop: 10 }
+                    : { fontSize: 18, marginTop: 10, marginBottom: -15 },
+        },
+    };
+}
+
 function getDateField({ name, label, onChange, value = undefined, isRequired = false }) {
     return {
         name: name,
@@ -137,6 +151,10 @@ function SimpleCheckBox({ onClick, checked, ...otherProps }) {
     );
 }
 
+function FormLabel({ value, style }) {
+    return <div style={style}>{value}</div>;
+}
+
 export default {
     getLabel,
     getTextField,
@@ -146,4 +164,5 @@ export default {
     getMultiSelect,
     getDateField,
     SimpleCheckBox,
+    getFormLabel,
 };
