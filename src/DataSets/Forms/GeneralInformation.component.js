@@ -29,7 +29,26 @@ const GeneralInformation = React.createClass({
             error: null,
             isLoading: true,
             currentUserHasAdminRole: currentUserHasAdminRole(this.context.d2),
+            yearsPeriod: 0,
         };
+    },
+
+    componentDidUpdate() {
+        const {
+            associations: { dataInputEndDate, dataInputStartDate },
+        } = this.props.store;
+        const newYearsPeriod =
+            dataInputStartDate && dataInputEndDate
+                ? _.range(
+                      moment(dataInputStartDate).year(),
+                      moment(dataInputEndDate)
+                          .add(1, "y")
+                          .year()
+                  )
+                : [];
+        if (this.state.yearsPeriod !== newYearsPeriod.length) {
+            this.setState({ yearsPeriod: newYearsPeriod.length });
+        }
     },
 
     componentDidMount() {
@@ -81,6 +100,10 @@ const GeneralInformation = React.createClass({
         }
     },
 
+    onSameDateCheckbox(newValue) {
+        return newValue;
+    },
+
     _renderForm() {
         const { associations, dataset } = this.props.store;
         const { error } = this.state;
@@ -94,87 +117,56 @@ const GeneralInformation = React.createClass({
               )
             : null;
 
-        const outputDates = years
-            ? years.map(year => [
-                  FormHelpers.getFormLabel({
-                      value: `${year}`,
-                      type: "subtitle",
-                      forSection: "output",
-                  }),
-                  FormHelpers.getDateField({
-                      name: `associations.outputDates.${year}.start`,
-                      value:
-                          associations.outputDates[`${year}`] &&
-                          associations.outputDates[`${year}`].start,
-                      label: `Output Start Date ${year}`,
-                      onChange: date =>
-                          this._onUpdateYearlyDatesFields(
-                              "start",
-                              `associations.outputDates`,
-                              date,
-                              associations.outputDates,
-                              year
-                          ),
-                  }),
-                  FormHelpers.getDateField({
-                      name: `associations.outputDates.${year}.end`,
-                      value:
-                          associations.outputDates[`${year}`] &&
-                          associations.outputDates[`${year}`].end,
-                      label: `Output End Date ${year}`,
-                      onChange: date =>
-                          this._onUpdateYearlyDatesFields(
-                              "end",
-                              `associations.outputDates`,
-                              date,
-                              associations.outputDates,
-                              year
-                          ),
-                  }),
-              ])
-            : [];
+        const generateDateFieldPairs = (years, type) => {
+            if (!years) return [];
+            return years.map((year, index) =>
+                _.compact([
+                    FormHelpers.getFormLabel({
+                        value: `${year}`,
+                        type: "subtitle",
+                        forSection: type,
+                    }),
+                    FormHelpers.getDateField({
+                        name: `associations.${type}.${year}.start`,
+                        value: associations[type][`${year}`] && associations[type][`${year}`].start,
+                        label: `Output Start Date ${year}`,
+                        onChange: date =>
+                            this._onUpdateYearlyDatesFields(
+                                "start",
+                                `associations.${type}`,
+                                date,
+                                associations[type],
+                                year
+                            ),
+                    }),
+                    FormHelpers.getDateField({
+                        name: `associations.${type}.${year}.end`,
+                        value: associations[type][`${year}`] && associations[type][`${year}`].end,
+                        label: `Output End Date ${year}`,
+                        onChange: date =>
+                            this._onUpdateYearlyDatesFields(
+                                "end",
+                                `associations.${type}`,
+                                date,
+                                associations[type],
+                                year
+                            ),
+                    }),
+                    index === 0 &&
+                        FormHelpers.getBooleanField({
+                            name: `same${type}`,
+                            label: "Apply same date for every year",
+                            value: true,
+                            onChange: this._onUpdateField,
+                        }),
+                ])
+            );
+        };
 
-        const outcomeDates = years
-            ? years.map(year => [
-                  FormHelpers.getFormLabel({
-                      value: `${year}`,
-                      type: "subtitle",
-                      forSection: "outcome",
-                  }),
-                  FormHelpers.getDateField({
-                      name: `associations.outcomeDates.${year}.start`,
-                      value:
-                          associations.outcomeDates[`${year}`] &&
-                          associations.outcomeDates[`${year}`].start,
-                      label: `Outcome Start Date ${year}`,
-                      onChange: date =>
-                          this._onUpdateYearlyDatesFields(
-                              "start",
-                              `associations.outcomeDates`,
-                              date,
-                              associations.outcomeDates,
-                              year
-                          ),
-                  }),
-                  FormHelpers.getDateField({
-                      name: `associations.outcomeDates.${year}.end`,
-                      value:
-                          associations.outcomeDates[`${year}`] &&
-                          associations.outcomeDates[`${year}`].end,
-                      label: `Outcome End Date ${year}`,
-                      onChange: date =>
-                          this._onUpdateYearlyDatesFields(
-                              "end",
-                              `associations.outcomeDates`,
-                              date,
-                              associations.outcomeDates,
-                              year
-                          ),
-                  }),
-              ])
-            : [];
+        const outputDates = generateDateFieldPairs(years, "outputDates");
+        const outcomeDates = generateDateFieldPairs(years, "outcomeDates");
 
-        const fields = [
+        const fields = _.compact([
             FormHelpers.getTextField({
                 name: "dataset.name",
                 label: this.getTranslation("name"),
@@ -238,9 +230,10 @@ const GeneralInformation = React.createClass({
                 value: dataset.notifyCompletingUser,
                 onChange: this._onUpdateField,
             }),
-        ];
+        ]);
 
-        const formKey = datesSet ? "refreshForm" : "form";
+        const { yearsPeriod } = this.state;
+        const formKey = `${yearsPeriod}`;
         return (
             <div>
                 {error && <p style={this.styles.error}>{error}</p>}
