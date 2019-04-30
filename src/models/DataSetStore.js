@@ -174,6 +174,7 @@ class Factory {
                 sections: collectionToArray(dataset.sections),
                 countries: sharingCountries,
                 userRoles,
+                sameDates: { outputDates: false, outcomeDates: false }, // TO-DO calculate from saved values
                 outputDates: {},
                 outcomeDates: {},
             })

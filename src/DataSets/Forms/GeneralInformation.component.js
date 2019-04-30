@@ -100,10 +100,6 @@ const GeneralInformation = React.createClass({
         }
     },
 
-    onSameDateCheckbox(newValue) {
-        return newValue;
-    },
-
     _renderForm() {
         const { associations, dataset } = this.props.store;
         const { error } = this.state;
@@ -154,9 +150,9 @@ const GeneralInformation = React.createClass({
                     }),
                     index === 0 &&
                         FormHelpers.getBooleanField({
-                            name: `same${type}`,
+                            name: `associations.sameDates.${type}`,
                             label: "Apply same date for every year",
-                            value: true,
+                            value: associations.sameDates[type],
                             onChange: this._onUpdateField,
                         }),
                 ])
