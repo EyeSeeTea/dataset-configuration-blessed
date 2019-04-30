@@ -145,7 +145,8 @@ const GeneralInformation = React.createClass({
                         name: `associations.${type}.${year}.start`,
                         value: getDateValue(year, type, array, "start"),
                         label: `Output Start Date ${year}`,
-                        disabled: false, // index === 0 ? false : associations.sameDates[type],
+                        disabled: false, // Clicking on next years fields causes the value update to fire, setting the first years value correctly,
+                        //disabled: index === 0 ? false : associations.sameDates[type],
                         onChange: date =>
                             this._onUpdateYearlyDatesFields(
                                 "start",
