@@ -18,6 +18,7 @@ import {
     postMetadata,
     update,
     sendMessageToGroups,
+    getCategoryCombo,
 } from "../utils/Dhis2Helpers";
 
 import { getCoreCompetencies, getProject } from "./dataset";
@@ -452,7 +453,7 @@ export default class DataSetStore {
                 _(dataSetElements)
                     .flatMap(dse =>
                         _([dse.dataElement.id])
-                            .cartesianProduct(categoryComboOptionsByCCId[dse.categoryCombo.id])
+                            .cartesianProduct(categoryComboOptionsByCCId[getCategoryCombo(dse).id])
                             .map(([dataElementId, cocId]) => dataElementId + "." + cocId)
                             .value()
                     )
@@ -471,7 +472,7 @@ export default class DataSetStore {
         };
 
         const newCategoryCombos = _(dataSetElements)
-            .map(dse => dse.categoryCombo)
+            .map(getCategoryCombo)
             .uniqBy(cc => cc.id)
             .filter(cc => !existingCategoryCombos.has(cc.id))
             .map(cc => this._addSharingToCategoryCombo(saving, cc))
@@ -503,7 +504,7 @@ export default class DataSetStore {
         const newDataSetElements = dataset.dataSetElements.map(dataSetElement => ({
             dataSet: { id: dataset.id },
             dataElement: { id: dataSetElement.dataElement.id },
-            categoryCombo: { id: dataSetElement.categoryCombo.id },
+            categoryCombo: { id: getCategoryCombo(dataSetElement).id },
         }));
         datasetPayload.dataSetElements = newDataSetElements;
 

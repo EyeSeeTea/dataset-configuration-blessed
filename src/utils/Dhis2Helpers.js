@@ -488,6 +488,20 @@ async function subQuery(d2, objects, field, subfields) {
     });
 }
 
+function getCategoryCombo(dataSetElement) {
+    const { dataElement, categoryCombo } = dataSetElement;
+
+    if (categoryCombo) {
+        return categoryCombo;
+    } else if (dataElement && dataElement.categoryCombo) {
+        return dataElement.categoryCombo;
+    } else {
+        throw new Error(
+            `Cannot get category combo for dataSetElement: ${JSON.stringify(dataSetElement)}`
+        );
+    }
+}
+
 export {
     accesses,
     redirectToLogin,
@@ -518,4 +532,5 @@ export {
     canUpdate,
     getFilteredDatasets,
     subQuery,
+    getCategoryCombo,
 };
