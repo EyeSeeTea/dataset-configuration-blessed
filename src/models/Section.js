@@ -563,14 +563,21 @@ const getFilteredItems = (model, filters, listOptions) => {
     if (_.isEmpty(filters)) {
         return Promise.resolve([]);
     } else {
-        return model
-            .list({
-                paging: false,
-                rootJunction: "OR",
-                filter: filters.map(([key, value]) => `${key}:eq:${value}`),
-                ...listOptions,
-            })
-            .then(collection => collection.toArray());
+        // rootJunction=OR does not work on 2.26 (it returns all unfiltered objects)
+        // build a request for each filter (we have at most 2), and join the results.
+        const requests = _(filters)
+            .groupBy(([key, _value]) => key)
+            .mapValues(pairs => pairs.map(([_key, value]) => value))
+            .map((values, field) =>
+                model
+                    .list({
+                        paging: false,
+                        filter: `${field}:in:[${values.join(",")}]`,
+                        ...listOptions,
+                    })
+                    .then(collectionToArray)
+            );
+        return Promise.all(requests).then(_.flatten);
     }
 };
 
