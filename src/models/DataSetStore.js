@@ -278,7 +278,7 @@ export default class DataSetStore {
             const newDataset = dataset;
             const newAssociations = _.clone(associations);
 
-            newDataset.name = project.name ? `${project.name} DataSet` : "";
+            newDataset.name = project.displayName ? `${project.displayName} DataSet` : "";
             newAssociations.dataInputStartDate = project.startDate
                 ? new Date(project.startDate)
                 : undefined;
