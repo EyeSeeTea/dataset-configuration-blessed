@@ -1,7 +1,7 @@
 import React from "react";
 import DropDown from "../forms/form-fields/drop-down";
 import LinearProgress from "material-ui/LinearProgress/LinearProgress";
-import { getCategoryCombos } from "../utils/Dhis2Helpers";
+import { getCategoryCombos, getCategoryCombo } from "../utils/Dhis2Helpers";
 import FormHelpers from "./FormHelpers";
 import _ from "../utils/lodash-mixins";
 
@@ -69,9 +69,18 @@ class GreyFieldsTable extends React.Component {
     }
 
     componentDidMount() {
-        getCategoryCombos(this.context.d2).then(persistedCategoryCombos => {
+        const d2 = this.context.d2;
+        const cocFields = "id,categoryOptions[id]";
+
+        const categoryComboIds = _(this.props.dataSet.dataSetElements)
+            .map(dse => getCategoryCombo(dse).id)
+            .uniq()
+            .value();
+        const options = { cocFields, filterIds: categoryComboIds };
+
+        getCategoryCombos(d2, options).then(persistedCategoryCombos => {
             const categoryCombosById = _(this.props.dataSet.dataSetElements)
-                .map(dse => dse.categoryCombo)
+                .map(dse => getCategoryCombo(dse))
                 .keyBy("id")
                 .merge(_.keyBy(persistedCategoryCombos.toArray(), "id"))
                 .value();
@@ -209,7 +218,7 @@ class GreyFieldsTable extends React.Component {
 
     renderCheckbox(dataSetElement, categoryOptions) {
         const { dataElement } = dataSetElement;
-        const key = getKey(dataSetElement.categoryCombo, categoryOptions);
+        const key = getKey(getCategoryCombo(dataSetElement), categoryOptions);
         const categoryOptionCombo = this.state.cocByCategoryKey[key];
         if (!dataElement || !categoryOptionCombo) return;
 
@@ -236,12 +245,7 @@ class GreyFieldsTable extends React.Component {
 
         return this.props.dataSet.dataSetElements
             .filter(dse => currentSectionDataElementIds.includes(dse.dataElement.id))
-            .filter(
-                dse =>
-                    (dse.categoryCombo
-                        ? dse.categoryCombo.id
-                        : dse.dataElement.categoryCombo.id) === categoryCombo.id
-            )
+            .filter(dse => getCategoryCombo(dse).id === categoryCombo.id)
             .sort(
                 (a, b) =>
                     currentSectionDataElementIds.indexOf(a.dataElement.id) -
@@ -285,7 +289,7 @@ class GreyFieldsTable extends React.Component {
         );
         const categoryCombosForVisibleSections = _(this.props.dataSet.dataSetElements)
             .filter(dse => sectionDataElementIds.has(dse.dataElement.id))
-            .map(dse => dse.categoryCombo)
+            .map(dse => getCategoryCombo(dse))
             .uniqBy("id")
             .sortBy("displayName")
             .value();
