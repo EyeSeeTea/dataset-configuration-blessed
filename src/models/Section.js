@@ -584,14 +584,13 @@ const getFilteredItems = (model, filters, listOptions) => {
 const getDataElements = async (d2, dataElementFilters) => {
     const fields = [
         "id",
-        "name",
         "displayName",
         "code",
         "description",
         "valueType",
         "categoryCombo[id]",
         "dataElementGroups[id]",
-        "attributeValues[value,attribute]",
+        "attributeValues[value,attribute[id]]",
     ];
 
     const dataElementGroupsFields = "id,displayName";
