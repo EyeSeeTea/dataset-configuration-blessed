@@ -8,6 +8,9 @@ export default React.createClass({
         labelText: React.PropTypes.string.isRequired,
         onChange: React.PropTypes.func.isRequired,
         disabled: React.PropTypes.bool,
+        defaultDate: React.PropTypes.object,
+        minDate: React.PropTypes.object,
+        maxDate: React.PropTypes.object,
     },
 
     defaultProps: {
@@ -27,17 +30,27 @@ export default React.createClass({
             models,
             modelDefinition,
             disabled,
+            defaultDate,
+            minDate,
+            maxDate,
+            value,
             ...other
         } = this.props;
+
+        const valueProp = value ? { value: new Date(value) } : {};
+
         return (
             <DatePicker
                 {...other}
-                value={this.props.value && new Date(this.props.value)}
+                {...valueProp}
                 mode="portrait"
                 autoOk
                 disabled={disabled}
                 floatingLabelText={labelText}
                 onChange={this._onDateSelect}
+                defaultDate={defaultDate}
+                minDate={minDate}
+                maxDate={maxDate}
             />
         );
     },
@@ -59,7 +72,8 @@ export default React.createClass({
             <div>
                 {!this.props.isRequired &&
                 this.props.value !== undefined &&
-                this.props.value !== "" ? (
+                this.props.value !== "" &&
+                !this.props.disabled ? (
                     <IconButton
                         iconClassName="material-icons"
                         style={styles.closeButton}
