@@ -1,6 +1,5 @@
 import React from "react";
 import _ from "lodash";
-import moment from "moment";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import FormBuilder from "d2-ui/lib/forms/FormBuilder.component";
 import Validators from "d2-ui/lib/forms/Validators";
@@ -29,26 +28,8 @@ const GeneralInformation = React.createClass({
             error: null,
             isLoading: true,
             currentUserHasAdminRole: currentUserHasAdminRole(this.context.d2),
-            yearsPeriod: 0,
+            isValid: undefined,
         };
-    },
-
-    componentDidUpdate() {
-        const {
-            associations: { dataInputEndDate, dataInputStartDate },
-        } = this.props.store;
-        const newYearsPeriod =
-            dataInputStartDate && dataInputEndDate
-                ? _.range(
-                      moment(dataInputStartDate).year(),
-                      moment(dataInputEndDate)
-                          .add(1, "y")
-                          .year()
-                  )
-                : [];
-        if (this.state.yearsPeriod !== newYearsPeriod.length) {
-            this.setState({ yearsPeriod: newYearsPeriod.length });
-        }
     },
 
     componentDidMount() {
@@ -72,17 +53,6 @@ const GeneralInformation = React.createClass({
         this.props.onFieldsChange(fieldPath, newValue);
     },
 
-    _onUpdateYearlyDatesFields(type, fieldPath, newDate, oldValue, year) {
-        let newValue;
-        if (!oldValue[`${year}`]) {
-            newValue = Object.assign(oldValue, { [`${year}`]: { [type]: newDate } });
-        } else {
-            const yearlyValue = Object.assign(oldValue[`${year}`], { [type]: newDate });
-            newValue = Object.assign(oldValue, yearlyValue);
-        }
-        this.props.onFieldsChange(fieldPath, newValue);
-    },
-
     async _validateNameUniqueness(name) {
         const dataSets = await this.context.d2.models.dataSets.list({
             filter: "name:^ilike:" + name,
@@ -98,91 +68,67 @@ const GeneralInformation = React.createClass({
         }
     },
 
+    _getPeriodFields(years) {
+        const { store } = this.props;
+        const { associations } = this.props.store;
+        const { getFormLabel, getDateField, getBooleanField } = FormHelpers;
+        const t = this.getTranslation;
+
+        const generateDateFieldPairs = type => {
+            return _.flatMap(years, (year, index) => {
+                const disabled = index > 0 && associations.periodDatesApplyToAll[type];
+                const showApplyToAllYearsCheckbox = index === 0 && years.length > 1;
+                const validators = [
+                    {
+                        validator: value => !value || value.getFullYear() === year,
+                        message: this.getTranslation("date_not_in_period_year"),
+                    },
+                ];
+
+                return _.compact([
+                    getFormLabel({ value: year, type: "subtitle", forSection: type }),
+                    getDateField({
+                        name: `associations.periodDates.${type}.${year}.start`,
+                        value: store.getPeriodValue(year, type, years, "start"),
+                        label: t("output_start_date") + " " + year,
+                        years: [year],
+                        disabled,
+                        validators,
+                    }),
+                    getDateField({
+                        name: `associations.periodDates.${type}.${year}.end`,
+                        value: store.getPeriodValue(year, type, years, "end"),
+                        label: t("output_end_date") + " " + year,
+                        years: [year],
+                        disabled,
+                    }),
+                    showApplyToAllYearsCheckbox
+                        ? getBooleanField({
+                              name: `associations.periodDatesApplyToAll.${type}`,
+                              label: t("apply_periods_to_all"),
+                              value: associations.periodDatesApplyToAll[type],
+                              onChange: this._onUpdateField,
+                          })
+                        : null,
+                ]);
+            });
+        };
+
+        return _(years).isEmpty()
+            ? []
+            : [
+                  getFormLabel({ value: t("output_dates") + ":", type: "title" }),
+                  ...generateDateFieldPairs("output"),
+                  getFormLabel({ value: t("outcome_dates") + ":", type: "title" }),
+                  ...generateDateFieldPairs("outcome"),
+              ];
+    },
+
     _renderForm() {
-        const { associations, dataset } = this.props.store;
+        const { store } = this.props;
+        const { associations, dataset } = store;
         const { error } = this.state;
-        const datesSet = associations.dataInputStartDate && associations.dataInputEndDate;
-
-        const years = datesSet
-            ? _.range(
-                  moment(associations.dataInputStartDate).year(),
-                  moment(associations.dataInputEndDate)
-                      .add(1, "y")
-                      .year()
-              )
-            : null;
-
-        const getDateValue = (year, type, array, period) => {
-            // only being called for first year on checkbox click => BUG
-            if (associations[type][`${year}`] && year === 2020) {
-                console.log({
-                    sameDates: associations.sameDates[type],
-                    firstYear: array[0],
-                    realValue: associations[type][`${year}`][period],
-                });
-            }
-            return (
-                associations[type][`${year}`] &&
-                (associations.sameDates[type]
-                    ? associations[type][`${array[0]}`][period]
-                    : associations[type][`${year}`][period])
-            );
-        };
-
-        const generateDateFieldPairs = (years, type) => {
-            if (!years) return [];
-            // BUG: After clicking on the sameDates checkbox, values for years other than the first year don't update till touched.
-            // Updating key on checkbox mark doesn't solve it, but either if it did we'd be relying on the user entering first year dates
-            // before clicking on the checkbox.
-            return years.map((year, index, array) =>
-                _.compact([
-                    FormHelpers.getFormLabel({
-                        value: `${year}`,
-                        type: "subtitle",
-                        forSection: type,
-                    }),
-                    FormHelpers.getDateField({
-                        name: `associations.${type}.${year}.start`,
-                        value: getDateValue(year, type, array, "start"),
-                        label: `Output Start Date ${year}`,
-                        disabled: false, // Clicking on next years fields causes the value update to fire, setting the first years value correctly,
-                        //disabled: index === 0 ? false : associations.sameDates[type],
-                        onChange: date =>
-                            this._onUpdateYearlyDatesFields(
-                                "start",
-                                `associations.${type}`,
-                                date,
-                                associations[type],
-                                year
-                            ),
-                    }),
-                    FormHelpers.getDateField({
-                        name: `associations.${type}.${year}.end`,
-                        value: getDateValue(year, type, array, "end"),
-                        label: `Output End Date ${year}`,
-                        disabled: false, //index === 0 ? false : associations.sameDates[type],
-                        onChange: date =>
-                            this._onUpdateYearlyDatesFields(
-                                "end",
-                                `associations.${type}`,
-                                date,
-                                associations[type],
-                                year
-                            ),
-                    }),
-                    index === 0 &&
-                        FormHelpers.getBooleanField({
-                            name: `associations.sameDates.${type}`,
-                            label: "Apply same date for every year",
-                            value: associations.sameDates[type],
-                            onChange: this._onUpdateField,
-                        }),
-                ])
-            );
-        };
-
-        const outputDatesFields = generateDateFieldPairs(years, "outputDates");
-        const outcomeDatesFields = generateDateFieldPairs(years, "outcomeDates");
+        const years = this.props.store.getPeriodYears();
 
         const fields = _.compact([
             FormHelpers.getTextField({
@@ -223,75 +169,56 @@ const GeneralInformation = React.createClass({
                     type: "number",
                 }),
 
-            FormHelpers.getDateField({
-                name: "associations.dataInputStartDate",
-                value: associations.dataInputStartDate,
-                label: FormHelpers.getLabel(this.getTranslation("data_input_start_date")),
-                onChange: date => this._onUpdateField("associations.dataInputStartDate", date),
-            }),
-
-            FormHelpers.getDateField({
-                name: "associations.dataInputEndDate",
-                value: associations.dataInputEndDate,
-                label: FormHelpers.getLabel(this.getTranslation("data_input_end_date")),
-                onChange: date => this._onUpdateField("associations.dataInputEndDate", date),
-            }),
-
-            datesSet && FormHelpers.getFormLabel({ value: "Output Dates:", type: "title" }),
-            ..._.flatten(outputDatesFields),
-            datesSet && FormHelpers.getFormLabel({ value: "Outcome Dates:", type: "title" }),
-            ..._.flatten(outcomeDatesFields),
-
             FormHelpers.getBooleanField({
                 name: "dataset.notifyCompletingUser",
                 label: this.getTranslation("notify_completing_user"),
                 value: dataset.notifyCompletingUser,
                 onChange: this._onUpdateField,
             }),
+
+            FormHelpers.getDateField({
+                name: "associations.dataInputStartDate",
+                value: associations.dataInputStartDate,
+                label: FormHelpers.getLabel(this.getTranslation("data_input_start_date")),
+            }),
+
+            FormHelpers.getDateField({
+                name: "associations.dataInputEndDate",
+                value: associations.dataInputEndDate,
+                label: FormHelpers.getLabel(this.getTranslation("data_input_end_date")),
+            }),
+
+            ...this._getPeriodFields(years),
         ]);
 
-        const { yearsPeriod } = this.state;
-        const {
-            associations: {
-                sameDates: { outcomeDates, outputDates },
-            },
-        } = this.props.store;
-        const formKey = `${yearsPeriod}-${outcomeDates}-${outputDates}`;
-        console.log(formKey);
+        // FormBuilder only considers fields with values sent on the first render, so we need
+        // to redraw the component (change its key) when years or the apply flag change.
+        const formKey = JSON.stringify([years, associations.periodDatesApplyToAll]);
+
         return (
             <div>
                 {error && <p style={this.styles.error}>{error}</p>}
+
                 <FormBuilder
                     key={formKey}
                     fields={_.compact(fields)}
                     onUpdateField={this._onUpdateField}
                     onUpdateFormStatus={this._onUpdateFormStatus}
-                    validateOnRender={this.props.validateOnRender}
+                    validateOnRender={_.isUndefined(this.state.isValid)}
                 />
             </div>
         );
     },
 
-    async validate() {
-        const { dataset } = this.props.store;
-
-        if (!dataset.name || !dataset.name.trim()) {
-            this.props.formStatus(false);
-        } else {
-            try {
-                await this._validateNameUniqueness(dataset.name);
-                this.props.formStatus(true);
-                this.setState({ error: null });
-            } catch (err) {
-                this.props.formStatus(false);
-                this.setState({ error: err.toString() });
-            }
-        }
+    _onUpdateFormStatus(status) {
+        const isValid = !status.validating && status.valid;
+        this.setState({ isValid });
+        this.props.formStatus(isValid);
     },
 
     async componentWillReceiveProps(props) {
         if (props.validateOnRender) {
-            this.validate();
+            this.props.formStatus(this.state.isValid);
         }
     },
 

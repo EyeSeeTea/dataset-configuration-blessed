@@ -155,6 +155,7 @@ class Factory {
             this.getCountriesFromSharing(dataset, countries),
             this.getUserRolesForCurrentUser(),
         ];
+        const getDate = value => (value ? new Date(value) : null);
 
         return Promise.all(promises).then(
             ([project, coreCompetencies, sharingCountries, userRoles]) => ({
@@ -163,20 +164,24 @@ class Factory {
                 initialSections: collectionToArray(dataset.sections),
                 initialCoreCompetencies: coreCompetencies,
                 processedCoreCompetencies: coreCompetencies,
-                dataInputStartDate: _(dataset.dataInputPeriods)
-                    .map("openingDate")
-                    .compact()
-                    .min(),
-                dataInputEndDate: _(dataset.dataInputPeriods)
-                    .map("closingDate")
-                    .compact()
-                    .max(),
+                dataInputStartDate: getDate(
+                    _(dataset.dataInputPeriods)
+                        .map("openingDate")
+                        .compact()
+                        .min()
+                ),
+                dataInputEndDate: getDate(
+                    _(dataset.dataInputPeriods)
+                        .map("closingDate")
+                        .compact()
+                        .max()
+                ),
                 sections: collectionToArray(dataset.sections),
                 countries: sharingCountries,
                 userRoles,
-                sameDates: { outputDates: false, outcomeDates: false }, // TO-DO calculate from saved values
-                outputDates: {},
-                outcomeDates: {},
+                // TO-DO calculate from saved values
+                periodDatesApplyToAll: { output: false, outcome: false },
+                periodDates: { output: {}, outcome: {} },
             })
         );
     }
@@ -217,6 +222,39 @@ export default class DataSetStore {
 
     isSharingStepVisible() {
         return !this.associations.project;
+    }
+
+    getPeriodYears() {
+        const { dataInputStartDate, dataInputEndDate } = this.associations;
+        if (!dataInputStartDate || !dataInputEndDate) {
+            return [];
+        } else {
+            const startYear = moment(dataInputStartDate).year();
+            const endYear = moment(dataInputEndDate)
+                .add(1, "year")
+                .year();
+            return _.range(startYear, endYear);
+        }
+    }
+
+    getPeriodValue(year, field, years, endStartKey) {
+        const { associations } = this;
+        const { periodDatesApplyToAll, periodDates } = associations;
+        const firstYear = years[0];
+
+        if (periodDatesApplyToAll[field]) {
+            const valueForFirstYear = periodDates[field][firstYear];
+            const value = valueForFirstYear ? valueForFirstYear[endStartKey] : null;
+            return value
+                ? moment(value)
+                      .set("year", year)
+                      .toDate()
+                : null;
+        } else if (periodDates[field][year]) {
+            return periodDates[field][year][endStartKey];
+        } else {
+            return null;
+        }
     }
 
     _saveCustomForm(saving) {
@@ -260,9 +298,10 @@ export default class DataSetStore {
     getOpenFuturePeriods(endDate) {
         if (endDate) {
             const currentDate = new Date();
+            const endDate_ = new Date(endDate);
             const monthsDiff =
-                (endDate.getYear() - currentDate.getYear()) * 12 +
-                (endDate.getMonth() - currentDate.getMonth());
+                (endDate_.getYear() - currentDate.getYear()) * 12 +
+                (endDate_.getMonth() - currentDate.getMonth());
             return monthsDiff > 0 ? monthsDiff + 1 : 1;
         } else {
             return 1;
