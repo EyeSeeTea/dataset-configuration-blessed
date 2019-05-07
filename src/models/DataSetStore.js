@@ -18,11 +18,14 @@ import {
     postMetadata,
     update,
     sendMessageToGroups,
+    getCategoryCombo,
 } from "../utils/Dhis2Helpers";
 
 import { getCoreCompetencies, getProject } from "./dataset";
 import * as Section from "./Section";
 import getCustomForm from "./CustomForm";
+
+const toArray = collectionToArray;
 
 class Factory {
     constructor(d2, config) {
@@ -54,7 +57,7 @@ class Factory {
                 dse.id = generateUid();
                 dse.dataSet = { id: undefined };
             });
-            dataset.sections.toArray().forEach(section => {
+            toArray(dataset.sections).forEach(section => {
                 section.id = undefined;
             });
             return this.getStore(dataset, "clone");
@@ -72,7 +75,7 @@ class Factory {
 
     getDataset(id) {
         const fields = [
-            "*,dataSetElements[*,categoryCombo[*,categories[*,categoryOptions[*]]],dataElement[*,categoryCombo[*]]]",
+            "*,dataSetElements[*,categoryCombo[*,categories[id,displayName]],dataElement[*,categoryCombo[*]]]",
             "sections[*,href],organisationUnits[*]",
         ].join(",");
         return this.d2.models.dataSets.get(id, { fields });
@@ -259,7 +262,8 @@ export default class DataSetStore {
 
     _saveCustomForm(saving) {
         const { richSections, dataset, project } = saving;
-        const categoryCombos$ = getCategoryCombos(this.d2);
+        const cocFields = "id,categoryOptions[id]";
+        const categoryCombos$ = getCategoryCombos(this.d2, { cocFields });
         const api = this.d2.Api.getApi();
 
         return categoryCombos$.then(categoryCombos => {
@@ -316,7 +320,7 @@ export default class DataSetStore {
             const newDataset = dataset;
             const newAssociations = _.clone(associations);
 
-            newDataset.name = project.name ? `${project.name} DataSet` : "";
+            newDataset.name = project.displayName ? `${project.displayName} DataSet` : "";
             newAssociations.dataInputStartDate = project.startDate
                 ? new Date(project.startDate)
                 : undefined;
@@ -362,7 +366,7 @@ export default class DataSetStore {
             return [countriesByCode[projectCountryCode]];
         } else {
             return _(countriesById)
-                .at(dataset.organisationUnits.toArray().map(ou => ou.id))
+                .at(toArray(dataset.organisationUnits).map(ou => ou.id))
                 .compact()
                 .value();
         }
@@ -454,7 +458,7 @@ export default class DataSetStore {
         const project$ = project
             ? this.d2.models.categoryOption.get(project.id)
             : Promise.resolve(null);
-        const categoryCombos$ = getCategoryCombos(this.d2);
+        const categoryCombos$ = getCategoryCombos(this.d2, { cocFields: "id" });
         const countryCodes = _(countries)
             .map(getCountryCode)
             .compact()
@@ -467,7 +471,7 @@ export default class DataSetStore {
                     warnings: [],
                     project: project,
                     countryCodes: countryCodes,
-                    userGroups: userGroups.toArray(),
+                    userGroups: toArray(userGroups),
                     metadata: {},
                     categoryCombos: categoryCombos,
                 };
@@ -476,12 +480,14 @@ export default class DataSetStore {
     }
 
     _processDisaggregation(saving) {
-        const { dataset } = saving;
+        const { dataset, categoryCombos } = saving;
+
+        const existingCategoryCombos = new Set(toArray(categoryCombos).map(cc => cc.id));
         const dataSetElements = collectionToArray(dataset.dataSetElements);
         const removeUnusedGreyedFields = (sections, newCategoryCombos) => {
             const categoryComboOptionsByCCId = _(collectionToArray(saving.categoryCombos))
                 .concat(newCategoryCombos)
-                .map(cc => [cc.id, cc.categoryOptionCombos.toArray().map(coc => coc.id)])
+                .map(cc => [cc.id, toArray(cc.categoryOptionCombos).map(coc => coc.id)])
                 .fromPairs()
                 .value();
 
@@ -489,7 +495,7 @@ export default class DataSetStore {
                 _(dataSetElements)
                     .flatMap(dse =>
                         _([dse.dataElement.id])
-                            .cartesianProduct(categoryComboOptionsByCCId[dse.categoryCombo.id])
+                            .cartesianProduct(categoryComboOptionsByCCId[getCategoryCombo(dse).id])
                             .map(([dataElementId, cocId]) => dataElementId + "." + cocId)
                             .value()
                     )
@@ -508,13 +514,13 @@ export default class DataSetStore {
         };
 
         const newCategoryCombos = _(dataSetElements)
-            .map(dse => dse.categoryCombo)
+            .map(getCategoryCombo)
             .uniqBy(cc => cc.id)
-            .filter(cc => cc.dirty)
+            .filter(cc => !existingCategoryCombos.has(cc.id))
             .map(cc => this._addSharingToCategoryCombo(saving, cc))
             .value();
         const newCategoryComboOptions = _(newCategoryCombos)
-            .flatMap(cc => cc.categoryOptionCombos.toArray())
+            .flatMap(cc => toArray(cc.categoryOptionCombos))
             .value();
 
         dataset.sections = removeUnusedGreyedFields(dataset.sections, newCategoryCombos);
@@ -540,7 +546,7 @@ export default class DataSetStore {
         const newDataSetElements = dataset.dataSetElements.map(dataSetElement => ({
             dataSet: { id: dataset.id },
             dataElement: { id: dataSetElement.dataElement.id },
-            categoryCombo: { id: dataSetElement.categoryCombo.id },
+            categoryCombo: { id: getCategoryCombo(dataSetElement).id },
         }));
         datasetPayload.dataSetElements = newDataSetElements;
 
@@ -596,7 +602,7 @@ export default class DataSetStore {
             const filter = "name:in:[" + userRoleNames.join(",") + "]";
             return this.d2.models.userRoles
                 .list({ paging: false, filter })
-                .then(collection => collection.toArray())
+                .then(toArray)
                 .then(userRoles =>
                     _(userRoles)
                         .keyBy("name")
@@ -755,7 +761,7 @@ export default class DataSetStore {
         const userGroupNames = this._getUserGroupsForNotifications();
 
         return getUserGroups(d2, userGroupNames)
-            .then(col => col.toArray())
+            .then(toArray)
             .then(userGroups => sendMessage(d2, msg.subject, msg.body, userGroups))
             .then(() => saving)
             .catch(err => {

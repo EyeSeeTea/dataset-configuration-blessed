@@ -27,14 +27,19 @@ function redirectToLogin(baseUrl) {
     window.location.assign(loginUrl);
 }
 
-function getCategoryCombos(d2) {
+function getCategoryCombos(d2, { cocFields, filterIds } = {}) {
     return d2.models.categoryCombos.list({
-        fields: [
-            "id,name,displayName,dataDimensionType,isDefault",
-            "categories[id,displayName,categoryOptions[id,name,displayName]]",
-            "categoryOptionCombos[id,displayName,categoryOptions[id,name,displayName]]",
-        ].join(","),
-        filter: "dataDimensionType:eq:DISAGGREGATION",
+        fields: _([
+            "id,displayName,dataDimensionType,isDefault",
+            "categories[id,displayName,categoryOptions[id,displayName]]",
+            cocFields ? `categoryOptionCombos[${cocFields}]` : null,
+        ])
+            .compact()
+            .join(","),
+        filter: _.compact([
+            "dataDimensionType:eq:DISAGGREGATION",
+            filterIds ? `id:in:[${filterIds.join(",")}]` : null,
+        ]),
         paging: false,
     });
 }
@@ -125,7 +130,6 @@ function getDisaggregationForCategories(d2, dataElement, categoryCombos, categor
             categories: categories,
             categoryOptionCombos: categoryOptionCombos,
         });
-        newCategoryCombo.dirty = true; // mark dirty so we know it must be saved
         cachedCategoryCombos[cacheKey] = newCategoryCombo;
         return newCategoryCombo;
     }
@@ -455,6 +459,49 @@ async function getFilteredDatasets(d2, config, page, sorting, filters) {
     }
 }
 
+async function subQuery(d2, objects, field, subfields) {
+    const filter =
+        "id:in:[" +
+        _(objects)
+            .map(obj => obj[field])
+            .flatMap(obj => (obj.toArray ? obj.toArray().map(o => o.id) : [obj.id]))
+            .uniq()
+            .join(",") +
+        "]";
+
+    const subObjects = await d2.models[field]
+        .list({
+            paging: false,
+            fields: subfields,
+            filter: filter,
+        })
+        .then(collection => collection.toArray());
+
+    const subObjectsById = _.keyBy(subObjects, "id");
+
+    return objects.map(obj => {
+        const value = obj[field];
+        obj[field] = value.toArray
+            ? { toArray: () => value.toArray().map(v => subObjectsById[v.id]) }
+            : subObjectsById[value.id];
+        return obj;
+    });
+}
+
+function getCategoryCombo(dataSetElement) {
+    const { dataElement, categoryCombo } = dataSetElement;
+
+    if (categoryCombo) {
+        return categoryCombo;
+    } else if (dataElement && dataElement.categoryCombo) {
+        return dataElement.categoryCombo;
+    } else {
+        throw new Error(
+            `Cannot get category combo for dataSetElement: ${JSON.stringify(dataSetElement)}`
+        );
+    }
+}
+
 export {
     accesses,
     redirectToLogin,
@@ -484,4 +531,6 @@ export {
     canDelete,
     canUpdate,
     getFilteredDatasets,
+    subQuery,
+    getCategoryCombo,
 };

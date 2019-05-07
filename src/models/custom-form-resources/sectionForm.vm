@@ -43,7 +43,7 @@
                     #foreach( $header in $headersRow )
                         <th colspan="$header.colSpan" scope="col" class="nrcdataheader">
                             <span align="center">
-                                #if( $header.name == 'default' )
+                                #if( $header.displayName == 'default' )
                                     ${i18n.getString( "value" )}
                                 #else
                                     ${encoder.htmlEncode( $header.displayName )}

@@ -54,12 +54,14 @@ const GeneralInformation = React.createClass({
     },
 
     async _validateNameUniqueness(name) {
+        const { dataset } = this.props.store;
         const dataSets = await this.context.d2.models.dataSets.list({
+            fields: "id,name",
             filter: "name:^ilike:" + name,
         });
         const existsDataSetWithName = dataSets
             .toArray()
-            .some(ds => ds.name.toLowerCase() === name.toLowerCase());
+            .some(ds => ds.id !== dataset.id && ds.name.toLowerCase() === name.toLowerCase());
 
         if (existsDataSetWithName) {
             throw this.getTranslation("dataset_name_exists");

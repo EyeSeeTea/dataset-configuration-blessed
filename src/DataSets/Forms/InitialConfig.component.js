@@ -44,7 +44,6 @@ const InitialConfig = React.createClass({
     _getProjects() {
         const fields = [
             "code",
-            "name",
             "displayName",
             "startDate",
             "endDate",
