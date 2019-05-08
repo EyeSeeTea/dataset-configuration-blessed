@@ -116,13 +116,13 @@ export default class Settings {
             defaultFilter: "code:eq:GL_CREATED_BY_DATASET_CONFIGURATION",
         },
         {
-            name: "dataPeriodOutputDates",
+            name: "dataPeriodOutputDatesAttributeId",
             type: "d2-object",
             model: "attributes",
             defaultFilter: "code:eq:GL_OUTPUT_DATES",
         },
         {
-            name: "dataPeriodOutcomeDates",
+            name: "dataPeriodOutcomeDatesAttributeId",
             type: "d2-object",
             model: "attributes",
             defaultFilter: "code:eq:GL_OUTCOME_DATES",

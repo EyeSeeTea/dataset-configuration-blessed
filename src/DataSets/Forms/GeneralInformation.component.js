@@ -1,5 +1,6 @@
 import React from "react";
 import _ from "lodash";
+import moment from "moment";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import FormBuilder from "d2-ui/lib/forms/FormBuilder.component";
 import Validators from "d2-ui/lib/forms/Validators";
@@ -72,18 +73,25 @@ const GeneralInformation = React.createClass({
 
     _getPeriodFields(years) {
         const { store } = this.props;
+        const { currentUserHasAdminRole } = this.state;
         const { associations } = this.props.store;
         const { getFormLabel, getDateField, getBooleanField } = FormHelpers;
         const t = this.getTranslation;
+        const startDate = associations.dataInputStartDate;
+        const periodDates = store.getPeriodDates();
+        const periodYears = store.getPeriodYears();
+
+        if (!currentUserHasAdminRole || _.isEmpty(periodYears)) return [];
 
         const generateDateFieldPairs = type => {
             return _.flatMap(years, (year, index) => {
                 const disabled = index > 0 && associations.periodDatesApplyToAll[type];
                 const showApplyToAllYearsCheckbox = index === 0 && years.length > 1;
+                const startDateMom = startDate ? moment(startDate).startOf("day") : null;
                 const validators = [
                     {
-                        validator: value => !value || value.getFullYear() === year,
-                        message: this.getTranslation("date_not_in_period_year"),
+                        validator: value => !value || moment(value).isSameOrAfter(startDateMom),
+                        message: this.getTranslation("start_date_before_project_start"),
                     },
                 ];
 
@@ -91,17 +99,17 @@ const GeneralInformation = React.createClass({
                     getFormLabel({ value: year, type: "subtitle", forSection: type }),
                     getDateField({
                         name: `associations.periodDates.${type}.${year}.start`,
-                        value: store.getPeriodValue(year, type, years, "start"),
+                        value: _(periodDates).get([type, year, "start"]),
                         label: t("output_start_date") + " " + year,
-                        years: [year],
+                        minDate: startDate,
                         disabled,
                         validators,
                     }),
                     getDateField({
                         name: `associations.periodDates.${type}.${year}.end`,
-                        value: store.getPeriodValue(year, type, years, "end"),
+                        value: _(periodDates).get([type, year, "end"]),
                         label: t("output_end_date") + " " + year,
-                        years: [year],
+                        minDate: startDate,
                         disabled,
                     }),
                     showApplyToAllYearsCheckbox
@@ -116,14 +124,12 @@ const GeneralInformation = React.createClass({
             });
         };
 
-        return _(years).isEmpty()
-            ? []
-            : [
-                  getFormLabel({ value: t("output_dates") + ":", type: "title" }),
-                  ...generateDateFieldPairs("output"),
-                  getFormLabel({ value: t("outcome_dates") + ":", type: "title" }),
-                  ...generateDateFieldPairs("outcome"),
-              ];
+        return [
+            getFormLabel({ value: t("output_dates") + ":", type: "title" }),
+            ...generateDateFieldPairs("output"),
+            getFormLabel({ value: t("outcome_dates") + ":", type: "title" }),
+            ...generateDateFieldPairs("outcome"),
+        ];
     },
 
     _renderForm() {

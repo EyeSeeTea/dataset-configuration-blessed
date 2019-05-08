@@ -5,7 +5,6 @@ import RichDropdown from "./RichDropdown.component";
 import CheckBox from "d2-ui/lib/form-fields/CheckBox.component";
 import MultiSelect from "./MultiSelect.component";
 import DateSelect from "./form-fields/date-select";
-import _ from "lodash";
 
 function getLabel(label, isRequired, help = null) {
     return label + (help ? ` (${help})` : "") + (isRequired ? " (*)" : "");
@@ -137,11 +136,9 @@ function getDateField({
     isRequired = false,
     disabled = false,
     validators = undefined,
-    years,
+    minDate = undefined,
+    maxDate = undefined,
 }) {
-    const [minDate, maxDate] = years
-        ? [new Date(_.min(years), 0, 1), new Date(_.max(years), 11, 31)]
-        : [];
     return {
         name: name,
         component: DateSelect,

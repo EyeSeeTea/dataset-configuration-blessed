@@ -19,6 +19,7 @@ import {
     update,
     sendMessageToGroups,
     getCategoryCombo,
+    setAttributes,
 } from "../utils/Dhis2Helpers";
 
 import { getCoreCompetencies, getProject } from "./dataset";
@@ -26,6 +27,39 @@ import * as Section from "./Section";
 import getCustomForm from "./CustomForm";
 
 const toArray = collectionToArray;
+const dataInputPeriodDatesFormat = "YYYYMMDD";
+
+function formatDate(value) {
+    const date = moment(value);
+    return value && date.isValid() ? date.format(dataInputPeriodDatesFormat) : "";
+}
+
+function parseDate(value) {
+    const date = moment(value, dataInputPeriodDatesFormat);
+    return value && date.isValid() ? date.toDate() : undefined;
+}
+
+function formatPeriodDates(dates, years) {
+    return _(dates)
+        .toPairs()
+        .sortBy(([year, _period]) => year)
+        .filter(([year, _period]) => years.includes(parseInt(year)))
+        .map(([year, { start, end }]) => `${year}=${formatDate(start)}-${formatDate(end)}`)
+        .join(",");
+}
+
+function parsePeriodDates(stringDate) {
+    // Example: "2018=20180501-20180531,2019=20190501-20190531"
+    return _((stringDate || "").split(","))
+        .map(stringDateForYear => {
+            const [year, stringDateInterval] = stringDateForYear.split("=");
+            const [start, end] = (stringDateInterval || "").split("-").map(parseDate);
+            return year ? [year, { start, end }] : null;
+        })
+        .compact()
+        .fromPairs()
+        .value();
+}
 
 class Factory {
     constructor(d2, config) {
@@ -158,7 +192,7 @@ class Factory {
             this.getCountriesFromSharing(dataset, countries),
             this.getUserRolesForCurrentUser(),
         ];
-        const getDate = value => (value ? new Date(value) : null);
+        const getDate = value => (value ? new Date(value) : undefined);
 
         return Promise.all(promises).then(
             ([project, coreCompetencies, sharingCountries, userRoles]) => ({
@@ -182,11 +216,42 @@ class Factory {
                 sections: collectionToArray(dataset.sections),
                 countries: sharingCountries,
                 userRoles,
-                // TO-DO calculate from saved values
-                periodDatesApplyToAll: { output: false, outcome: false },
-                periodDates: { output: {}, outcome: {} },
+                ...this.getPeriodAssociations(dataset),
             })
         );
+    }
+
+    getPeriodAssociations(dataset) {
+        const { dataPeriodOutputDatesAttributeId, dataPeriodOutcomeDatesAttributeId } = this.config;
+
+        const valueByAttrId = _(dataset.attributeValues)
+            .map(av => [av.attribute.id, av.value])
+            .fromPairs()
+            .value();
+
+        const output = parsePeriodDates(valueByAttrId[dataPeriodOutputDatesAttributeId]);
+        const outcome = parsePeriodDates(valueByAttrId[dataPeriodOutcomeDatesAttributeId]);
+
+        const hasSameDatesAcrossYears = datesByYear => {
+            return _(datesByYear)
+                .values()
+                .map(dates =>
+                    _(dates)
+                        .values()
+                        .map(date => (date ? moment(date).format("MM-DD") : undefined))
+                        .value()
+                )
+                .unzip()
+                .every(datesGroup => datesGroup.length > 1 && _.uniq(datesGroup).length === 1);
+        };
+
+        return {
+            periodDatesApplyToAll: {
+                output: hasSameDatesAcrossYears(output),
+                outcome: hasSameDatesAcrossYears(outcome),
+            },
+            periodDates: { output, outcome },
+        };
     }
 }
 
@@ -240,34 +305,49 @@ export default class DataSetStore {
         }
     }
 
-    getPeriodValue(year, field, years, endStartKey) {
+    getPeriodDates() {
         const { associations } = this;
         const { periodDatesApplyToAll, periodDates } = associations;
+        const years = this.getPeriodYears();
         const firstYear = years[0];
-
-        if (periodDatesApplyToAll[field]) {
-            const valueForFirstYear = periodDates[field][firstYear];
-            const value = valueForFirstYear ? valueForFirstYear[endStartKey] : null;
-            return value
-                ? moment(value)
+        const processDate = (date, year, periodKey) =>
+            date
+                ? moment(date)
                       .set("year", year)
+                      .startOf(periodKey === "start" ? "day" : undefined)
+                      .endOf(periodKey === "end" ? "day" : undefined)
                       .toDate()
-                : null;
-        } else if (periodDates[field][year]) {
-            return periodDates[field][year][endStartKey];
-        } else {
-            return null;
-        }
+                : undefined;
+
+        return _(periodDates)
+            .mapValues((datesByYear, type) => {
+                const valueForFirstYear = periodDates[type][firstYear];
+                if (periodDatesApplyToAll[type]) {
+                    return _(years)
+                        .map(year => {
+                            const value = _.mapValues(valueForFirstYear, (date, periodKey) =>
+                                processDate(date, year, periodKey)
+                            );
+                            return [year, value];
+                        })
+                        .fromPairs()
+                        .value();
+                } else {
+                    return datesByYear;
+                }
+            })
+            .value();
     }
 
     _saveCustomForm(saving) {
-        const { richSections, dataset, project } = saving;
+        const { richSections, dataset } = saving;
         const cocFields = "id,categoryOptions[id]";
         const categoryCombos$ = getCategoryCombos(this.d2, { cocFields });
         const api = this.d2.Api.getApi();
+        const periodDates = this.getPeriodDates();
 
         return categoryCombos$.then(categoryCombos => {
-            return getCustomForm(this.d2, dataset, project, richSections, categoryCombos).then(
+            return getCustomForm(this.d2, dataset, periodDates, richSections, categoryCombos).then(
                 htmlCode => {
                     const payload = { style: "NORMAL", htmlCode };
                     return api
@@ -792,31 +872,37 @@ export default class DataSetStore {
         throw err;
     }
 
-    _setCreatedByAttribute(saving) {
-        const attributeId = this.config.createdByDataSetConfigurationAttributeId;
+    _setAttributes(saving) {
+        const attributeKeys = [
+            "createdByDataSetConfigurationAttributeId",
+            "dataPeriodOutputDatesAttributeId",
+            "dataPeriodOutcomeDatesAttributeId",
+        ];
 
-        if (!attributeId) {
-            return this._notifyError({
-                message: "Setting createdByDataSetConfigurationAttribute is not set",
-            }).catch(() => Promise.resolve(saving));
-        } else {
-            const attributeValues = saving.dataset.attributeValues || [];
-            const attributeValueExists = _(attributeValues).some(
-                av => av.attribute.id === attributeId
-            );
-            let newAttributeValues;
-            if (attributeValueExists) {
-                newAttributeValues = attributeValues.map(av =>
-                    av.attribute.id === attributeId ? _.imerge(av, { value: "true" }) : av
-                );
-            } else {
-                const newAttributeValue = { value: "true", attribute: { id: attributeId } };
-                newAttributeValues = attributeValues.concat([newAttributeValue]);
-            }
+        const missingAttributeKeys = attributeKeys.filter(key => !this.config[key]);
 
-            saving.dataset.attributeValues = newAttributeValues;
-            return Promise.resolve(saving);
+        if (!_(missingAttributeKeys).isEmpty()) {
+            this._notifyError({
+                message: `Missing settings: ${missingAttributeKeys.join(", ")}`,
+            });
         }
+
+        const periodDates = this.getPeriodDates();
+        const years = this.getPeriodYears();
+        const attributeValues = saving.dataset.attributeValues || [];
+        const valuesByKey = {
+            createdByDataSetConfigurationAttributeId: "true",
+            dataPeriodOutputDatesAttributeId: formatPeriodDates(periodDates.output, years),
+            dataPeriodOutcomeDatesAttributeId: formatPeriodDates(periodDates.outcome, years),
+        };
+        const values = _(valuesByKey)
+            .map((value, key) => (this.config[key] ? [this.config[key], value] : null))
+            .compact()
+            .fromPairs()
+            .value();
+        const newAttributeValues = setAttributes(attributeValues, values);
+        saving.dataset.attributeValues = newAttributeValues;
+        return Promise.resolve(saving);
     }
 
     _processSave(methods) {
@@ -828,7 +914,7 @@ export default class DataSetStore {
 
     save() {
         return this._processSave([
-            this._setCreatedByAttribute,
+            this._setAttributes,
             this._setDatasetId,
             this._setDatasetCode,
             this._addSharingToDataset,
