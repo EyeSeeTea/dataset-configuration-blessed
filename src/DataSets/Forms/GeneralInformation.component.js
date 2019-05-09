@@ -12,9 +12,10 @@ const GeneralInformation = React.createClass({
     mixins: [Translate],
 
     styles: {
-        error: {
-            color: "red",
-        },
+        error: { color: "red" },
+        dateFieldWrapStyle: { float: "left", marginRight: 20 },
+        applyToAll: { marginLeft: 20, marginTop: 25, marginBottom: -15 },
+        periodYearLabel: { float: "left", marginLeft: 20, marginTop: 41, marginRight: 20 },
     },
 
     propTypes: {
@@ -75,7 +76,7 @@ const GeneralInformation = React.createClass({
         const { store } = this.props;
         const { currentUserHasAdminRole } = this.state;
         const { associations } = this.props.store;
-        const { getFormLabel, getDateField, getBooleanField } = FormHelpers;
+        const { getFormLabel, getDateField, getBooleanField, separator } = FormHelpers;
         const t = this.getTranslation;
         const startDate = associations.dataInputStartDate;
         const periodDates = store.getPeriodDates();
@@ -96,38 +97,48 @@ const GeneralInformation = React.createClass({
                 ];
 
                 return _.compact([
-                    getFormLabel({ value: year, type: "subtitle", forSection: type }),
-                    getDateField({
-                        name: `associations.periodDates.${type}.${year}.start`,
-                        value: _(periodDates).get([type, year, "start"]),
-                        label: t("output_start_date") + " " + year,
-                        minDate: startDate,
-                        disabled,
-                        validators,
-                    }),
-                    getDateField({
-                        name: `associations.periodDates.${type}.${year}.end`,
-                        value: _(periodDates).get([type, year, "end"]),
-                        label: t("output_end_date") + " " + year,
-                        minDate: startDate,
-                        disabled,
-                    }),
                     showApplyToAllYearsCheckbox
                         ? getBooleanField({
                               name: `associations.periodDatesApplyToAll.${type}`,
                               label: t("apply_periods_to_all"),
                               value: associations.periodDatesApplyToAll[type],
                               onChange: this._onUpdateField,
+                              style: this.styles.applyToAll,
                           })
                         : null,
+                    getFormLabel({
+                        value: year,
+                        forSection: type,
+                        style: this.styles.periodYearLabel,
+                    }),
+                    getDateField({
+                        name: `associations.periodDates.${type}.${year}.start`,
+                        value: _(periodDates).get([type, year, "start"]),
+                        label: t(`${type}_start_date`) + " " + year,
+                        minDate: startDate,
+                        disabled,
+                        validators,
+                        wrapStyle: this.styles.dateFieldWrapStyle,
+                    }),
+                    getDateField({
+                        name: `associations.periodDates.${type}.${year}.end`,
+                        value: _(periodDates).get([type, year, "end"]),
+                        label: t(`${type}_start_date`) + " " + year,
+                        minDate: startDate,
+                        disabled,
+                        wrapStyle: this.styles.dateFieldWrapStyle,
+                    }),
+                    separator(`${type}-${year}-end`),
                 ]);
             });
         };
 
         return [
-            getFormLabel({ value: t("output_dates") + ":", type: "title" }),
+            getFormLabel({ value: t("output_dates") }),
+            separator("output-dates"),
             ...generateDateFieldPairs("output"),
-            getFormLabel({ value: t("outcome_dates") + ":", type: "title" }),
+            getFormLabel({ value: t("outcome_dates") }),
+            separator("outcome-dates"),
             ...generateDateFieldPairs("outcome"),
         ];
     },
@@ -188,19 +199,23 @@ const GeneralInformation = React.createClass({
                 name: "associations.dataInputStartDate",
                 value: associations.dataInputStartDate,
                 label: FormHelpers.getLabel(this.getTranslation("data_input_start_date")),
+                wrapStyle: this.styles.dateFieldWrapStyle,
             }),
 
             FormHelpers.getDateField({
                 name: "associations.dataInputEndDate",
                 value: associations.dataInputEndDate,
                 label: FormHelpers.getLabel(this.getTranslation("data_input_end_date")),
+                wrapStyle: this.styles.dateFieldWrapStyle,
             }),
+
+            FormHelpers.separator("period-fields"),
 
             ...this._getPeriodFields(years),
         ]);
 
         // FormBuilder only considers fields with values sent on the first render, so we need
-        // to redraw the component (change its key) when years or the apply flag change.
+        // to redraw the component (by changing its key) when the years or the apply flag change.
         const formKey = JSON.stringify([years, associations.periodDatesApplyToAll]);
 
         return (

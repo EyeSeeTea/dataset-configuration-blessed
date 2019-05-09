@@ -88,7 +88,7 @@ function getRichSelectField({
     };
 }
 
-function getBooleanField({ name, label, onChange, value = false }) {
+function getBooleanField({ name, label, onChange, value = false, style }) {
     return {
         name: name,
         component: CheckBox,
@@ -97,6 +97,7 @@ function getBooleanField({ name, label, onChange, value = false }) {
             checked: value,
             label: getLabel(label),
             onCheck: (ev, newValue) => onChange(name, newValue),
+            style,
         },
     };
 }
@@ -115,16 +116,13 @@ function getMultiSelect({ name, label, onChange, options = [], selected = [], er
     };
 }
 
-function getFormLabel({ value, type, forSection }) {
+function getFormLabel({ value, forSection, style }) {
     return {
         name: `${value}_${forSection}`,
         component: FormLabel,
         props: {
             value,
-            style:
-                type === "title"
-                    ? { fontSize: 20, marginTop: 10 }
-                    : { fontSize: 18, marginTop: 10, marginBottom: -15 },
+            style: { fontSize: 16, marginTop: 16, marginBottom: -15, ...style },
         },
     };
 }
@@ -138,6 +136,7 @@ function getDateField({
     validators = undefined,
     minDate = undefined,
     maxDate = undefined,
+    wrapStyle = undefined,
 }) {
     return {
         name: name,
@@ -145,9 +144,10 @@ function getDateField({
         value: value ? new Date(value) : undefined,
         validators: validators,
         props: {
+            wrapStyle,
             labelText: getLabel(label, isRequired),
             changeEvent: "onChange",
-            fullWidth: true,
+            fullWidth: false,
             disabled,
             minDate,
             maxDate,
@@ -168,6 +168,10 @@ function FormLabel({ value, style }) {
     return <div style={style}>{value}</div>;
 }
 
+function separator(name) {
+    return { name, component: () => null, props: { wrapStyle: { clear: "both" } } };
+}
+
 export default {
     getLabel,
     getTextField,
@@ -178,4 +182,5 @@ export default {
     getDateField,
     SimpleCheckBox,
     getFormLabel,
+    separator,
 };
