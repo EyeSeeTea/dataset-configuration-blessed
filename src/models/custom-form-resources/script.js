@@ -347,7 +347,7 @@ function setPeriodDates(periodDates_) {
         /* eslint-disable no-undef */
         const selectedPeriod = dhis2.de.getSelectedPeriod();
         if (!selectedPeriod || !selectedPeriod.startDate) return;
-        const getDate = isoDate => (isoDate ? isoDate.split("T")[0] : null);
+        const getDate = isoDate => (isoDate ? new Date(isoDate.split("T")[0]) : null);
         const startDate = selectedPeriod.startDate;
         const endDate = selectedPeriod.endDate;
         const periodYear = startDate.split("-")[0];
@@ -355,13 +355,18 @@ function setPeriodDates(periodDates_) {
 
         ["output", "outcome"].forEach(type => {
             const obj = (periodDates[type] || {})[periodYear];
-            const ns = { from: getDate(obj.start) || "-", to: getDate(obj.end) || "-" };
+            const ns = { from: formatDate(getDate(obj.start), "dd/MM/yyyy") || "-", to: formatDate(getDate(obj.end), "dd/MM/yyyy") || "-" };
             const info = `${ns.from} -> ${ns.to}`;
             const isDateOutsidePeriod =
                 (obj.start && startDate < getDate(obj.start)) ||
                 (obj.end && endDate > getDate(obj.end));
 
-            setTabsVisibility(type, isDateOutsidePeriod, info);
+            const today = new Date();
+            const isDateOutsidePeriod2 =
+                (obj.start && today < getDate(obj.start)) ||
+                (obj.end && today > getDate(obj.end));
+
+            setTabsVisibility(type, isDateOutsidePeriod2, info);
         });
     };
 
