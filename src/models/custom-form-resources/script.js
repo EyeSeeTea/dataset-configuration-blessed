@@ -357,16 +357,13 @@ function setPeriodDates(periodDates_) {
             const obj = (periodDates[type] || {})[periodYear];
             const ns = { from: formatDate(getDate(obj.start), "dd/MM/yyyy") || "-", to: formatDate(getDate(obj.end), "dd/MM/yyyy") || "-" };
             const info = `${ns.from} -> ${ns.to}`;
-            const isDateOutsidePeriod =
-                (obj.start && startDate < getDate(obj.start)) ||
-                (obj.end && endDate > getDate(obj.end));
 
             const today = new Date();
-            const isDateOutsidePeriod2 =
+            const isDateOutsidePeriod =
                 (obj.start && today < getDate(obj.start)) ||
                 (obj.end && today > getDate(obj.end));
 
-            setTabsVisibility(type, isDateOutsidePeriod2, info);
+            setTabsVisibility(type, isDateOutsidePeriod, info);
         });
     };
 
