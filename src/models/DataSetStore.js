@@ -310,12 +310,10 @@ export default class DataSetStore {
         const { periodDatesApplyToAll, periodDates } = associations;
         const years = this.getPeriodYears();
         const firstYear = years[0];
-        const processDate = (date, year, periodKey) =>
+        const processDate = (date, index) =>
             date
                 ? moment(date)
-                      .set("year", year)
-                      .startOf(periodKey === "start" ? "day" : undefined)
-                      .endOf(periodKey === "end" ? "day" : undefined)
+                      .add("year", index)
                       .toDate()
                 : undefined;
 
@@ -324,9 +322,9 @@ export default class DataSetStore {
                 const valueForFirstYear = periodDates[type][firstYear];
                 if (periodDatesApplyToAll[type]) {
                     return _(years)
-                        .map(year => {
-                            const value = _.mapValues(valueForFirstYear, (date, periodKey) =>
-                                processDate(date, year, periodKey)
+                        .map((year, index) => {
+                            const value = _.mapValues(valueForFirstYear, date =>
+                                processDate(date, index)
                             );
                             return [year, value];
                         })
