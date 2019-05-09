@@ -26,7 +26,7 @@ export default React.createClass({
         liSharing: { fontStyle: "italic", fontWeight: 500 },
     },
 
-    virtualFields: new Set(["sharing"]),
+    virtualFields: new Set(["sharing", "dataInputPeriod"]),
 
     getInitialState() {
         this.asyncFields = this.getAsyncFields();
@@ -50,6 +50,7 @@ export default React.createClass({
                 "id",
                 "href",
                 "linkedProject",
+                "dataInputPeriod",
                 "coreCompetencies",
                 "sharing",
             ],
@@ -72,6 +73,14 @@ export default React.createClass({
             const value = await getValue.bind(this)(asyncField);
             this.setState({ [asyncField]: { loaded: true, value } });
         });
+    },
+
+    getDataInputPeriod(dataSet) {
+        const { openingDate, closingDate } = (dataSet.dataInputPeriods || [])[0] || {};
+        const format = isoDate => (isoDate ? moment(isoDate).format("L") : "-");
+        return openingDate || closingDate
+            ? [format(openingDate), format(closingDate)].join(" -> ")
+            : null;
     },
 
     getAsyncFields() {
@@ -175,11 +184,14 @@ export default React.createClass({
         };
 
         if (fieldName === "sharing") {
-            // return this.renderSharing(value);
             const sharingItems = this.renderSharing(value).map((sharingItem, index) => {
                 return <li key={"sharing_" + index}>{sharingItem}</li>;
             });
             return <ul style={this.styles.ulSharing}>{sharingItems}</ul>;
+        }
+
+        if (fieldName === "dataInputPeriod") {
+            return this.getDataInputPeriod(this.props.source) || "-";
         }
 
         if (fieldName === "created" || fieldName === "lastUpdated") {
