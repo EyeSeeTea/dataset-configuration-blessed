@@ -349,6 +349,7 @@ function setPeriodDates(periodDates_) {
         if (!selectedPeriod || !selectedPeriod.startDate) return;
         const getDate = isoDate => (isoDate ? isoDate.split("T")[0] : null);
         const startDate = selectedPeriod.startDate;
+        const endDate = selectedPeriod.endDate;
         const periodYear = startDate.split("-")[0];
         console.debug("applyPeriodDates", { periodDates, selectedPeriod, periodYear });
 
@@ -358,7 +359,7 @@ function setPeriodDates(periodDates_) {
             const info = `${ns.from} -> ${ns.to}`;
             const isDateOutsidePeriod =
                 (obj.start && startDate < getDate(obj.start)) ||
-                (obj.end && startDate > getDate(obj.end));
+                (obj.end && endDate > getDate(obj.end));
 
             setTabsVisibility(type, isDateOutsidePeriod, info);
         });

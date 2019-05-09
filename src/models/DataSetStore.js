@@ -314,25 +314,22 @@ export default class DataSetStore {
             date
                 ? moment(date)
                       .add("year", index)
-                      .toDate()
+                      .format("YYYY-MM-DD")
                 : undefined;
 
         return _(periodDates)
             .mapValues((datesByYear, type) => {
                 const valueForFirstYear = periodDates[type][firstYear];
-                if (periodDatesApplyToAll[type]) {
-                    return _(years)
-                        .map((year, index) => {
-                            const value = _.mapValues(valueForFirstYear, date =>
-                                processDate(date, index)
-                            );
-                            return [year, value];
-                        })
-                        .fromPairs()
-                        .value();
-                } else {
-                    return datesByYear;
-                }
+                const applyToAll = periodDatesApplyToAll[type];
+                return _(years)
+                    .map((year, index) => {
+                        const value = applyToAll
+                            ? _.mapValues(valueForFirstYear, date => processDate(date, index))
+                            : _.mapValues(datesByYear[year], date => processDate(date, 0));
+                        return [year, value];
+                    })
+                    .fromPairs()
+                    .value();
             })
             .value();
     }
