@@ -7,6 +7,7 @@ import { init, config, getUserSettings, getManifest } from "d2/lib/d2";
 import log from "loglevel";
 import LoadingMask from "d2-ui/lib/loading-mask/LoadingMask.component";
 import MuiThemeProvider from "material-ui/styles/MuiThemeProvider";
+import moment from "moment";
 
 // The react-tap-event-plugin is required by material-ui to make touch screens work properly with onClick events
 import "react-tap-event-plugin";
@@ -51,6 +52,8 @@ function safeGetUserSettings() {
 
 function configI18n(userSettings) {
     const uiLocale = userSettings.keyUiLocale;
+    const browserLocale = window.navigator.userLanguage || window.navigator.language;
+    moment.locale(browserLocale);
 
     if (uiLocale && uiLocale !== "en") {
         // Add the language sources for the preferred locale

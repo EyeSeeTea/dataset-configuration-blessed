@@ -376,11 +376,9 @@ export default class DataSetStore {
 
     getOpenFuturePeriods(endDate) {
         if (endDate) {
-            const currentDate = new Date();
-            const endDate_ = new Date(endDate);
-            const monthsDiff =
-                (endDate_.getYear() - currentDate.getYear()) * 12 +
-                (endDate_.getMonth() - currentDate.getMonth());
+            const endDateM = moment(endDate);
+            const currentDate = moment();
+            const monthsDiff = Math.ceil(moment(endDateM).diff(currentDate, "months", true));
             return monthsDiff > 0 ? monthsDiff + 1 : 1;
         } else {
             return 1;
