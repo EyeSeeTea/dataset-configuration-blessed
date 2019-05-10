@@ -348,17 +348,17 @@ function setPeriodDates(periodDates_) {
         const selectedPeriod = dhis2.de.getSelectedPeriod();
         if (!selectedPeriod || !selectedPeriod.startDate) return;
         const getDate = isoDate => (isoDate ? new Date(isoDate.split("T")[0]) : null);
+        const getFormatDate = isoDate => (isoDate ? formatDate(new Date(isoDate.split("T")[0]), "dd/MM/yyyy") : null);
         const startDate = selectedPeriod.startDate;
-        const endDate = selectedPeriod.endDate;
         const periodYear = startDate.split("-")[0];
-        console.debug("applyPeriodDates", { periodDates, selectedPeriod, periodYear });
+        const today = new Date();
+        console.debug("applyPeriodDates", { periodDates, selectedPeriod, periodYear, today });
 
         ["output", "outcome"].forEach(type => {
             const obj = (periodDates[type] || {})[periodYear];
-            const ns = { from: formatDate(getDate(obj.start), "dd/MM/yyyy") || "-", to: formatDate(getDate(obj.end), "dd/MM/yyyy") || "-" };
+            const ns = { from: getFormatDate(obj.start) || "-", to: getFormatDate(obj.end) || "-" };
             const info = `${ns.from} -> ${ns.to}`;
-
-            const today = new Date();
+           
             const isDateOutsidePeriod =
                 (obj.start && today < getDate(obj.start)) ||
                 (obj.end && today > getDate(obj.end));
