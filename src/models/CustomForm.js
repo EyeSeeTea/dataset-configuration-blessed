@@ -2,6 +2,7 @@ import velocity from "velocityjs";
 import htmlencode from "htmlencode";
 import I18n from "d2/lib/i18n/I18n";
 import _ from "../utils/lodash-mixins";
+import { getCategoryCombo } from "../utils/Dhis2Helpers";
 
 /* eslint import/no-webpack-loader-syntax: off */
 import customFormTemplate from "!!raw-loader!./custom-form-resources/sectionForm.vm";
@@ -143,11 +144,11 @@ const getContext = (d2, i18n, dataset, richSections, allCategoryCombos) => {
             .some("selected")
     );
     const categoryComboByDataElementId = _a(dataset.dataSetElements)
-        .map(dse => [dse.dataElement.id, dse.categoryCombo])
+        .map(dse => [dse.dataElement.id, getCategoryCombo(dse)])
         .fromPairs()
         .value();
     const categoryCombosId = _a(dataset.dataSetElements)
-        .map(dse => dse.categoryCombo.id)
+        .map(dse => getCategoryCombo(dse).id)
         .uniq()
         .value();
     const categoryCombos = _a(allCategoryCombos)
@@ -220,17 +221,20 @@ const getI18n = d2 => {
     }
 };
 
-const get = async (d2, dataset, project, sections, categoryCombos) => {
+const get = async (d2, dataset, periodDates, sections, categoryCombos) => {
     const i18n = await getI18n(d2);
     const context = getContext(d2, i18n, dataset, sections, categoryCombos);
     const config = { env: "development", escape: false };
     const htmlForm = velocity.render(data.template, context, {}, config);
 
     return `
-    <style>${data.css}</style>
-    <script>${data.js}</script>
-    ${htmlForm}
-  `;
+        <style>${data.css}</style>
+        <script>
+            ${data.js}
+            setPeriodDates(${JSON.stringify(periodDates)});
+        </script>
+        ${htmlForm}
+    `;
 };
 
 export default get;
