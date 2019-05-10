@@ -123,7 +123,7 @@ const GeneralInformation = React.createClass({
                     getDateField({
                         name: `associations.periodDates.${type}.${year}.end`,
                         value: _(periodDates).get([type, year, "end"]),
-                        label: t(`${type}_start_date`) + " " + year,
+                        label: t(`${type}_end_date`) + " " + year,
                         minDate: startDate,
                         disabled,
                         wrapStyle: this.styles.dateFieldWrapStyle,
