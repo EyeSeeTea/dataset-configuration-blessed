@@ -1,5 +1,11 @@
 var _ = window._;
 var $ = window.$;
+var periodDates = {};
+
+/* eslint-disable no-unused-vars */
+function setPeriodDates(periodDates_) {
+    periodDates = periodDates_;
+}
 
 (function() {
     _.mixin({
@@ -324,8 +330,47 @@ var $ = window.$;
             .focusout(ev => setClass(ev, "focus", false));
     };
 
+    var setTabsVisibility = function(type, isDateOutsidePeriod, info) {
+        const tabContents = $(".type-" + type);
+
+        if (isDateOutsidePeriod) {
+            tabContents.find(".in-period").hide();
+            tabContents.find(".out-of-period").show();
+            tabContents.find(".out-of-period .info").text(info);
+        } else {
+            tabContents.find(".in-period").show();
+            tabContents.find(".out-of-period").hide();
+        }
+    };
+
+    var applyPeriodDates = function() {
+        /* eslint-disable no-undef */
+        const selectedPeriod = dhis2.de.getSelectedPeriod();
+        if (!selectedPeriod || !selectedPeriod.startDate) return;
+        const getDate = isoDate => (isoDate ? new Date(isoDate.split("T")[0]) : null);
+        const getFormatDate = isoDate => (isoDate ? formatDate(new Date(isoDate.split("T")[0]), "dd/MM/yyyy") : null);
+        const startDate = selectedPeriod.startDate;
+        const periodYear = startDate.split("-")[0];
+        const today = new Date();
+        console.debug("applyPeriodDates", { periodDates, selectedPeriod, periodYear, today });
+
+        ["output", "outcome"].forEach(type => {
+            const obj = (periodDates[type] || {})[periodYear];
+            const ns = { from: getFormatDate(obj.start) || "-", to: getFormatDate(obj.end) || "-" };
+            const info = `${ns.from} -> ${ns.to}`;
+           
+            const isDateOutsidePeriod =
+                (obj.start && today < getDate(obj.start)) ||
+                (obj.end && today > getDate(obj.end));
+
+            setTabsVisibility(type, isDateOutsidePeriod, info);
+        });
+    };
+
     var applyChangesToForm = function() {
         if (!$("#tabs").hasClass("dataset-configuration-custom-form")) return;
+
+        applyPeriodDates();
         debugElapsed("Split tables", splitWideTables);
         highlightDataElementRows();
         renumerateInputFields();
@@ -336,6 +381,7 @@ var $ = window.$;
         if (window.datasetConfigurationCustomFormLoaded) return;
         window.datasetConfigurationCustomFormLoaded = true;
         $(document).on("dhis2.de.event.formLoaded", applyChangesToForm);
+        $("#selectedPeriodId").change(applyPeriodDates);
         loadJs("../dhis-web-commons/bootstrap/js/bootstrap.min.js");
         loadCss("../dhis-web-commons/bootstrap/css/bootstrap.min.css");
     };

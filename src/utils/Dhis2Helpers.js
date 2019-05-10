@@ -503,6 +503,25 @@ function getCategoryCombo(dataSetElement) {
     }
 }
 
+function setAttributes(initialAttributeValues, valuesByAttributeId) {
+    return _(valuesByAttributeId)
+        .toPairs()
+        .reduce((attributeValues, [attributeId, value]) => {
+            const attributeValueExists = _(attributeValues).some(
+                av => av.attribute.id === attributeId
+            );
+
+            if (attributeValueExists) {
+                return attributeValues.map(av =>
+                    av.attribute.id === attributeId ? _.imerge(av, { value }) : av
+                );
+            } else {
+                const newAttributeValue = { value, attribute: { id: attributeId } };
+                return attributeValues.concat([newAttributeValue]);
+            }
+        }, initialAttributeValues);
+}
+
 export {
     accesses,
     redirectToLogin,
@@ -534,4 +553,5 @@ export {
     getFilteredDatasets,
     subQuery,
     getCategoryCombo,
+    setAttributes,
 };

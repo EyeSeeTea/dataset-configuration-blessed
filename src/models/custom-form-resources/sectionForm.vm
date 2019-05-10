@@ -256,8 +256,15 @@
         </ul>
         
         #foreach( $section in $sections )
-            <div id="tab-${section.id}">
-                #renderSection( $section )
+            <div id="tab-${section.id}" class="type-${section.type}">
+                <div class="in-period">
+                    #renderSection( $section )
+                </div>
+
+                <div class="out-of-period" style="display: none">
+                    ${i18n.getString( "current_date_out_of_period" )}:
+                    <span class="info"></span>
+                </div>
             </div>
         #end
     </div>

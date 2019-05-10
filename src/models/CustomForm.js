@@ -221,17 +221,20 @@ const getI18n = d2 => {
     }
 };
 
-const get = async (d2, dataset, project, sections, categoryCombos) => {
+const get = async (d2, dataset, periodDates, sections, categoryCombos) => {
     const i18n = await getI18n(d2);
     const context = getContext(d2, i18n, dataset, sections, categoryCombos);
     const config = { env: "development", escape: false };
     const htmlForm = velocity.render(data.template, context, {}, config);
 
     return `
-    <style>${data.css}</style>
-    <script>${data.js}</script>
-    ${htmlForm}
-  `;
+        <style>${data.css}</style>
+        <script>
+            ${data.js}
+            setPeriodDates(${JSON.stringify(periodDates)});
+        </script>
+        ${htmlForm}
+    `;
 };
 
 export default get;

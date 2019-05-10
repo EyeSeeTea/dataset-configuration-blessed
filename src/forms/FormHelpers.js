@@ -88,7 +88,7 @@ function getRichSelectField({
     };
 }
 
-function getBooleanField({ name, label, onChange, value = false }) {
+function getBooleanField({ name, label, onChange, value = false, style }) {
     return {
         name: name,
         component: CheckBox,
@@ -97,6 +97,7 @@ function getBooleanField({ name, label, onChange, value = false }) {
             checked: value,
             label: getLabel(label),
             onCheck: (ev, newValue) => onChange(name, newValue),
+            style,
         },
     };
 }
@@ -115,15 +116,41 @@ function getMultiSelect({ name, label, onChange, options = [], selected = [], er
     };
 }
 
-function getDateField({ name, label, onChange, value = undefined, isRequired = false }) {
+function getFormLabel({ value, forSection, style }) {
+    return {
+        name: `${value}_${forSection}`,
+        component: FormLabel,
+        props: {
+            value,
+            style: { fontSize: 16, marginTop: 16, marginBottom: -15, ...style },
+        },
+    };
+}
+
+function getDateField({
+    name,
+    label,
+    value = undefined,
+    isRequired = false,
+    disabled = false,
+    validators = undefined,
+    minDate = undefined,
+    maxDate = undefined,
+    wrapStyle = undefined,
+}) {
     return {
         name: name,
         component: DateSelect,
-        value: value || undefined,
+        value: value ? new Date(value) : undefined,
+        validators: validators,
         props: {
+            wrapStyle,
             labelText: getLabel(label, isRequired),
-            onChange: data => onChange(data.target.value || undefined),
-            fullWidth: true,
+            changeEvent: "onChange",
+            fullWidth: false,
+            disabled,
+            minDate,
+            maxDate,
         },
     };
 }
@@ -137,6 +164,14 @@ function SimpleCheckBox({ onClick, checked, ...otherProps }) {
     );
 }
 
+function FormLabel({ value, style }) {
+    return <div style={style}>{value}</div>;
+}
+
+function separator(name) {
+    return { name, component: () => null, props: { wrapStyle: { clear: "both" } } };
+}
+
 export default {
     getLabel,
     getTextField,
@@ -146,4 +181,6 @@ export default {
     getMultiSelect,
     getDateField,
     SimpleCheckBox,
+    getFormLabel,
+    separator,
 };
