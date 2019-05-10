@@ -1,8 +1,9 @@
 import { generateUid } from "d2/lib/uid";
 import _ from "lodash";
-import { update, collectionToArray } from "../utils/Dhis2Helpers";
+import { update, collectionToArray, subQuery } from "../utils/Dhis2Helpers";
 import fp from "lodash/fp";
 import { getOwnedPropertyJSON } from "d2/lib/model/helpers/json";
+import memoize from "nano-memoize";
 
 /* Return an array of sections containing its data elements and associated indicators. Schema:
 
@@ -26,7 +27,9 @@ Notes:
     * DataElements can only be used within one section. Since we are getting DataElements from
       indicators, we can have duplicated items that must be removed.
 */
-export const getSections = (d2, config, dataset, initialCoreCompetencies, coreCompetencies) => {
+export const getSections = (d2_, config, dataset, initialCoreCompetencies, coreCompetencies) => {
+    const d2 = getCachedD2(d2_);
+
     const data$ = [
         getDataElementGroupRelations(d2),
         getIndicatorGroupRelations(d2),
@@ -58,6 +61,25 @@ export const getSections = (d2, config, dataset, initialCoreCompetencies, coreCo
             );
         }
     );
+};
+
+// Cache d2.models[].list()
+let cachedD2;
+
+const getCachedD2 = d2 => {
+    if (cachedD2) {
+        return cachedD2;
+    } else {
+        const models = _(d2.models)
+            .mapValues(model => {
+                const model2 = model.clone();
+                model2.list = memoize(opts => model.list(opts), { serializer: JSON.stringify });
+                return model2;
+            })
+            .value();
+        cachedD2 = { ...d2, models };
+        return cachedD2;
+    }
 };
 
 const validateCoreItemsSelectedForCurrentUser = (d2, config) => {
@@ -131,7 +153,6 @@ export const getDataSetInfo = (d2, config, sections) => {
             };
         })
         .value();
-
     const emptyCoreCompetenciesErrors = _(sections)
         .groupBy(section => section.coreCompetency.name)
         .toPairs()
@@ -228,7 +249,7 @@ export const processDatasetSections = (d2, config, dataset, stateSections) => {
     // Don't override dataSetElements (disaggregation)
     const newDataSetElements = _.keyBy(dataSetElements, dse => dse.dataElement.id);
     const prevDataSetElements = _.keyBy(dataset.dataSetElements || [], dse => dse.dataElement.id);
-    const mergedDataSetElements = _(fp.merge(newDataSetElements, prevDataSetElements))
+    const mergedDataSetElements = _({ ...newDataSetElements, ...prevDataSetElements })
         .at(_.keys(newDataSetElements))
         .value();
 
@@ -308,7 +329,6 @@ const getD2Section = (d2, section) => {
         .flatMap(item => (item.type === "dataElement" ? [item] : item.dataElements))
         .map(de => ({
             id: de.id,
-            name: de.name,
             displayName: de.displayName,
             categoryCombo: de.categoryCombo,
         }))
@@ -316,7 +336,7 @@ const getD2Section = (d2, section) => {
         .value();
     const indicators = _(items)
         .flatMap(item => (item.type === "indicator" ? [item] : []))
-        .map(ind => ({ id: ind.id, displayName: ind.displayName, name: ind.name }))
+        .map(ind => ({ id: ind.id, displayName: ind.displayName, name: ind.displayName }))
         .uniqBy("id")
         .value();
 
@@ -351,7 +371,7 @@ const getOutputSection = opts => {
             .value();
         const mandatoryIndicatorId = config.dataElementGroupGlobalIndicatorMandatoryId;
         const degSetStatus = groupSets[config.dataElementGroupSetStatusId];
-        const status = degSetStatus ? degSetStatus.name : null;
+        const status = degSetStatus ? degSetStatus.displayName : null;
 
         return {
             type: "dataElement",
@@ -413,7 +433,7 @@ const getOutcomeSection = opts => {
             .value();
         const mandatoryIndicatorId = config.indicatorGroupGlobalIndicatorMandatoryId;
         const igSetStatus = indicatorGroupSets[config.indicatorGroupSetStatusId];
-        const status = igSetStatus ? igSetStatus.name : null;
+        const status = igSetStatus ? igSetStatus.displayName : null;
 
         return {
             type: "indicator",
@@ -511,7 +531,7 @@ const filterDataElements = (dataElements, requiredDegIds) => {
 /* Return object {dataElementGroupId: dataElementGroupSetId} */
 const getDataElementGroupRelations = d2 => {
     return d2.models.dataElementGroupSets
-        .list({ fields: "id,name,displayName,dataElementGroups[id,name,displayName]" })
+        .list({ fields: "id,displayName,dataElementGroups[id,displayName]" })
         .then(collection =>
             collection.toArray().map(degSet =>
                 _(degSet.dataElementGroups.toArray())
@@ -526,7 +546,7 @@ const getDataElementGroupRelations = d2 => {
 /* Return object {indicatorGroupId: indicatorGroupSetId} */
 const getIndicatorGroupRelations = d2 => {
     return d2.models.indicatorGroupSets
-        .list({ fields: "id,name,displayName,indicatorGroups[id,name,displayName]" })
+        .list({ fields: "id,displayName,indicatorGroups[id,displayName]" })
         .then(collection =>
             collection.toArray().map(igSet =>
                 _(igSet.indicatorGroups.toArray())
@@ -540,41 +560,64 @@ const getIndicatorGroupRelations = d2 => {
 
 /* Return a promise with an array of d2 items filtered by an array of [field, value] pairs */
 const getFilteredItems = (model, filters, listOptions) => {
-    // As d2 filtering does not implement operator <in> (see dhis2/d2/issues/60),
-    // we must use a reduce folding filtering with the <eq> operator and rootJunction=OR
     if (_.isEmpty(filters)) {
         return Promise.resolve([]);
     } else {
-        return _(filters)
-            .reduce(
-                (model_, [key, value]) =>
-                    model_
-                        .filter()
-                        .on(key)
-                        .equals(value),
+        // rootJunction=OR does not work on 2.26 (it returns all unfiltered objects)
+        // build a request for each filter (we have at most 2), and join the results.
+        const requests = _(filters)
+            .groupBy(([key, _value]) => key)
+            .mapValues(pairs => pairs.map(([_key, value]) => value))
+            .map((values, field) =>
                 model
-            )
-            .list(_.merge({ paging: false, rootJunction: "OR" }, listOptions))
-            .then(collection => collection.toArray());
+                    .list({
+                        paging: false,
+                        filter: `${field}:in:[${values.join(",")}]`,
+                        ...listOptions,
+                    })
+                    .then(collectionToArray)
+            );
+        return Promise.all(requests).then(_.flatten);
     }
 };
 
-const getDataElements = (d2, dataElementFilters) => {
+const getDataElements = async (d2, dataElementFilters) => {
     const fields = [
         "id",
-        "name",
         "displayName",
         "code",
         "description",
         "valueType",
-        "categoryCombo[id,name,displayName,categoryOptionCombos[id,displayName,categoryOptions[id,displayName]]," +
-            "categories[id,name,displayName,categoryOptions[id,displayName]]]",
-        "dataElementGroups[id,name,displayName]",
-        "attributeValues[value,attribute]",
+        "categoryCombo[id]",
+        "dataElementGroups[id]",
+        "attributeValues[value,attribute[id]]",
     ];
-    return getFilteredItems(d2.models.dataElements, dataElementFilters, {
+
+    const dataElementGroupsFields = "id,displayName";
+
+    const categoryComboFields =
+        "id,displayName,categoryOptionCombos[id,displayName,categoryOptions[id,displayName]]," +
+        "categories[id,displayName,categoryOptions[id,displayName]]";
+
+    const dataElements = await getFilteredItems(d2.models.dataElements, dataElementFilters, {
         fields: fields.join(","),
     });
+
+    const dataElementsWithCatCombos = await subQuery(
+        d2,
+        dataElements,
+        "categoryCombo",
+        categoryComboFields
+    );
+
+    const dataElementsWithGroups = await subQuery(
+        d2,
+        dataElementsWithCatCombos,
+        "dataElementGroups",
+        dataElementGroupsFields
+    );
+
+    return dataElementsWithGroups;
 };
 
 const getOutputDataElementsByCoreCompetencyId = (d2, config, coreCompetencies) => {
@@ -596,12 +639,12 @@ const getIndicatorsByGroupName = (d2, coreCompetencies) => {
         "id",
         "name",
         "displayName",
-        "indicators[id,name,displayName,code,numerator,denominator,indicatorGroups[id,name,displayName],attributeValues[value,attribute]]",
+        "indicators[id,displayName,code,numerator,denominator,indicatorGroups[id,displayName],attributeValues[value,attribute]]",
     ].join(",");
 
     return getFilteredItems(d2.models.indicatorGroups, filters, { fields }).then(indicatorGroups =>
         _(indicatorGroups)
-            .map(indGroup => [indGroup.name, indGroup.indicators.toArray()])
+            .map(indGroup => [indGroup.displayName, indGroup.indicators.toArray()])
             .fromPairs()
             .value()
     );

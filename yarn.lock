@@ -1725,7 +1725,7 @@ d2-manifest@^1.0.0:
 
 "d2-ui@github:EyeSeeTea/d2-ui#dataset-configuration":
   version "26.1.7"
-  resolved "https://codeload.github.com/EyeSeeTea/d2-ui/tar.gz/cfb9f581da3efd4c03c921edc51eb2f9596d65c8"
+  resolved "https://codeload.github.com/EyeSeeTea/d2-ui/tar.gz/21f7d05ea22d020304be13fdc663028dc2b8fbc2"
 
 d2-utilizr@^0.2.9:
   version "0.2.13"
@@ -3877,6 +3877,11 @@ mute-stream@0.0.7:
 nan@^2.3.0, nan@^2.3.2:
   version "2.5.1"
   resolved "https://registry.yarnpkg.com/nan/-/nan-2.5.1.tgz#d5b01691253326a97a2bbee9e61c55d8d60351e2"
+
+nano-memoize@^1.1.3:
+  version "1.1.3"
+  resolved "https://registry.yarnpkg.com/nano-memoize/-/nano-memoize-1.1.3.tgz#3ce885f76898384ac78d39fe185b6419f71f8e12"
+  integrity sha512-+0yGTtwV70h7GourgGsy/AlxrQxqIvJdJjMCuBln+v9lc+u+STuEAscPc4YLgT7uVc+Su/osREG1Do9C/L5OVA==
 
 natural-compare@^1.4.0:
   version "1.4.0"
