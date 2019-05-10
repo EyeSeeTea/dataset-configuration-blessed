@@ -54,12 +54,13 @@ const DataSetFormSteps = React.createClass({
             .then(config => {
                 return getStore(config)
                     .then(store => this.setState({ store }))
-                    .catch(err =>
+                    .catch(err => {
+                        console.error(err);
                         snackActions.show({
                             route: "/",
-                            message: `Cannot edit dataset: ${JSON.stringify(err)}`,
-                        })
-                    );
+                            message: `Cannot edit dataset: ${err.message || JSON.stringify(err)}`,
+                        });
+                    });
             })
             .catch(err => {
                 snackActions.show({ route: "/", message: `Error: settings not found: ${err}` });
