@@ -99,7 +99,7 @@ const CategoriesSelectField = ({
 };
 
 function DataSetElementList(
-    { dataSetElements, categoryCombos, onCategoriesSelected, canEdit },
+    { dataSetElementsGroups, categoryCombos, onCategoriesSelected, canEdit },
     { d2 }
 ) {
     const styles = {
@@ -116,48 +116,50 @@ function DataSetElementList(
         .sortBy("displayName")
         .value();
 
-    const dataSetElementsRows = dataSetElements.map(
-        ({ categoryCombo = {}, dataElement = {}, id }) => {
-            const dataElementCategoryIds = new Set(
-                toArray(dataElement.categoryCombo.categories).map(cat => cat.id)
-            );
-            const selectableCategories = categories.filter(
-                category => !dataElementCategoryIds.has(category.id)
-            );
-            const selectedCategories = _.differenceBy(
-                toArray(categoryCombo.categories),
-                toArray(dataElement.categoryCombo.categories),
-                "id"
-            );
-            const categoryOptions = getCategoryOptions(
-                categoryCombosById[dataElement.categoryCombo.id]
-            );
+    const dataSetElementsRows = _.flatMap(dataSetElementsGroups, dseGroup => {
+        const { categoryCombo = {}, dataElement = {}, id } = dseGroup[0];
+        const dseIds = dseGroup.map(dse => dse.id);
+        const dataElementCategoryIds = new Set(
+            toArray(dataElement.categoryCombo.categories).map(cat => cat.id)
+        );
+        const selectableCategories = categories.filter(
+            category => !dataElementCategoryIds.has(category.id)
+        );
+        const selectedCategories = _.differenceBy(
+            toArray(categoryCombo.categories),
+            toArray(dataElement.categoryCombo.categories),
+            "id"
+        );
+        const categoryOptions = getCategoryOptions(
+            categoryCombosById[dataElement.categoryCombo.id]
+        );
 
-            return (
-                <Row key={id} style={{ alignItems: "center", marginBottom: canEdit ? 0 : 10 }}>
+        return (
+            <Row key={id} style={{ alignItems: "center", marginBottom: canEdit ? 0 : 10 }}>
+                <div style={styles.elementListItem}>
+                    {dseGroup.map(dse => (
+                        <div key={dse.id}>{dse.dataElement.displayName}</div>
+                    ))}
+                    <span title={categoryOptions} style={styles.originalCategoryCombo}>
+                        {dataElement.categoryCombo.displayName}
+                    </span>
+                </div>
+
+                {canEdit ? (
                     <div style={styles.elementListItem}>
-                        <div>{dataElement.displayName}</div>
-                        <span title={categoryOptions} style={styles.originalCategoryCombo}>
-                            {dataElement.categoryCombo.displayName}
-                        </span>
+                        <CategoriesSelectField
+                            hintText={d2.i18n.getTranslation("no_override")}
+                            selectableCategories={selectableCategories}
+                            selectedCategories={selectedCategories}
+                            onChange={categories => onCategoriesSelected(dseIds, categories)}
+                        />
                     </div>
-
-                    {canEdit ? (
-                        <div style={styles.elementListItem}>
-                            <CategoriesSelectField
-                                hintText={d2.i18n.getTranslation("no_override")}
-                                selectableCategories={selectableCategories}
-                                selectedCategories={selectedCategories}
-                                onChange={categories => onCategoriesSelected(id, categories)}
-                            />
-                        </div>
-                    ) : (
-                        <div />
-                    )}
-                </Row>
-            );
-        }
-    );
+                ) : (
+                    <div />
+                )}
+            </Row>
+        );
+    });
 
     if (dataSetElementsRows.length === 0) {
         return (
@@ -175,12 +177,12 @@ DataSetElementList.contextTypes = {
 };
 
 export function DataSetElementCategoryComboSelection(props) {
-    const { categoryCombos, dataSetElements, onCategoriesSelected, canEdit } = props;
+    const { categoryCombos, dataSetElementsGroups, onCategoriesSelected, canEdit } = props;
 
     return (
         <div>
             <DataSetElementList
-                dataSetElements={Array.from(dataSetElements || [])}
+                dataSetElementsGroups={dataSetElementsGroups}
                 categoryCombos={categoryCombos}
                 onCategoriesSelected={onCategoriesSelected}
                 canEdit={canEdit}
