@@ -11,7 +11,7 @@
                     #end
 
                     <tr>
-                        <td #if( $mark == 1 )class="alt"#else class="reg"#end>
+                        <td #if( $mark == 1 )class="alt nrcindicatorName"#else class="reg nrcindicatorName"#end>
                             <span>$indicator.displayName</span>
                         </td>
 
