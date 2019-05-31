@@ -440,6 +440,7 @@ const getOutcomeSection = opts => {
             dataElements: dataElements.map(de =>
                 _.assign(getOwnedPropertyJSON(de), { displayName: de.displayName })
             ),
+            dataElementsNumeric: dataElements.filter(de => de.code && !de.code.endsWith("-C")),
             id: indicator.id,
             code: indicator.code,
             name: indicator.name,
