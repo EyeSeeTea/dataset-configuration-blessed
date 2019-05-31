@@ -104,6 +104,7 @@ function DataSetElementList(
 ) {
     const styles = {
         elementListItem: { width: "49%" },
+        elementListItemDataElement: { width: "49%", marginTop: "2.5%" },
         noDataElementMessage: { paddingTop: "2rem" },
         originalCategoryCombo: { color: "#CCC", fontSize: "1rem", fontWeight: "300" },
     };
@@ -136,7 +137,7 @@ function DataSetElementList(
 
         return (
             <Row key={id} style={{ alignItems: "center", marginBottom: canEdit ? 0 : 10 }}>
-                <div style={styles.elementListItem}>
+                <div style={styles.elementListItemDataElement}>
                     {dseGroup.map(dse => (
                         <div key={dse.id}>{dse.dataElement.displayName}</div>
                     ))}
