@@ -88,6 +88,10 @@
         "webpack-dev-server": "^1.14.1",
         "webpack-visualizer-plugin": "^0.1.5"
     },
+    "resolutions": {
+        "node-sass/**/fstream": "^1.0.12",
+        "node-sass/**/tar": "^2.2.2"
+    },
     "pre-commit": [
         "test",
         "lint",
