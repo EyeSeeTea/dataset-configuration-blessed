@@ -455,9 +455,10 @@ export default class DataSetStore {
             _(years)
                 .map(year => {
                     const period = {
-                        start: moment(dataInputStartDate)
-                            .set("year", year)
-                            .toDate(),
+                        start:
+                            dataInputStartDate.getFullYear() === year
+                                ? dataInputStartDate
+                                : new Date(year, 0, 1),
                         end: new Date(year + 1, month - 1, 1),
                     };
                     return [year, period];
@@ -467,8 +468,8 @@ export default class DataSetStore {
 
         _.assign(this.associations, {
             periodDatesApplyToAll: {
-                output: true,
-                outcome: true,
+                output: false,
+                outcome: false,
             },
             periodDates: {
                 output: getPeriodDates(years, { month: 4 }),
