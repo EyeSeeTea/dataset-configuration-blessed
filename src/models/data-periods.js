@@ -11,7 +11,7 @@ const dataInputPeriodDatesFormat = "YYYYMMDD";
 export async function getDataSets(d2, ids) {
     return await d2.models.dataSets
         .list({
-            fields: "id,displayName,attributeValues,dataInputPeriods,:owner",
+            fields: "id,attributeValues,dataInputPeriods[id,openingDate,closingDate,period]",
             filter: `id:in:[${ids.join(",")}]`,
             paging: false,
         })
@@ -42,13 +42,53 @@ export function getAttributeValues(store, dataset) {
 
 export async function saveDataSets(d2, store, dataSets) {
     const { dataset: storeDataset, associations } = store;
-    const dataSetsUpdated = dataSets.map(dataSet => ({
+
+    const dataSetsWithForms = await d2.models.dataSets
+        .list({
+            fields: ":owner,dataEntryForm[:owner]",
+            filter: `id:in:[${dataSets.map(ds => ds.id).join(",")}]`,
+            paging: false,
+        })
+        .then(collection => collection.toArray());
+
+    const periodDates = store.getPeriodDates();
+
+    const [dataSetsClean, dataEntryFormsUpdated] = _(dataSetsWithForms)
+        .map(dataSet => {
+            const htmlCode = (dataSet.dataEntryForm && dataSet.dataEntryForm.htmlCode) || "";
+            // Regenerating the full form for a group of datasets would be very slow.
+            // Instead, we only replace the JS code that sets the period dates. This assumes
+            // that the data sets involved have been at least saved once with the periods
+            // infrastructure active and have the last version of the forms.
+            const newHtmlCode = htmlCode.replace(
+                /setPeriodDates\({.*}\)/,
+                `setPeriodDates(${JSON.stringify(periodDates)})`
+            );
+            const dataEntryFormUpdated = htmlCode
+                ? { ...dataSet.dataEntryForm, htmlCode: newHtmlCode }
+                : null;
+            const dataSetClean = Object.assign(dataSet, {
+                dataEntryForm: { id: dataSet.dataEntryForm.id },
+            });
+
+            return [dataSetClean, dataEntryFormUpdated];
+        })
+        .unzip()
+        .value();
+
+    const dataSetsUpdated = dataSetsClean.map(dataSet => ({
         ...getOwnedPropertyJSON(dataSet),
         attributeValues: getAttributeValues(store, dataSet),
         dataInputPeriods: store.getDataInputPeriods(associations),
         openFuturePeriods: storeDataset.openFuturePeriods,
     }));
-    const payload = { update: { dataSets: dataSetsUpdated } };
+
+    const payload = {
+        update: {
+            dataSets: dataSetsUpdated,
+            dataEntryForms: _.compact(dataEntryFormsUpdated),
+        },
+    };
 
     return postMetadata(d2, payload);
 }

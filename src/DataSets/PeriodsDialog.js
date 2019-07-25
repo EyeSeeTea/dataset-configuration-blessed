@@ -79,7 +79,7 @@ export default class PeriodsDialog extends React.Component {
                 this.setState({ error: JSON.stringify(response, null, 2) });
             }
         } catch (err) {
-            //snackActions.show({ message: (err && err.message) || "Error" });
+            console.error(err);
             this.setState({ error: (err && err.message) || "Error" });
         } finally {
             this.setState({ saving: false });
