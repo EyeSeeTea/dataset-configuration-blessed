@@ -309,22 +309,24 @@ export default class DataSetStore {
             .value();
     }
 
-    _saveCustomForm(saving) {
+    _getCustomForm(saving, categoryCombos) {
         const { richSections, dataset } = saving;
-        const cocFields = "id,categoryOptions[id]";
-        const categoryCombos$ = getCategoryCombos(this.d2, { cocFields });
-        const api = this.d2.Api.getApi();
         const periodDates = this.getPeriodDates();
 
-        return categoryCombos$.then(categoryCombos => {
-            return getCustomForm(this.d2, dataset, periodDates, richSections, categoryCombos).then(
-                htmlCode => {
-                    const payload = { style: "NORMAL", htmlCode };
-                    return api
-                        .post(["dataSets", dataset.id, "form"].join("/"), payload)
-                        .then(() => saving);
-                }
-            );
+        return getCustomForm(this.d2, dataset, periodDates, richSections, categoryCombos).then(
+            htmlCode => ({ style: "NORMAL", htmlCode })
+        );
+    }
+
+    async _saveCustomForm(saving) {
+        const { dataset } = saving;
+        const categoryCombos = await getCategoryCombos(this.d2, {
+            cocFields: "id,categoryOptions[id]",
+        });
+        const api = this.d2.Api.getApi();
+
+        return this._getCustomForm(saving, categoryCombos).then(payload => {
+            return api.post(["dataSets", dataset.id, "form"].join("/"), payload).then(() => saving);
         });
     }
 
@@ -892,6 +894,12 @@ export default class DataSetStore {
         return methods
             .reduce(reducer, this._getInitialSaving())
             .catch(err => this._notifyError(err));
+    }
+
+    buildCustomForm(categoryCombos) {
+        return this._processSections({ dataset: this.dataset }).then(saving =>
+            this._getCustomForm(saving, categoryCombos)
+        );
     }
 
     save() {

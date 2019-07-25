@@ -1,10 +1,11 @@
 import moment from "moment";
+import { getOwnedPropertyJSON } from "d2/lib/model/helpers/json";
+import { generateUid } from "d2/lib/uid";
 
 import _ from "../utils/lodash-mixins";
-import { setAttributes, postMetadata } from "../utils/Dhis2Helpers";
+import { setAttributes, postMetadata, getCategoryCombos, mapPromise } from "../utils/Dhis2Helpers";
 import Settings from "./Settings";
 import DataSetStore from "./DataSetStore";
-import { getOwnedPropertyJSON } from "d2/lib/model/helpers/json";
 
 const dataInputPeriodDatesFormat = "YYYYMMDD";
 
@@ -40,6 +41,14 @@ export function getAttributeValues(store, dataset) {
     return setAttributes(oldAttributeValues, newValues);
 }
 
+let categoryCombos = null;
+
+async function getCachedCategoryCombos(d2) {
+    categoryCombos =
+        categoryCombos || (await getCategoryCombos(d2, { cocFields: "id,categoryOptions[id]" }));
+    return categoryCombos;
+}
+
 export async function saveDataSets(d2, store, dataSets) {
     const { dataset: storeDataset, associations } = store;
 
@@ -52,29 +61,28 @@ export async function saveDataSets(d2, store, dataSets) {
         .then(collection => collection.toArray());
 
     const periodDates = store.getPeriodDates();
+    categoryCombos = null;
 
-    const [dataSetsClean, dataEntryFormsUpdated] = _(dataSetsWithForms)
-        .map(dataSet => {
-            const htmlCode = (dataSet.dataEntryForm && dataSet.dataEntryForm.htmlCode) || "";
-            // Regenerating the full form for a group of datasets would be very slow.
-            // Instead, we only replace the JS code that sets the period dates. This assumes
-            // that the data sets involved have been at least saved once with the periods
-            // infrastructure active and have the last version of the forms.
-            const newHtmlCode = htmlCode.replace(
-                /setPeriodDates\({.*}\)/,
-                `setPeriodDates(${JSON.stringify(periodDates)})`
-            );
-            const dataEntryFormUpdated = htmlCode
-                ? { ...dataSet.dataEntryForm, htmlCode: newHtmlCode }
-                : null;
-            const dataSetClean = Object.assign(dataSet, {
-                dataEntryForm: { id: dataSet.dataEntryForm.id },
-            });
+    const pairs = await mapPromise(dataSetsWithForms, async dataSet => {
+        const htmlCode = (dataSet.dataEntryForm && dataSet.dataEntryForm.htmlCode) || "";
+        const regexp = /setPeriodDates\({.*}\)/;
+        const newJsCode = `setPeriodDates(${JSON.stringify(periodDates)})`;
 
-            return [dataSetClean, dataEntryFormUpdated];
-        })
-        .unzip()
-        .value();
+        const formPayload = htmlCode.match(regexp)
+            ? { htmlCode: htmlCode.replace(regexp, newJsCode) }
+            : await store.buildCustomForm(await getCachedCategoryCombos(d2));
+
+        const dataEntryFormUpdated = {
+            id: generateUid(),
+            name: dataSet.id,
+            ...dataSet.dataEntryForm,
+            ...formPayload,
+        };
+        dataSet.dataEntryForm = { id: dataEntryFormUpdated.id };
+
+        return [dataSet, dataEntryFormUpdated];
+    });
+    const [dataSetsClean, dataEntryFormsUpdated] = _.unzip(pairs);
 
     const dataSetsUpdated = dataSetsClean.map(dataSet => ({
         ...getOwnedPropertyJSON(dataSet),
@@ -84,7 +92,7 @@ export async function saveDataSets(d2, store, dataSets) {
     }));
 
     const payload = {
-        update: {
+        create_and_update: {
             dataSets: dataSetsUpdated,
             dataEntryForms: _.compact(dataEntryFormsUpdated),
         },
