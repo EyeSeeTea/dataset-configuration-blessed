@@ -118,7 +118,7 @@ function getMultiSelect({ name, label, onChange, options = [], selected = [], er
 
 function getFormLabel({ value, forSection, style }) {
     return {
-        name: `${value}_${forSection}`,
+        name: forSection ? `${value}_${forSection}` : value,
         component: FormLabel,
         props: {
             value,
