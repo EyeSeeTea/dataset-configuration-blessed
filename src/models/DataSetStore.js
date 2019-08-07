@@ -445,6 +445,39 @@ export default class DataSetStore {
         }
     }
 
+    setDefaultPeriodValues() {
+        const { dataInputStartDate, dataInputEndDate } = this.associations;
+        if (!(dataInputStartDate && dataInputEndDate)) return;
+
+        const years = this.getPeriodYears();
+
+        const getPeriodDates = (years, { month }) =>
+            _(years)
+                .map(year => {
+                    const period = {
+                        start:
+                            dataInputStartDate.getFullYear() === year
+                                ? dataInputStartDate
+                                : new Date(year, 0, 1),
+                        end: new Date(year + 1, month - 1, 1),
+                    };
+                    return [year, period];
+                })
+                .fromPairs()
+                .value();
+
+        _.assign(this.associations, {
+            periodDatesApplyToAll: {
+                output: false,
+                outcome: false,
+            },
+            periodDates: {
+                output: getPeriodDates(years, { month: 4 }),
+                outcome: getPeriodDates(years, { month: 5 }),
+            },
+        });
+    }
+
     updateLinkedFields(fieldPath, oldValue) {
         const { dataset, associations } = this;
 
@@ -457,11 +490,13 @@ export default class DataSetStore {
                     } = this.getDataFromProject(dataset, associations);
                     this.dataset = newDataset;
                     this.associations = newAssociations;
+                    this.setDefaultPeriodValues();
                 }
                 break;
             case "associations.dataInputStartDate":
             case "associations.dataInputEndDate":
                 const { dataInputStartDate, dataInputEndDate } = associations;
+                this.setDefaultPeriodValues();
                 this.dataset.openFuturePeriods = this.getOpenFuturePeriods(dataInputEndDate);
                 this.dataset.dataInputPeriods = this.getDataInputPeriods(
                     dataInputStartDate,

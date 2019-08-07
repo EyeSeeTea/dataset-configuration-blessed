@@ -37,14 +37,14 @@ export default React.createClass({
             ...other
         } = this.props;
 
-        // Set the empty string instead of undefined for the no-value case, otherwise the component
+        // Set an empty object instead of undefined for the no-value case, otherwise the component
         // assumes it's being used in un-controlled state and does not react properly to changes
-        const valueProp = value ? { value: new Date(value) } : { value: "" };
+        const valueProp = value ? new Date(value) : {};
 
         return (
             <DatePicker
                 {...other}
-                {...valueProp}
+                value={valueProp}
                 mode="portrait"
                 autoOk
                 disabled={disabled}

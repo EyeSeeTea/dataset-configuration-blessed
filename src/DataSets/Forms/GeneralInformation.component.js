@@ -88,10 +88,13 @@ const GeneralInformation = React.createClass({
             return _.flatMap(years, (year, index) => {
                 const disabled = index > 0 && associations.periodDatesApplyToAll[type];
                 const showApplyToAllYearsCheckbox = index === 0 && years.length > 1;
-                const startDateMom = startDate ? moment(startDate).startOf("day") : null;
                 const validators = [
                     {
-                        validator: value => !value || moment(value).isSameOrAfter(startDateMom),
+                        validator: value => {
+                            const startDate = associations.dataInputStartDate;
+                            const startDateM = startDate ? moment(startDate).startOf("day") : null;
+                            return !value || !startDateM || moment(value).isSameOrAfter(startDateM);
+                        },
                         message: this.getTranslation("start_date_before_project_start"),
                     },
                 ];
