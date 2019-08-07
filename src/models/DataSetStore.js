@@ -490,6 +490,7 @@ export default class DataSetStore {
                     } = this.getDataFromProject(dataset, associations);
                     this.dataset = newDataset;
                     this.associations = newAssociations;
+                    this.setDefaultPeriodValues();
                 }
                 break;
             case "associations.dataInputStartDate":
