@@ -357,11 +357,13 @@ function setPeriodDates(periodDates_) {
 
         ["output", "outcome"].forEach(type => {
             const obj = (periodDates[type] || {})[periodYear];
-            const ns = { from: getFormatDate(obj.start) || "-", to: getFormatDate(obj.end) || "-" };
-            const info = `${ns.from} -> ${ns.to}`;
-
             const isDateOutsidePeriod =
-                (obj.start && today < getDate(obj.start)) || (obj.end && today > getDate(obj.end));
+                obj !== undefined && ((obj.start && today < getDate(obj.start)) || (obj.end && today > getDate(obj.end)));
+            let info;
+            if (isDateOutsidePeriod){
+                const ns = { from: getFormatDate(obj.start) || "-", to: getFormatDate(obj.end) || "-" };
+                info = `${ns.from} -> ${ns.to}`;
+            }
 
             setTabsVisibility(type, isDateOutsidePeriod, info);
         });

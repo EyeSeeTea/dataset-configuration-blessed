@@ -5,6 +5,8 @@ import fp from "lodash/fp";
 import { getOwnedPropertyJSON } from "d2/lib/model/helpers/json";
 import memoize from "nano-memoize";
 
+const toArray = collectionToArray;
+
 /* Return an array of sections containing its data elements and associated indicators. Schema:
 
     [{
@@ -117,10 +119,10 @@ export const getDataSetInfo = (d2, config, sections) => {
         .map((d2s, index) => _.set(d2s, "sortOrder", index))
         .value();
     const dataElements = _(d2Sections)
-        .flatMap(d2s => d2s.dataElements.toArray())
+        .flatMap(d2s => toArray(d2s.dataElements))
         .value();
     const indicators = _(d2Sections)
-        .flatMap(d2s => d2s.indicators.toArray())
+        .flatMap(d2s => toArray(d2s.indicators))
         .value();
     const dataSetElements = dataElements.map(dataElement => ({
         id: generateUid(),
@@ -356,7 +358,7 @@ const getOutputSection = opts => {
     const sectionName = coreCompetency.name + " Outputs";
     const dataElements = dataElementsByCCId[coreCompetency.id];
     const getDataElementInfo = dataElement => {
-        const groupSets = _(dataElement.dataElementGroups.toArray())
+        const groupSets = _(toArray(dataElement.dataElementGroups))
             .map(deg => [degRelations[deg.id], deg])
             .fromPairs()
             .value();
@@ -418,7 +420,7 @@ const getOutcomeSection = opts => {
     const sectionName = coreCompetency.name + " Outcomes";
     const indicators = indicatorsByGroupName[coreCompetency.name] || [];
     const getIndicatorInfo = (indicator, dataElements) => {
-        const indicatorGroupSets = _(indicator.indicatorGroups.toArray())
+        const indicatorGroupSets = _(toArray(indicator.indicatorGroups))
             .map(ig => [igRelations[ig.id], ig])
             .fromPairs()
             .value();
@@ -440,6 +442,7 @@ const getOutcomeSection = opts => {
             dataElements: dataElements.map(de =>
                 _.assign(getOwnedPropertyJSON(de), { displayName: de.displayName })
             ),
+            dataElementsNumeric: dataElements.filter(de => de.code && !de.code.endsWith("-C")),
             id: indicator.id,
             code: indicator.code,
             name: indicator.name,
@@ -523,7 +526,7 @@ const getDeIdsFromFormula = formula => {
 
 const filterDataElements = (dataElements, requiredDegIds) => {
     return dataElements.filter(dataElement => {
-        const degIds = new Set(dataElement.dataElementGroups.toArray().map(deg => deg.id));
+        const degIds = new Set(toArray(dataElement.dataElementGroups).map(deg => deg.id));
         return requiredDegIds.every(requiredDegId => degIds.has(requiredDegId));
     });
 };
@@ -533,8 +536,8 @@ const getDataElementGroupRelations = d2 => {
     return d2.models.dataElementGroupSets
         .list({ fields: "id,displayName,dataElementGroups[id,displayName]" })
         .then(collection =>
-            collection.toArray().map(degSet =>
-                _(degSet.dataElementGroups.toArray())
+            toArray(collection).map(degSet =>
+                _(toArray(degSet.dataElementGroups))
                     .map(deg => [deg.id, degSet.id])
                     .fromPairs()
                     .value()
@@ -548,8 +551,8 @@ const getIndicatorGroupRelations = d2 => {
     return d2.models.indicatorGroupSets
         .list({ fields: "id,displayName,indicatorGroups[id,displayName]" })
         .then(collection =>
-            collection.toArray().map(igSet =>
-                _(igSet.indicatorGroups.toArray())
+            toArray(collection).map(igSet =>
+                _(toArray(igSet.indicatorGroups))
                     .map(ig => [ig.id, igSet.id])
                     .fromPairs()
                     .value()
@@ -644,7 +647,7 @@ const getIndicatorsByGroupName = (d2, coreCompetencies) => {
 
     return getFilteredItems(d2.models.indicatorGroups, filters, { fields }).then(indicatorGroups =>
         _(indicatorGroups)
-            .map(indGroup => [indGroup.displayName, indGroup.indicators.toArray()])
+            .map(indGroup => [indGroup.displayName, toArray(indGroup.indicators)])
             .fromPairs()
             .value()
     );

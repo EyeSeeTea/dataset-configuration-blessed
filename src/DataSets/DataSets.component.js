@@ -39,6 +39,8 @@ import FormHelpers from "../forms/FormHelpers";
 import { currentUserHasAdminRole, canCreate, getFilteredDatasets } from "../utils/Dhis2Helpers";
 import * as sharing from "../models/Sharing";
 import Settings from "../models/Settings";
+import periodsStore from "./periods.store";
+import PeriodsDialog from "./PeriodsDialog";
 
 const { SimpleCheckBox } = FormHelpers;
 
@@ -90,6 +92,7 @@ const DataSets = React.createClass({
             sorting: null,
             searchValue: null,
             orgUnits: null,
+            periods: null,
             helpOpen: false,
             logs: null,
             logsHasMore: null,
@@ -114,6 +117,7 @@ const DataSets = React.createClass({
         this.registerDisposable(deleteStore.subscribe(_deleteObjects => this.getDataSets()));
         this.registerDisposable(this.subscribeToModelStore(sharingStore, "sharing"));
         this.registerDisposable(this.subscribeToModelStore(orgUnitsStore, "orgUnits"));
+        this.registerDisposable(this.subscribeToModelStore(periodsStore, "periods"));
         this.registerDisposable(logsStore.subscribe(datasets => this.openLogs(datasets)));
     },
 
@@ -343,6 +347,14 @@ const DataSets = React.createClass({
                 display: "flex",
                 flexOrientation: "row",
             },
+            dialogContentStyle: {
+                width: "1150px",
+                maxWidth: "none",
+            },
+            dialogBodyStyle: {
+                minHeight: "440px",
+                maxHeight: "600px",
+            },
         };
 
         const rows = this.state.dataRows.map(dr =>
@@ -406,6 +418,7 @@ const DataSets = React.createClass({
             logsOldestDate,
             logsHasMore,
             showOnlyCreatedByApp,
+            periods,
         } = this.state;
 
         const showCreatedByAppCheck = !!config.createdByDataSetConfigurationAttributeId;
@@ -462,8 +475,18 @@ const DataSets = React.createClass({
                         open={true}
                         onSave={datasets => log("change organisation units", "success", datasets)}
                         onRequestClose={listActions.hideOrgUnitsBox}
-                        contentStyle={{ width: "1150px", maxWidth: "none" }}
-                        bodyStyle={{ minHeight: "440px", maxHeight: "600px" }}
+                        contentStyle={styles.dialogContentStyle}
+                        bodyStyle={styles.dialogBodyStyle}
+                    />
+                ) : null}
+
+                {this.state.periods ? (
+                    <PeriodsDialog
+                        dataSets={periods.models}
+                        onSave={datasets => log("set period dates", "success", datasets)}
+                        onRequestClose={() => periodsStore.setState(null)}
+                        contentStyle={styles.dialogContentStyle}
+                        bodyStyle={styles.dialogBodyStyle}
                     />
                 ) : null}
 

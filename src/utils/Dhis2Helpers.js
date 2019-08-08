@@ -2,6 +2,16 @@ import { generateUid } from "d2/lib/uid";
 import { getOwnedPropertyJSON } from "d2/lib/model/helpers/json";
 import _ from "./lodash-mixins";
 
+function collectionToArray(collectionOrArray) {
+    const array =
+        collectionOrArray && collectionOrArray.toArray
+            ? collectionOrArray.toArray()
+            : collectionOrArray || [];
+    return _.compact(array);
+}
+
+const toArray = collectionToArray;
+
 const accesses = {
     none: "--------",
     read: "r-------",
@@ -57,14 +67,8 @@ function getOrgUnitsForLevel(d2, levelId) {
                 order: "displayName:asc",
                 paging: false,
             })
-            .then(collection => collection.toArray().filter(ou => ou.children));
+            .then(collection => toArray(collection).filter(ou => ou.children));
     });
-}
-
-function collectionToArray(collectionOrArray) {
-    return collectionOrArray && collectionOrArray.toArray
-        ? collectionOrArray.toArray()
-        : collectionOrArray || [];
 }
 
 // Keep track of the created categoryCombos so objects are reused
@@ -72,7 +76,7 @@ let cachedCategoryCombos = {};
 
 function getDisaggregationForCategories(d2, dataElement, categoryCombos, categories) {
     const categoriesById = _(categoryCombos)
-        .flatMap(cc => cc.categories.toArray())
+        .flatMap(cc => toArray(cc.categories))
         .uniqBy("id")
         .keyBy("id")
         .value();
@@ -113,7 +117,7 @@ function getDisaggregationForCategories(d2, dataElement, categoryCombos, categor
     } else {
         const newCategoryComboId = generateUid();
         const categories = _.at(categoriesById, combinedCategoriesIds);
-        const categoryOptions = categories.map(c => c.categoryOptions.toArray());
+        const categoryOptions = categories.map(c => toArray(c.categoryOptions));
         const categoryOptionCombos = _.cartesianProduct(...categoryOptions).map(cos => ({
             id: generateUid(),
             name: cos.map(co => co.displayName).join(", "),
@@ -168,7 +172,7 @@ function getExistingUserRoleByName(d2, name) {
         .on("name")
         .equals(name)
         .list({ fields: "*" })
-        .then(collection => collection.toArray()[0]);
+        .then(collection => toArray(collection)[0]);
 }
 
 function getUserGroups(d2, names) {
@@ -222,7 +226,7 @@ function setSharings(d2, objects, userGroupAccessByName) {
     } else {
         const [userGroupNames, userGroupAccesses] = _.zip(...userGroupAccessByName);
         userGroupAccesses$ = getUserGroups(d2, userGroupNames).then(userGroupsCollection =>
-            _(userGroupsCollection.toArray())
+            _(toArray(userGroupsCollection))
                 .keyBy(userGroup => userGroup.name)
                 .at(userGroupNames)
                 .zip(userGroupAccesses)
@@ -295,8 +299,8 @@ function deepMerge(obj1, obj2) {
 function postMetadata(d2, metadata) {
     const api = d2.Api.getApi();
 
-    const sendRequest = payloadsWithStrategy => {
-        const { strategy, payload } = payloadsWithStrategy;
+    const sendRequest = payloadWithStrategy => {
+        const { strategy, payload } = payloadWithStrategy;
         // Payload values may be d2 models or plain objects, get JSON only for models.
         const jsonPayload = _(payload)
             .mapValues(objs =>
@@ -304,6 +308,7 @@ function postMetadata(d2, metadata) {
             )
             .value();
         const path = `metadata?mergeMode=MERGE&importStrategy=${strategy.toUpperCase()}`;
+
         return api.post(path, jsonPayload).then(response => {
             if (response.status !== "OK") {
                 const msg = [
@@ -333,7 +338,10 @@ function postMetadata(d2, metadata) {
                 return _(payload)
                     .toPairs()
                     .partition(([modelName, _objs]) => modelName !== "sections")
-                    .map(pairs => ({ strategy, payload: _.fromPairs(pairs) }))
+                    .map(pairs =>
+                        _(pairs).isEmpty() ? null : { strategy, payload: _.fromPairs(pairs) }
+                    )
+                    .compact()
                     .value();
             }
         })
@@ -353,7 +361,7 @@ function getUids(d2, length) {
 
 function sendMessageToGroups(d2, userGroupNames, title, body) {
     return getUserGroups(d2, userGroupNames)
-        .then(userGroups => sendMessage(d2, title, body, userGroups.toArray()))
+        .then(userGroups => sendMessage(d2, title, body, toArray(userGroups)))
         .catch(_err => {
             alert("Could not send DHIS2 message");
         });
@@ -435,18 +443,23 @@ async function getFilteredDatasets(d2, config, page, sorting, filters) {
         // so we need to make a double request: first get non-paginated datasets, filter manually by the attribute,
         // and finally make a query on paginated datasets filtering by those datasets.
         const attributeFields = "id,attributeValues[value,attribute[id]]";
+        const options = cleanOptions({ order, fields, filter: filters, page });
+        const paramsSize = _(options)
+            .map((value, key) => `${key}=${encodeURIComponent(value)}`)
+            .join("&").length;
+
         const dataSetsCollectionNoPaging = await model.list({
             fields: attributeFields,
             paging: false,
+            order: "lastUpdated:desc",
         });
-        const datasetsByApp = dataSetsCollectionNoPaging
-            .toArray()
-            .filter(dataset =>
-                _(dataset.attributeValues).some(
-                    av => av.attribute.id === attributeByAppId && av.value.toString() === "true"
-                )
-            );
-        const maxUids = (8192 - 1000) / (11 + 3); // To avoid 413 URL too large
+        const datasetsByApp = toArray(dataSetsCollectionNoPaging).filter(dataset =>
+            _(dataset.attributeValues).some(
+                av => av.attribute.id === attributeByAppId && av.value.toString() === "true"
+            )
+        );
+        // Truncate IDs to avoid 413 URL too large
+        const maxUids = (8192 - paramsSize - 1000) / (11 + 3);
         const filters = [
             ...baseFilters,
             `id:in:[${_(datasetsByApp)
@@ -465,7 +478,7 @@ async function subQuery(d2, objects, field, subfields) {
         "id:in:[" +
         _(objects)
             .map(obj => obj[field])
-            .flatMap(obj => (obj.toArray ? obj.toArray().map(o => o.id) : [obj.id]))
+            .flatMap(obj => (obj.toArray ? toArray(obj).map(o => o.id) : [obj.id]))
             .uniq()
             .join(",") +
         "]";
@@ -476,14 +489,14 @@ async function subQuery(d2, objects, field, subfields) {
             fields: subfields,
             filter: filter,
         })
-        .then(collection => collection.toArray());
+        .then(collection => toArray(collection));
 
     const subObjectsById = _.keyBy(subObjects, "id");
 
     return objects.map(obj => {
         const value = obj[field];
         obj[field] = value.toArray
-            ? { toArray: () => value.toArray().map(v => subObjectsById[v.id]) }
+            ? { toArray: () => toArray(value).map(v => subObjectsById[v.id]) }
             : subObjectsById[value.id];
         return obj;
     });
