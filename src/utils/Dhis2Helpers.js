@@ -295,8 +295,8 @@ function deepMerge(obj1, obj2) {
 function postMetadata(d2, metadata) {
     const api = d2.Api.getApi();
 
-    const sendRequest = payloadsWithStrategy => {
-        const { strategy, payload } = payloadsWithStrategy;
+    const sendRequest = payloadWithStrategy => {
+        const { strategy, payload } = payloadWithStrategy;
         // Payload values may be d2 models or plain objects, get JSON only for models.
         const jsonPayload = _(payload)
             .mapValues(objs =>
@@ -304,6 +304,7 @@ function postMetadata(d2, metadata) {
             )
             .value();
         const path = `metadata?mergeMode=MERGE&importStrategy=${strategy.toUpperCase()}`;
+
         return api.post(path, jsonPayload).then(response => {
             if (response.status !== "OK") {
                 const msg = [
@@ -333,7 +334,10 @@ function postMetadata(d2, metadata) {
                 return _(payload)
                     .toPairs()
                     .partition(([modelName, _objs]) => modelName !== "sections")
-                    .map(pairs => ({ strategy, payload: _.fromPairs(pairs) }))
+                    .map(pairs =>
+                        _(pairs).isEmpty() ? null : { strategy, payload: _.fromPairs(pairs) }
+                    )
+                    .compact()
                     .value();
             }
         })
