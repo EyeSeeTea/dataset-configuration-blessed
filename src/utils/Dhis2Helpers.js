@@ -443,16 +443,23 @@ async function getFilteredDatasets(d2, config, page, sorting, filters) {
         // so we need to make a double request: first get non-paginated datasets, filter manually by the attribute,
         // and finally make a query on paginated datasets filtering by those datasets.
         const attributeFields = "id,attributeValues[value,attribute[id]]";
+        const options = cleanOptions({ order, fields, filter: filters, page });
+        const paramsSize = _(options)
+            .map((value, key) => `${key}=${encodeURIComponent(value)}`)
+            .join("&").length;
+
         const dataSetsCollectionNoPaging = await model.list({
             fields: attributeFields,
             paging: false,
+            order: "lastUpdated:desc",
         });
         const datasetsByApp = toArray(dataSetsCollectionNoPaging).filter(dataset =>
             _(dataset.attributeValues).some(
                 av => av.attribute.id === attributeByAppId && av.value.toString() === "true"
             )
         );
-        const maxUids = (8192 - 1000) / (11 + 3); // To avoid 413 URL too large
+        // Truncate IDs to avoid 413 URL too large
+        const maxUids = (8192 - paramsSize - 1000) / (11 + 3);
         const filters = [
             ...baseFilters,
             `id:in:[${_(datasetsByApp)
