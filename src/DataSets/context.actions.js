@@ -13,6 +13,7 @@ import {
     canUpdate,
 } from "../utils/Dhis2Helpers";
 import _ from "lodash";
+import periodsStore from "./periods.store";
 
 const setupActions = actions => {
     const actionsByName = _.keyBy(actions, "name");
@@ -68,6 +69,13 @@ const { contextActions, contextMenuIcons, isContextActionAllowed } = setupAction
         icon: "business",
         isActive: canUpdate,
         onClick: datasets => orgUnitsStore.setState(datasets),
+    },
+    {
+        name: "period_dates",
+        multiple: true,
+        icon: "timeline",
+        isActive: canUpdate,
+        onClick: datasets => periodsStore.setState(datasets),
     },
     {
         name: "details",
