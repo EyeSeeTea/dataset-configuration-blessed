@@ -81,6 +81,8 @@ class Factory {
             toArray(dataset.sections).forEach(section => {
                 section.id = undefined;
             });
+            // On dataset clone, the custom form is reused, clear the field explicitly
+            dataset.dataEntryForm = undefined;
             return this.getStore(dataset, "clone");
         });
     }
