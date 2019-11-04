@@ -35,7 +35,7 @@ const InitialConfig = React.createClass({
     _getDataElementGroups(dataElementGroupSetId, fields = [":all"]) {
         return this.context.d2.models.dataElementGroups
             .filter()
-            .on("dataElementGroupSet.id")
+            .on("groupSets.id")
             .equals(dataElementGroupSetId)
             .list({ fields: `id,${fields.join(",")}`, paging: false })
             .then(collection => _.keyBy(collection.toArray(), "id"));
