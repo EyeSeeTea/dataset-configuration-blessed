@@ -118,7 +118,7 @@ function DataSetElementList(
         .value();
 
     const dataSetElementsRows = _.flatMap(dataSetElementsGroups, dseGroup => {
-        const { categoryCombo = {}, dataElement = {}, id } = dseGroup[0];
+        const { categoryCombo = {}, dataElement = {} } = dseGroup[0];
         const dseIds = dseGroup.map(dse => dse.id);
         const dataElementCategoryIds = new Set(
             toArray(dataElement.categoryCombo.categories).map(cat => cat.id)
@@ -136,10 +136,13 @@ function DataSetElementList(
         );
 
         return (
-            <Row key={id} style={{ alignItems: "center", marginBottom: canEdit ? 0 : 10 }}>
+            <Row
+                key={dataElement.id}
+                style={{ alignItems: "center", marginBottom: canEdit ? 0 : 10 }}
+            >
                 <div style={styles.elementListItemDataElement}>
                     {dseGroup.map(dse => (
-                        <div key={dse.id}>{dse.dataElement.displayName}</div>
+                        <div key={dse.dataElement.id}>{dse.dataElement.displayName}</div>
                     ))}
                     <span title={categoryOptions} style={styles.originalCategoryCombo}>
                         {dataElement.categoryCombo.displayName}
