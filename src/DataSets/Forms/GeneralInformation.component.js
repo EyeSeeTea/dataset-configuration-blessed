@@ -56,7 +56,7 @@ const GeneralInformation = React.createClass({
         const { dataset } = this.props.store;
         const dataSets = await this.context.d2.models.dataSets.list({
             fields: "id,name",
-            filter: "name:^ilike:" + name,
+            filter: "name:$ilike:" + name,
         });
         const existsDataSetWithName = dataSets
             .toArray()
