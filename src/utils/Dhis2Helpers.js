@@ -307,7 +307,7 @@ function postMetadata(d2, metadata) {
                 objs.map(obj => (obj.modelDefinition ? getOwnedPropertyJSON(obj) : obj))
             )
             .value();
-        const path = `metadata?mergeMode=MERGE&importStrategy=${strategy.toUpperCase()}`;
+        const path = `metadata?mergeMode=REPLACE&importStrategy=${strategy.toUpperCase()}`;
 
         return api.post(path, jsonPayload).then(response => {
             if (response.status !== "OK") {
