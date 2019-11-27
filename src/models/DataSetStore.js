@@ -315,9 +315,13 @@ export default class DataSetStore {
         const { richSections, dataset } = saving;
         const periodDates = this.getPeriodDates();
 
-        return getCustomForm(this.d2, dataset, periodDates, richSections, categoryCombos).then(
-            htmlCode => ({ style: "NORMAL", htmlCode })
-        );
+        return getCustomForm(
+            this.d2,
+            dataset,
+            periodDates,
+            richSections,
+            categoryCombos
+        ).then(htmlCode => ({ style: "NORMAL", htmlCode }));
     }
 
     async _saveCustomForm(saving) {
@@ -657,11 +661,11 @@ export default class DataSetStore {
         const { dataset } = saving;
         const userGroupSharingByName = _(saving.countryCodes)
             .flatMap(countryCode => [
-                [countryCode + "_Users", { access: "r-------" }],
-                [countryCode + "_Administrators", { access: "rw------" }],
+                [countryCode + "_Users", { access: "r-r-----" }],
+                [countryCode + "_Administrators", { access: "rwrw----" }],
             ])
             .fromPairs()
-            .set("GL_GlobalAdministrator", { access: "rw------" })
+            .set("GL_GlobalAdministrator", { access: "rwrw----" })
             .value();
 
         const baseSharing = { object: { publicAccess: dataset.publicAccess } };
