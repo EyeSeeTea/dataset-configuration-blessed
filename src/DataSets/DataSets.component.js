@@ -11,7 +11,7 @@ import ListActionBar from "../ListActionBar/ListActionBar.component";
 import SearchBox from "../SearchBox/SearchBox.component";
 import Pagination from "d2-ui/lib/pagination/Pagination.component";
 import OrgUnitsDialog from "d2-ui/lib/org-unit-dialog/OrgUnitsDialog.component";
-import SharingDialog from "../components/sharing-dialog/SharingDialog";
+import SharingDialog from "d2-ui/lib/sharing/SharingDialog.component";
 import "../Pagination/Pagination.scss";
 import snackActions from "../Snackbar/snack.actions";
 

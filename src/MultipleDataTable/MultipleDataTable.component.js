@@ -1,6 +1,6 @@
 import isIterable from "d2-utilizr/lib/isIterable";
 import React from "react";
-import createReactClass from 'create-react-class';
+import createReactClass from "create-react-class";
 import PropTypes from "prop-types";
 import update from "immutability-helper";
 import MultipleDataTableRow from "./MultipleDataTableRow.component";
@@ -68,7 +68,7 @@ const MultipleDataTable = createReactClass({
                 return availableActions;
             }, {});
 
-        if (Object.keys(actionsToShow).length === 0) return null;
+        const hasActions = Object.keys(actionsToShow).length > 0;
 
         return (
             <MultipleDataTableContextMenu
@@ -76,7 +76,7 @@ const MultipleDataTable = createReactClass({
                 onRequestClose={this._hideContextMenu}
                 actions={actionsToShow}
                 activeItems={this.state.activeRows}
-                showContextMenu={this.state.showContextMenu}
+                showContextMenu={hasActions && this.state.showContextMenu}
                 icons={this.props.contextMenuIcons}
             />
         );

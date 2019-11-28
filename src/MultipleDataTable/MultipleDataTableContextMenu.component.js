@@ -1,11 +1,11 @@
 import React from "react";
-import createReactClass from 'create-react-class';
+import createReactClass from "create-react-class";
 import PropTypes from "prop-types";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import Menu from "material-ui/Menu";
 import MenuItem from "material-ui/MenuItem";
 import FontIcon from "material-ui/FontIcon";
-import Popover from "material-ui/Popover";
+import Popover from "./PopoverNoFlicker";
 import Paper from "material-ui/Paper";
 
 const MultipleDataTableContextMenu = createReactClass({
