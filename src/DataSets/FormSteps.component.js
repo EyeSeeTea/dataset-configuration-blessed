@@ -1,4 +1,6 @@
 import React from "react";
+import createReactClass from "create-react-class";
+import PropTypes from "prop-types";
 import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import Wizard from "../Wizard/Wizard.component";
@@ -18,14 +20,14 @@ import Heading from "d2-ui/lib/headings/Heading.component";
 import DataSetStore from "../models/DataSetStore";
 import Settings from "../models/Settings";
 
-const DataSetFormSteps = React.createClass({
+const DataSetFormSteps = createReactClass({
     mixins: [Translate],
     propTypes: {},
 
     getInitialState() {
         return {
             store: null,
-            active: 0,
+            active: 4,
             doneUntil: 0,
             validating: false,
             saving: false,

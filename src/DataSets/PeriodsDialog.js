@@ -1,4 +1,6 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import _ from "lodash";
 import Dialog from "material-ui/Dialog";
 import FlatButton from "material-ui/FlatButton/FlatButton";
@@ -10,11 +12,11 @@ import snackActions from "../Snackbar/snack.actions";
 
 export default class PeriodsDialog extends React.Component {
     static propTypes = {
-        onRequestClose: React.PropTypes.func.isRequired,
+        onRequestClose: PropTypes.func.isRequired,
     };
 
     static contextTypes = {
-        d2: React.PropTypes.any,
+        d2: PropTypes.any,
     };
 
     state = {
@@ -52,14 +54,14 @@ export default class PeriodsDialog extends React.Component {
         return [
             <FlatButton
                 label={this.getTranslation("cancel")}
-                onTouchTap={onRequestClose}
+                onClick={onRequestClose}
                 style={{ marginRight: 16 }}
             />,
             <RaisedButton
                 primary
                 label={this.getTranslation("save")}
                 disabled={saving}
-                onTouchTap={this.save}
+                onClick={this.save}
             />,
         ];
     }

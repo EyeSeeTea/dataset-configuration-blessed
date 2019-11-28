@@ -1,4 +1,6 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import LinearProgress from "material-ui/LinearProgress/LinearProgress";
@@ -6,15 +8,15 @@ import snackActions from "../../Snackbar/snack.actions";
 import { collectionString } from "../../utils/Dhis2Helpers";
 import { log } from "../log";
 
-const Save = React.createClass({
+const Save = createReactClass({
     mixins: [Translate],
 
     propTypes: {
-        config: React.PropTypes.object,
-        store: React.PropTypes.object,
-        state: React.PropTypes.string,
-        errors: React.PropTypes.arrayOf(React.PropTypes.string),
-        afterSave: React.PropTypes.func.isRequired,
+        config: PropTypes.object,
+        store: PropTypes.object,
+        state: PropTypes.string,
+        errors: PropTypes.arrayOf(PropTypes.string),
+        afterSave: PropTypes.func.isRequired,
     },
 
     saveStates: {
@@ -23,7 +25,7 @@ const Save = React.createClass({
         SAVE_ERROR: "SAVE_ERROR",
     },
 
-    componentWillReceiveProps(nextProps) {
+    UNSAFE_componentWillReceiveProps(nextProps) {
         if (nextProps.saving) {
             this._save();
         }

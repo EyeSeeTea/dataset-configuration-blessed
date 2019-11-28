@@ -1,4 +1,6 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import Store from "d2-ui/lib/store/Store";
 import { getInstance } from "d2/lib/d2";
 import GroupEditor from "d2-ui/lib/group-editor/GroupEditor.component";
@@ -55,16 +57,16 @@ multiSelectActions.removeItemsFromModelCollection.subscribe(({ data, complete, e
     complete();
 });
 
-export default React.createClass({
+export default createReactClass({
     propTypes: {
-        referenceType: React.PropTypes.string.isRequired,
-        referenceProperty: React.PropTypes.string.isRequired,
-        model: React.PropTypes.object.isRequired,
-        labelText: React.PropTypes.string.isRequired,
-        onChange: React.PropTypes.func.isRequired,
-        value: React.PropTypes.oneOfType([
-            React.PropTypes.shape({ values: React.PropTypes.func.isRequired }),
-            React.PropTypes.arrayOf(React.PropTypes.func),
+        referenceType: PropTypes.string.isRequired,
+        referenceProperty: PropTypes.string.isRequired,
+        model: PropTypes.object.isRequired,
+        labelText: PropTypes.string.isRequired,
+        onChange: PropTypes.func.isRequired,
+        value: PropTypes.oneOfType([
+            PropTypes.shape({ values: PropTypes.func.isRequired }),
+            PropTypes.arrayOf(PropTypes.func),
         ]),
     },
 
@@ -86,7 +88,7 @@ export default React.createClass({
         };
     },
 
-    componentWillMount() {
+    UNSAFE_componentWillMount() {
         if (!this.props.referenceType) {
             return;
         }

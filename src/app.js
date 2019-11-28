@@ -10,8 +10,8 @@ import MuiThemeProvider from "material-ui/styles/MuiThemeProvider";
 import moment from "moment";
 
 // The react-tap-event-plugin is required by material-ui to make touch screens work properly with onClick events
-import "react-tap-event-plugin";
-import injectTapEventPlugin from "react-tap-event-plugin";
+//import "react-tap-event-plugin";
+//import injectTapEventPlugin from "react-tap-event-plugin";
 
 import routes from "./router";
 import appTheme from "./App/app.theme";
@@ -27,7 +27,7 @@ const dhisDevConfig = DHIS_CONFIG; // eslint-disable-line
 if (process.env.NODE_ENV !== "production") {
     jQuery.ajaxSetup({ headers: { Authorization: dhisDevConfig.authorization } }); // eslint-disable-line
 }
-injectTapEventPlugin();
+//injectTapEventPlugin();
 
 // Render the a LoadingMask to show the user the app is in loading
 // The consecutive render after we did our setup will replace this loading mask

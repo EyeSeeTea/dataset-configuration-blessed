@@ -1,10 +1,11 @@
 import React from "react";
+import createReactClass from 'create-react-class';
 import Snackbar from "material-ui/Snackbar/Snackbar";
 import snackStore from "./snack.store";
 import ObserverRegistry from "../utils/ObserverRegistry.mixin";
 import log from "loglevel";
 
-const SnackBarContainer = React.createClass({
+const SnackBarContainer = createReactClass({
     mixins: [ObserverRegistry],
 
     getInitialState() {
@@ -16,7 +17,7 @@ const SnackBarContainer = React.createClass({
         };
     },
 
-    componentWillMount() {
+    UNSAFE_componentWillMount() {
         const snackStoreDisposable = snackStore.subscribe(snack => {
             if (snack) {
                 this.setState({
@@ -60,7 +61,7 @@ const SnackBarContainer = React.createClass({
                 action={this.state.snack.action}
                 autoHideDuration={0}
                 open={this.state.show}
-                onActionTouchTap={this.state.snack.onActionTouchTap}
+                onActionClick={this.state.snack.onActionClick}
                 onRequestClose={this._closeSnackbar}
             />
         );

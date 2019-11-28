@@ -1,4 +1,6 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import Menu from "material-ui/Menu";
 import MenuItem from "material-ui/MenuItem";
@@ -6,13 +8,13 @@ import FontIcon from "material-ui/FontIcon";
 import Popover from "material-ui/Popover";
 import Paper from "material-ui/Paper";
 
-const MultipleDataTableContextMenu = React.createClass({
+const MultipleDataTableContextMenu = createReactClass({
     propTypes: {
-        actions: React.PropTypes.objectOf(React.PropTypes.func),
-        showContextMenu: React.PropTypes.bool,
-        activeItems: React.PropTypes.array,
-        icons: React.PropTypes.object,
-        target: React.PropTypes.object,
+        actions: PropTypes.objectOf(PropTypes.func),
+        showContextMenu: PropTypes.bool,
+        activeItems: PropTypes.array,
+        icons: PropTypes.object,
+        target: PropTypes.object,
     },
 
     mixins: [Translate],

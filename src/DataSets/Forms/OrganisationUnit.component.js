@@ -1,23 +1,25 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import OrganisationUnitTreeMultiSelect from "d2-ui/lib/org-unit-select/orgunit-tree-multi-select";
 import scrollToComponent from "react-scroll-to-component";
 import { collectionToArray } from "../../utils/Dhis2Helpers";
 
-const OrganisationUnit = React.createClass({
+const OrganisationUnit = createReactClass({
     mixins: [Translate],
 
     propTypes: {
-        config: React.PropTypes.object,
-        store: React.PropTypes.object,
+        config: PropTypes.object,
+        store: PropTypes.object,
     },
 
     getInitialState() {
         return { errors: null };
     },
 
-    componentWillReceiveProps(props) {
+    UNSAFE_componentWillReceiveProps(props) {
         if (props.validateOnRender) {
             const organisationUnits = collectionToArray(this.props.store.dataset.organisationUnits);
             if (_(organisationUnits).isEmpty()) {

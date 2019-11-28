@@ -1,4 +1,6 @@
 import React from "react";
+import createReactClass from "create-react-class";
+import PropTypes from "prop-types";
 import fp from "lodash/fp";
 import _ from "lodash";
 
@@ -9,7 +11,7 @@ import ListActionBar from "../ListActionBar/ListActionBar.component";
 import SearchBox from "../SearchBox/SearchBox.component";
 import Pagination from "d2-ui/lib/pagination/Pagination.component";
 import OrgUnitsDialog from "d2-ui/lib/org-unit-dialog/OrgUnitsDialog.component";
-import SharingDialog from "d2-ui/lib/sharing/SharingDialog.component";
+import SharingDialog from "../components/sharing-dialog/SharingDialog";
 import "../Pagination/Pagination.scss";
 import snackActions from "../Snackbar/snack.actions";
 
@@ -54,19 +56,19 @@ export function calculatePageValue(pager) {
     return `${startItem} - ${endItem > total ? total : endItem}`;
 }
 
-const DataSets = React.createClass({
+const DataSets = createReactClass({
     propTypes: {
-        name: React.PropTypes.string,
+        name: PropTypes.string,
     },
 
     contextTypes: {
-        d2: React.PropTypes.object.isRequired,
+        d2: PropTypes.object.isRequired,
     },
 
     mixins: [ObserverRegistry, Translate],
 
     childContextTypes: {
-        d2: React.PropTypes.object,
+        d2: PropTypes.object,
     },
 
     getChildContext() {
@@ -397,7 +399,7 @@ const DataSets = React.createClass({
 
         const renderSettingsButton = () => (
             <div style={{ float: "right" }}>
-                <IconButton onTouchTap={this.openSettings} tooltip={this.tr("settings")}>
+                <IconButton onClick={this.openSettings} tooltip={this.tr("settings")}>
                     <SettingsIcon />
                 </IconButton>
             </div>
