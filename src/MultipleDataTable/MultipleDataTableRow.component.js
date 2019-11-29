@@ -149,7 +149,7 @@ const MultipleDataTableRow = React.createClass({
         if (value) {
             const accessMetadata = value.slice(0, 2);
             const accessData = value.slice(2, 4);
-            const get = this.getAccessText.bind(this);
+            const get = this.getAccessText;
             return `Data: ${get(accessMetadata)}, Metadata: ${get(accessData)}`;
         } else {
             return "?";
