@@ -18,6 +18,7 @@ import appTheme from "./App/app.theme";
 import "./App/App.scss";
 import { redirectToLogin } from "./utils/Dhis2Helpers";
 import Settings from "./models/Settings";
+import i18n from "./components/sharing-dialog/i18n";
 
 const dhisDevConfig = DHIS_CONFIG; // eslint-disable-line
 
@@ -73,6 +74,7 @@ function configI18n(userSettings) {
  */
 function startApp(d2) {
     window.d2 = d2;
+    i18n.config.d2 = d2; // Init wrapper for component using gettext i18n
     render(routes, document.getElementById("app"));
 }
 
