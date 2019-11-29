@@ -1,11 +1,8 @@
 import React from "react";
-//import { ConfirmationDialog } from "d2-ui-components";
-import Dialog from "@material-ui/core/Dialog";
 import DialogContent from "@material-ui/core/DialogContent";
-
+import ConfirmationDialog from "./ConfirmationDialog";
 import Sharing from "./Sharing";
-
-const i18n = { t: s => s };
+import i18n from "./i18n";
 
 const SharingDialog = ({
     isOpen,
@@ -14,30 +11,30 @@ const SharingDialog = ({
     onCancel,
     onSharingChanged,
     onSearchRequest,
+    controls,
 }) => {
     return (
-        <React.Fragment>
-            <Dialog
-                isOpen={isOpen}
-                title={i18n.t("Sharing settings")}
-                onCancel={onCancel}
-                cancelText={i18n.t("Close")}
-                maxWidth={"lg"}
-                fullWidth={true}
-                disableEnforceFocus
-            >
-                <DialogContent>
-                    {sharedObject && (
-                        <Sharing
-                            sharedObject={sharedObject}
-                            dataShareable={isDataShareable}
-                            onChange={onSharingChanged}
-                            onSearch={onSearchRequest}
-                        />
-                    )}
-                </DialogContent>
-            </Dialog>
-        </React.Fragment>
+        <ConfirmationDialog
+            isOpen={isOpen}
+            title={i18n.t("Sharing settings")}
+            onCancel={onCancel}
+            cancelText={i18n.t("Close")}
+            maxWidth={"lg"}
+            fullWidth={true}
+            disableEnforceFocus
+        >
+            <DialogContent>
+                {sharedObject && (
+                    <Sharing
+                        controls={controls}
+                        sharedObject={sharedObject}
+                        dataShareable={isDataShareable}
+                        onChange={onSharingChanged}
+                        onSearch={onSearchRequest}
+                    />
+                )}
+            </DialogContent>
+        </ConfirmationDialog>
     );
 };
 

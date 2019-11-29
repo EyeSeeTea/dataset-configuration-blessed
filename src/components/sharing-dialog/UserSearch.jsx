@@ -8,8 +8,7 @@ import { withStyles } from "@material-ui/core/styles";
 import { accessObjectToString } from "./utils";
 import PermissionPicker from "./PermissionPicker";
 import AutoComplete from "./AutoComplete";
-
-const i18n = { t: s => s };
+import i18n from "./i18n";
 
 const styles = {
     container: {

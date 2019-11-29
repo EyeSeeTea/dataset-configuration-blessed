@@ -6,8 +6,7 @@ import { withStyles } from "@material-ui/core/styles";
 
 import UserSearch from "./UserSearch";
 import { PublicAccess, ExternalAccess, GroupAccess } from "./Access";
-
-const i18n = { t: s => s };
+import i18n from "./i18n";
 
 const styles = {
     title: {
@@ -112,8 +111,9 @@ class Sharing extends React.Component {
             publicAccess,
             externalAccess,
         } = this.props.sharedObject.object;
-        const { allowPublicAccess, allowExternalAccess } = this.props.sharedObject.meta;
-        const { classes } = this.props;
+        const { allowPublicAccess = true, allowExternalAccess = false } =
+            this.props.sharedObject.meta || {};
+        const { controls, classes } = this.props;
 
         const accessIds = (userAccesses || [])
             .map(access => access.id)
@@ -122,11 +122,12 @@ class Sharing extends React.Component {
         return (
             <div>
                 <h2 className={classes.title}>{displayName || name}</h2>
-                {user && (
+                {user && user.name && (
                     <div className={classes.createdBy}>
                         {`${i18n.t("Created by")}: ${user.name}`}
                     </div>
                 )}
+                {controls || null}
                 <div className={classes.titleBodySpace} />
                 <Typography variant="subtitle1">{i18n.t("Who has access")}</Typography>
                 <Divider />
@@ -138,11 +139,13 @@ class Sharing extends React.Component {
                         onChange={this.onPublicAccessChange}
                     />
                     <Divider />
-                    <ExternalAccess
-                        access={externalAccess}
-                        disabled={!allowExternalAccess}
-                        onChange={this.onExternalAccessChange}
-                    />
+                    {allowExternalAccess && (
+                        <ExternalAccess
+                            access={externalAccess}
+                            disabled={!allowExternalAccess}
+                            onChange={this.onExternalAccessChange}
+                        />
+                    )}
                     <Divider />
                     {userAccesses &&
                         userAccesses.map(access => (
@@ -189,7 +192,13 @@ Sharing.propTypes = {
     /**
      * The object to share
      */
-    sharedObject: PropTypes.object.isRequired,
+    sharedObject: PropTypes.shape({
+        object: PropTypes.object,
+        meta: PropTypes.shape({
+            allowPublicAccess: PropTypes.bool,
+            allowExternalAccess: PropTypes.bool,
+        }),
+    }).isRequired,
 
     /*
      * If true, the object's data should have their own settings.
@@ -206,6 +215,8 @@ Sharing.propTypes = {
      * Takes a string and a callback, and returns matching users and userGroups.
      */
     onSearch: PropTypes.func.isRequired,
+
+    controls: PropTypes.node,
 };
 
 export default withStyles(styles)(Sharing);

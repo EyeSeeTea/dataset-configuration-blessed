@@ -11,7 +11,7 @@ import ListActionBar from "../ListActionBar/ListActionBar.component";
 import SearchBox from "../SearchBox/SearchBox.component";
 import Pagination from "d2-ui/lib/pagination/Pagination.component";
 import OrgUnitsDialog from "d2-ui/lib/org-unit-dialog/OrgUnitsDialog.component";
-import SharingDialog from "d2-ui/lib/sharing/SharingDialog.component";
+import SharingDialogMultiple from "../components/sharing-dialog/SharingDialogMultiple";
 import "../Pagination/Pagination.scss";
 import snackActions from "../Snackbar/snack.actions";
 
@@ -43,6 +43,7 @@ import * as sharing from "../models/Sharing";
 import Settings from "../models/Settings";
 import periodsStore from "./periods.store";
 import PeriodsDialog from "./PeriodsDialog";
+import { save } from "../components/sharing-dialog/utils";
 
 const { SimpleCheckBox } = FormHelpers;
 
@@ -55,6 +56,8 @@ export function calculatePageValue(pager) {
 
     return `${startItem} - ${endItem > total ? total : endItem}`;
 }
+
+const sharingMeta = { allowPublicAccess: true, allowExternalAccess: false };
 
 const DataSets = createReactClass({
     propTypes: {
@@ -123,13 +126,13 @@ const DataSets = createReactClass({
         this.registerDisposable(logsStore.subscribe(datasets => this.openLogs(datasets)));
     },
 
-    subscribeToModelStore(store, modelName) {
+    subscribeToModelStore(store, modelName, mapper = _.identity) {
         const d2 = this.context.d2;
 
         return store.subscribe(datasets => {
             if (datasets) {
                 const d2Datasets = datasets.map(dataset => d2.models.dataSets.create(dataset));
-                this.setState({ [modelName]: { models: d2Datasets } });
+                this.setState({ [modelName]: mapper({ models: d2Datasets }) });
             } else {
                 this.setState({ [modelName]: null });
             }
@@ -289,14 +292,30 @@ const DataSets = createReactClass({
         this.setState({ helpOpen: false });
     },
 
-    _onSharingClose(sharings) {
-        const { updated, all } = sharing.getChanges(this.state.dataRows, sharings);
+    _onSharingClose() {
+        const { updated, all } = sharing.getChanges(this.state.dataRows, this.state.sharing.models);
 
         if (!_(updated).isEmpty()) {
             log("change sharing settings", "success", updated);
             this.setState({ dataRows: all });
         }
         listActions.hideSharingBox();
+    },
+
+    _onSharingSearch(key) {
+        return this.context.d2.Api.getApi().get("sharing/search", { key });
+    },
+
+    async _onSharingSave(attributes, strategy) {
+        const { d2 } = this.context;
+        const currentDataSets = this.state.sharing.models;
+        const { status, dataSets } = await save(d2, currentDataSets, attributes, strategy);
+
+        if (status) {
+            this.setState({ sharing: { models: dataSets } });
+        } else {
+            snackActions.show({ message: "Error" });
+        }
     },
 
     _onShowOnlyCreatedByAppCheck(ev) {
@@ -493,15 +512,14 @@ const DataSets = createReactClass({
                 ) : null}
 
                 {this.state.sharing ? (
-                    <SharingDialog
-                        objectsToShare={this.state.sharing.models}
-                        open={true}
-                        onRequestClose={this._onSharingClose}
-                        onError={err => {
-                            log("change sharing settings", "failed", this.state.sharing.models);
-                            snackActions.show({ message: (err && err.message) || "Error" });
-                        }}
-                        bodyStyle={{ minHeight: "400px" }}
+                    <SharingDialogMultiple
+                        isOpen={!!this.state.sharing}
+                        isDataShareable={true}
+                        objects={this.state.sharing.models}
+                        meta={sharingMeta}
+                        onCancel={this._onSharingClose}
+                        onSharingChanged={this._onSharingSave}
+                        onSearchRequest={this._onSharingSearch}
                     />
                 ) : null}
 

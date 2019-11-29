@@ -1,3 +1,6 @@
+import _ from "lodash";
+import { getOwnedPropertyJSON } from "d2/lib/model/helpers/json";
+
 export const cachedAccessTypeToString = (canView, canEdit) => {
     if (canView) {
         return canEdit ? "rw------" : "r-------";
@@ -54,3 +57,80 @@ export const accessObjectToString = accessObject => {
 
     return accessString;
 };
+
+/* Batch mode helpers */
+
+export function mergeShareableAccesses(objects) {
+    return {
+        publicAccess: mergeAccesses(objects, "publicAccess"),
+        externalAccess: _(objects)
+            .map(obj => obj.externalAccess)
+            .uniq()
+            .isEqual([true]),
+        userAccesses: mergeEntityAccesses(objects, "userAccesses"),
+        userGroupAccesses: mergeEntityAccesses(objects, "userGroupAccesses"),
+    };
+}
+
+function mergeAccesses(objects, field, defaultAccess = "--------") {
+    return _.zip(...objects.map(objects => (objects[field] || defaultAccess).split("")))
+        .map(vals => (_.uniq(vals).length === 1 ? vals[0] : "-"))
+        .join("");
+}
+
+function mergeEntityAccesses(objects, field) {
+    const commonAccesses = _.intersectionBy(...objects.map(o => o[field]), "id");
+
+    return _(objects)
+        .flatMap(field)
+        .groupBy("id")
+        .at(commonAccesses.map(obj => obj.id))
+        .values()
+        .map(permissions => ({ ...permissions[0], access: mergeAccesses(permissions, "access") }))
+        .value();
+}
+
+function mergePermissions(object, newAttributes, field, strategy) {
+    const objPermissions = object[field] || [];
+    const newPermissions = newAttributes[field];
+    if (!newPermissions) return {};
+
+    switch (strategy) {
+        case "merge":
+            const ids = _(objPermissions)
+                .map("id")
+                .concat(_.map(newPermissions, "id"))
+                .uniq()
+                .value();
+            const newObjPermissions = _(objPermissions)
+                .keyBy("id")
+                .merge(_.keyBy(newPermissions, "id"))
+                .at(ids)
+                .value();
+            return { [field]: newObjPermissions };
+        case "replace":
+            return { [field]: newPermissions };
+        default:
+            throw new Error("Unknown strategy: " + strategy);
+    }
+}
+
+export function save(d2, objects, sharingAttributes, strategy) {
+    const plainObjects = objects.map(object =>
+        object.modelDefinition ? getOwnedPropertyJSON(object) : object
+    );
+
+    const dataSetsUpdated = plainObjects.map(object => ({
+        ...object,
+        ...mergePermissions(object, sharingAttributes, "userAccesses", strategy),
+        ...mergePermissions(object, sharingAttributes, "userGroupAccesses", strategy),
+        ..._.pick(sharingAttributes, ["publicAccess", "externalAccess"]),
+    }));
+    const api = d2.Api.getApi();
+    const payload = { dataSets: dataSetsUpdated };
+
+    return api
+        .post("metadata", payload)
+        .then(response => ({ status: response.status === "OK", ...payload }))
+        .catch(_err => ({ status: "ERROR" }));
+}

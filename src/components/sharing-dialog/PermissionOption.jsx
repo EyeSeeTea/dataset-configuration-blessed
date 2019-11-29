@@ -17,7 +17,12 @@ const PermissionOption = props => {
                     <DoneIcon />
                 </ListItemIcon>
             )}
-            <ListItemText inset primary={props.primaryText} />
+            <ListItemText
+                disableTypography
+                inset
+                primary={props.primaryText}
+                style={props.isSelected ? { marginLeft: -56 } : {}}
+            />
         </MenuItem>
     );
 };

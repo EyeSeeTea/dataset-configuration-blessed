@@ -10,8 +10,7 @@ import VisibilityIcon from "@material-ui/icons/Visibility";
 import { withStyles } from "@material-ui/core/styles";
 
 import PermissionOption from "./PermissionOption";
-
-const i18n = { t: s => s };
+import i18n from "./i18n";
 
 const styles = {
     optionHeader: {

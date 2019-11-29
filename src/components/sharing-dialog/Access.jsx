@@ -10,8 +10,7 @@ import { withStyles } from "@material-ui/core/styles";
 
 import PermissionPicker from "./PermissionPicker";
 import { accessStringToObject, accessObjectToString } from "./utils";
-
-const i18n = { t: s => s };
+import i18n from "./i18n";
 
 const icons = {
     user: PersonIcon,
