@@ -35,7 +35,7 @@ class App extends AppWithD2 {
             <MuiThemeProvider muiTheme={appTheme}>
                 <div>
                     <HeaderBar
-                        showAppTitle="dataset-configuration"
+                        showAppTitle="Dataset-Configuration"
                         styles={{ background: "#3c3c3c" }}
                     />
 
