@@ -90,13 +90,16 @@ function mergeEntityAccesses(objects, field) {
         .value();
 }
 
-function mergePermissions(object, newAttributes, field, strategy) {
+function mergePermissions(object, newAttributes, field, strategy, commonPermissionIds) {
     const objPermissions = object[field] || [];
     const newPermissions = newAttributes[field];
     if (!newPermissions) return {};
 
     switch (strategy) {
         case "merge":
+            // If a permission id was commont but it's not pressent in the newPermissions, it means
+            // the user removed it from the list.
+            const idsToRemove = _.difference(commonPermissionIds, newPermissions.map(p => p.id));
             const ids = _(objPermissions)
                 .map("id")
                 .concat(_.map(newPermissions, "id"))
@@ -105,7 +108,9 @@ function mergePermissions(object, newAttributes, field, strategy) {
             const newObjPermissions = _(objPermissions)
                 .keyBy("id")
                 .merge(_.keyBy(newPermissions, "id"))
+                .omit(idsToRemove)
                 .at(ids)
+                .compact()
                 .value();
             return { [field]: newObjPermissions };
         case "replace":
@@ -120,10 +125,17 @@ export function save(d2, objects, sharingAttributes, strategy) {
         object.modelDefinition ? getOwnedPropertyJSON(object) : object
     );
 
+    const commonIds = _(objects)
+        .flatMap(obj => [...(obj.userAccesses || []), ...(obj.userGroupAccesses || [])])
+        .countBy(permission => permission.id)
+        .pickBy(count => count === objects.length)
+        .keys()
+        .value();
+
     const dataSetsUpdated = plainObjects.map(object => ({
         ...object,
-        ...mergePermissions(object, sharingAttributes, "userAccesses", strategy),
-        ...mergePermissions(object, sharingAttributes, "userGroupAccesses", strategy),
+        ...mergePermissions(object, sharingAttributes, "userAccesses", strategy, commonIds),
+        ...mergePermissions(object, sharingAttributes, "userGroupAccesses", strategy, commonIds),
         ..._.pick(sharingAttributes, ["publicAccess", "externalAccess"]),
     }));
     const api = d2.Api.getApi();
