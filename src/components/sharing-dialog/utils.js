@@ -97,8 +97,8 @@ function mergePermissions(object, newAttributes, field, strategy, commonPermissi
 
     switch (strategy) {
         case "merge":
-            // If a permission id was commont but it's not pressent in the newPermissions, it means
-            // the user removed it from the list.
+            // If a permission id was common but it's now not present in newPermissions, it means
+            // the user removed it from the list, should be removed here.
             const idsToRemove = _.difference(commonPermissionIds, newPermissions.map(p => p.id));
             const ids = _(objPermissions)
                 .map("id")
@@ -138,6 +138,7 @@ export function save(d2, objects, sharingAttributes, strategy) {
         ...mergePermissions(object, sharingAttributes, "userGroupAccesses", strategy, commonIds),
         ..._.pick(sharingAttributes, ["publicAccess", "externalAccess"]),
     }));
+
     const api = d2.Api.getApi();
     const payload = { dataSets: dataSetsUpdated };
 
