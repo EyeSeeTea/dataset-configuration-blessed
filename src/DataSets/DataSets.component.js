@@ -119,6 +119,7 @@ const DataSets = createReactClass({
         this.registerDisposable(
             detailsStore.subscribe(detailsObject => this.setState({ detailsObject }))
         );
+
         this.registerDisposable(deleteStore.subscribe(_deleteObjects => this.getDataSets()));
         this.registerDisposable(this.subscribeToModelStore(sharingStore, "sharing"));
         this.registerDisposable(this.subscribeToModelStore(orgUnitsStore, "orgUnits"));
@@ -126,13 +127,11 @@ const DataSets = createReactClass({
         this.registerDisposable(logsStore.subscribe(datasets => this.openLogs(datasets)));
     },
 
-    subscribeToModelStore(store, modelName, mapper = _.identity) {
-        const d2 = this.context.d2;
-
-        return store.subscribe(datasets => {
+    subscribeToModelStore(store, modelName) {
+        return store.subscribe(async datasets => {
             if (datasets) {
-                const d2Datasets = datasets.map(dataset => d2.models.dataSets.create(dataset));
-                this.setState({ [modelName]: mapper({ models: d2Datasets }) });
+                const d2Datasets = await getDataSetsWithOwnerFields(datasets);
+                this.setState({ [modelName]: { models: d2Datasets } });
             } else {
                 this.setState({ [modelName]: null });
             }
@@ -600,5 +599,15 @@ const DataSets = createReactClass({
         );
     },
 });
+
+function getDataSetsWithOwnerFields(dataSets) {
+    const dataSetIds = dataSets.map(o => o.id).join(",");
+    return d2.models.dataSets
+        .list({
+            fields: ":owner",
+            filter: `id:in:[${dataSetIds}]`,
+        })
+        .then(c => c.toArray());
+}
 
 export default DataSets;
