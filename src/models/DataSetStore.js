@@ -661,7 +661,7 @@ export default class DataSetStore {
         const { dataset } = saving;
         const userGroupSharingByName = _(saving.countryCodes)
             .flatMap(countryCode => [
-                [countryCode + "_Users", { access: "r-r-----" }],
+                [countryCode + "_Users", { access: "r-rw----" }],
                 [countryCode + "_Administrators", { access: "rwrw----" }],
             ])
             .fromPairs()
