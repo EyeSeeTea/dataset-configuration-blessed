@@ -18,7 +18,7 @@ try {
     console.warn(`\nWARNING! Failed to load DHIS config:`, e.message);
     console.info("Using default config");
     dhisConfig = {
-        baseUrl: "http://localhost:8080",
+        baseUrl: "http://localhost:8031",
         authorization: "Basic YWRtaW46ZGlzdHJpY3Q=", // admin:district
     };
 }
@@ -70,6 +70,7 @@ const webpackConfig = {
         ],
     },
     resolve: {
+        extensions: ["", ".js", ".jsx"],
         alias: {
             react: path.resolve("./node_modules/react"),
             "material-ui": path.resolve("./node_modules/material-ui"),

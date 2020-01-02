@@ -1,4 +1,6 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import ObserverRegistry from "../../utils/ObserverRegistry.mixin";
@@ -25,11 +27,11 @@ const SearchBoxWrapper = props => {
     );
 };
 
-const Disaggregation = React.createClass({
+const Disaggregation = createReactClass({
     mixins: [Translate, ObserverRegistry],
 
     propTypes: {
-        validateOnRender: React.PropTypes.bool,
+        validateOnRender: PropTypes.bool,
     },
 
     getInitialState() {
@@ -51,7 +53,7 @@ const Disaggregation = React.createClass({
         );
     },
 
-    componentWillReceiveProps(props) {
+    UNSAFE_componentWillReceiveProps(props) {
         if (props.validateOnRender) props.formStatus(true);
     },
 

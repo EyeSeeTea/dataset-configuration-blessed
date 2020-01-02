@@ -1,5 +1,6 @@
-import React, { PropTypes } from "react";
-import CircularProgress from "material-ui/CircularProgress/CircularProgress";
+import React from "react";
+import PropTypes from "prop-types";
+import { CircularProgress } from "@material-ui/core";
 
 export default function RefreshMask({ horizontal }, { d2 }) {
     const styles = {

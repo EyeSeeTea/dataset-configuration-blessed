@@ -1,4 +1,6 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import FormBuilder from "d2-ui/lib/forms/FormBuilder.component";
@@ -6,13 +8,13 @@ import LinearProgress from "material-ui/LinearProgress/LinearProgress";
 import FormHelpers from "../../forms/FormHelpers";
 import moment from "moment";
 
-const InitialConfig = React.createClass({
+const InitialConfig = createReactClass({
     mixins: [Translate],
 
     propTypes: {
-        config: React.PropTypes.object,
-        store: React.PropTypes.object,
-        onFieldsChange: React.PropTypes.func,
+        config: PropTypes.object,
+        store: PropTypes.object,
+        onFieldsChange: PropTypes.func,
     },
 
     getDefaultProps: function() {
@@ -58,7 +60,7 @@ const InitialConfig = React.createClass({
         return this._getDataElementGroups(degsId, fields);
     },
 
-    componentWillReceiveProps(props) {
+    UNSAFE_componentWillReceiveProps(props) {
         if (props.validateOnRender) {
             const { coreCompetencies } = this.props.store.associations;
             if (_.isEmpty(coreCompetencies)) {

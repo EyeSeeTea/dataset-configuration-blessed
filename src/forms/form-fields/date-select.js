@@ -1,20 +1,18 @@
 import React from "react";
+import createReactClass from "create-react-class";
+import PropTypes from "prop-types";
 import DatePicker from "material-ui/DatePicker/DatePicker";
 import IconButton from "material-ui/IconButton/IconButton";
 
-export default React.createClass({
+const DateSelect = createReactClass({
     propTypes: {
-        value: React.PropTypes.oneOfType([React.PropTypes.string, React.PropTypes.object]),
-        labelText: React.PropTypes.string.isRequired,
-        onChange: React.PropTypes.func.isRequired,
-        disabled: React.PropTypes.bool,
-        defaultDate: React.PropTypes.object,
-        minDate: React.PropTypes.object,
-        maxDate: React.PropTypes.object,
-    },
-
-    defaultProps: {
-        disabled: false,
+        value: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
+        labelText: PropTypes.string.isRequired,
+        onChange: PropTypes.func.isRequired,
+        disabled: PropTypes.bool,
+        defaultDate: PropTypes.object,
+        minDate: PropTypes.object,
+        maxDate: PropTypes.object,
     },
 
     renderDatePicker() {
@@ -102,3 +100,9 @@ export default React.createClass({
         });
     },
 });
+
+DateSelect.defaultProps = {
+    disabled: false,
+};
+
+export default DateSelect;

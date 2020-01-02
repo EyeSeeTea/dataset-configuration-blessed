@@ -1,4 +1,6 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import moment from "moment";
 import _ from "lodash";
 import FormBuilder from "d2-ui/lib/forms/FormBuilder.component";
@@ -8,12 +10,12 @@ import { currentUserHasAdminRole } from "../utils/Dhis2Helpers";
 
 export default class DataSetPeriods extends React.Component {
     static propTypes = {
-        store: React.PropTypes.object.isRequired,
-        onFieldChange: React.PropTypes.func.isRequired,
+        store: PropTypes.object.isRequired,
+        onFieldChange: PropTypes.func.isRequired,
     };
 
     static contextTypes = {
-        d2: React.PropTypes.any,
+        d2: PropTypes.any,
     };
 
     styles = {

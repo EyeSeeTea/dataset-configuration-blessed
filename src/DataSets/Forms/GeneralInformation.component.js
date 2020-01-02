@@ -1,4 +1,6 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import FormBuilder from "d2-ui/lib/forms/FormBuilder.component";
@@ -8,7 +10,7 @@ import FormHelpers from "../../forms/FormHelpers";
 import { currentUserHasAdminRole } from "../../utils/Dhis2Helpers";
 import DataSetPeriods from "../DataSetPeriods";
 
-const GeneralInformation = React.createClass({
+const GeneralInformation = createReactClass({
     mixins: [Translate],
 
     styles: {
@@ -16,10 +18,10 @@ const GeneralInformation = React.createClass({
     },
 
     propTypes: {
-        config: React.PropTypes.object,
-        store: React.PropTypes.object,
-        onFieldsChange: React.PropTypes.func,
-        validateOnRender: React.PropTypes.bool,
+        config: PropTypes.object,
+        store: PropTypes.object,
+        onFieldsChange: PropTypes.func,
+        validateOnRender: PropTypes.bool,
     },
 
     getInitialState() {
@@ -143,7 +145,7 @@ const GeneralInformation = React.createClass({
         this.props.formStatus(isValid);
     },
 
-    async componentWillReceiveProps(props) {
+    async UNSAFE_componentWillReceiveProps(props) {
         if (props.validateOnRender) {
             this.props.formStatus(this.state.isValid);
         }

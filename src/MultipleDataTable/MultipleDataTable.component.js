@@ -1,27 +1,29 @@
 import isIterable from "d2-utilizr/lib/isIterable";
 import React from "react";
+import createReactClass from "create-react-class";
+import PropTypes from "prop-types";
 import update from "immutability-helper";
 import MultipleDataTableRow from "./MultipleDataTableRow.component";
 import DataTableHeader from "d2-ui/lib/data-table/DataTableHeader.component";
 import MultipleDataTableContextMenu from "./MultipleDataTableContextMenu.component";
 import _ from "../utils/lodash-mixins";
 
-const MultipleDataTable = React.createClass({
+const MultipleDataTable = createReactClass({
     propTypes: {
-        contextMenuActions: React.PropTypes.object,
-        contextMenuIcons: React.PropTypes.object,
-        primaryAction: React.PropTypes.func,
-        isContextActionAllowed: React.PropTypes.func,
-        isMultipleSelectionAllowed: React.PropTypes.bool,
-        columns: React.PropTypes.arrayOf(React.PropTypes.object),
-        hideRowsActionsIcon: React.PropTypes.bool,
-        onColumnSort: React.PropTypes.func,
-        styles: React.PropTypes.shape({
-            table: React.PropTypes.object,
-            header: React.PropTypes.object,
+        contextMenuActions: PropTypes.object,
+        contextMenuIcons: PropTypes.object,
+        primaryAction: PropTypes.func,
+        isContextActionAllowed: PropTypes.func,
+        isMultipleSelectionAllowed: PropTypes.bool,
+        columns: PropTypes.arrayOf(PropTypes.object),
+        hideRowsActionsIcon: PropTypes.bool,
+        onColumnSort: PropTypes.func,
+        styles: PropTypes.shape({
+            table: PropTypes.object,
+            header: PropTypes.object,
         }),
-        activeRows: React.PropTypes.arrayOf(React.PropTypes.object),
-        onActiveRowsChange: React.PropTypes.func,
+        activeRows: PropTypes.arrayOf(PropTypes.object),
+        onActiveRowsChange: PropTypes.func,
     },
 
     getDefaultProps() {
@@ -36,7 +38,7 @@ const MultipleDataTable = React.createClass({
         return this.getStateFromProps(this.props);
     },
 
-    componentWillReceiveProps(newProps) {
+    UNSAFE_componentWillReceiveProps(newProps) {
         this.setState(this.getStateFromProps(newProps));
     },
 
@@ -66,7 +68,7 @@ const MultipleDataTable = React.createClass({
                 return availableActions;
             }, {});
 
-        if (Object.keys(actionsToShow).length === 0) return null;
+        const hasActions = Object.keys(actionsToShow).length > 0;
 
         return (
             <MultipleDataTableContextMenu
@@ -74,7 +76,7 @@ const MultipleDataTable = React.createClass({
                 onRequestClose={this._hideContextMenu}
                 actions={actionsToShow}
                 activeItems={this.state.activeRows}
-                showContextMenu={this.state.showContextMenu}
+                showContextMenu={hasActions && this.state.showContextMenu}
                 icons={this.props.contextMenuIcons}
             />
         );

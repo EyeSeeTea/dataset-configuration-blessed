@@ -1,16 +1,18 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import GreyFieldsTable from "../../forms/GreyFieldsTable.component";
 import { collectionToArray } from "../../utils/Dhis2Helpers";
 
-const GreyFields = React.createClass({
+const GreyFields = createReactClass({
     mixins: [Translate],
 
     propTypes: {
-        validateOnRender: React.PropTypes.bool,
+        validateOnRender: PropTypes.bool,
     },
 
-    componentWillReceiveProps(props) {
+    UNSAFE_componentWillReceiveProps(props) {
         if (props.validateOnRender) props.formStatus(true);
     },
 
