@@ -1,10 +1,11 @@
 import React from "react";
+import createReactClass from 'create-react-class';
 import Dialog from "material-ui/Dialog";
 import FlatButton from "material-ui/FlatButton";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import { redirectToLogin } from "../utils/Dhis2Helpers";
 
-const SessionDialog = React.createClass({
+const SessionDialog = createReactClass({
     mixins: [Translate],
 
     getInitialState() {
@@ -35,12 +36,12 @@ const SessionDialog = React.createClass({
             <FlatButton
                 label={this.getTranslation("close")}
                 primary={true}
-                onTouchTap={this.close}
+                onClick={this.close}
             />,
             <FlatButton
                 label={this.getTranslation("login")}
                 primary={true}
-                onTouchTap={() => redirectToLogin(this.context.d2.system.settings.api.baseUrl)}
+                onClick={() => redirectToLogin(this.context.d2.system.settings.api.baseUrl)}
             />,
         ];
 

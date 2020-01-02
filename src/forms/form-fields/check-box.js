@@ -1,15 +1,17 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import Checkbox from "material-ui/Checkbox/Checkbox";
 
 function isTrueOrTheStringTrue(value) {
     return value === true || value === "true";
 }
 
-export default React.createClass({
+export default createReactClass({
     propTypes: {
-        onChange: React.PropTypes.func.isRequired,
-        labelText: React.PropTypes.string.isRequired,
-        value: React.PropTypes.bool,
+        onChange: PropTypes.func.isRequired,
+        labelText: PropTypes.string.isRequired,
+        value: PropTypes.bool,
     },
 
     render() {

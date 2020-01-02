@@ -1,9 +1,11 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import LinearProgress from "material-ui/LinearProgress";
 
-export default React.createClass({
+export default createReactClass({
     propTypes: {
-        isLoading: React.PropTypes.bool.isRequired,
+        isLoading: PropTypes.bool.isRequired,
     },
 
     getDefaultProps() {

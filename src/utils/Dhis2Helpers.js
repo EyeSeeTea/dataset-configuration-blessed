@@ -307,7 +307,7 @@ function postMetadata(d2, metadata) {
                 objs.map(obj => (obj.modelDefinition ? getOwnedPropertyJSON(obj) : obj))
             )
             .value();
-        const path = `metadata?mergeMode=MERGE&importStrategy=${strategy.toUpperCase()}`;
+        const path = `metadata?mergeMode=REPLACE&importStrategy=${strategy.toUpperCase()}`;
 
         return api.post(path, jsonPayload).then(response => {
             if (response.status !== "OK") {
@@ -433,7 +433,7 @@ async function getFilteredDatasets(d2, config, page, sorting, filters) {
     const fields =
         "id,name,displayName,displayDescription,shortName,created,lastUpdated,externalAccess," +
         "publicAccess,userAccesses,userGroupAccesses,user,access,attributeValues," +
-        "sections[id,name],dataInputPeriods~paging(1;1)";
+        "periodType,sections[id,name],dataInputPeriods~paging(1;1)";
     const cleanOptions = options =>
         _.omitBy(options, value => _.isArray(value) && _.isEmpty(value));
     const baseFilters = _.compact([searchValue ? `displayName:ilike:${searchValue}` : null]);

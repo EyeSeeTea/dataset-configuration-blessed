@@ -1,4 +1,6 @@
 import React from "react";
+import createReactClass from "create-react-class";
+import PropTypes from "prop-types";
 import fp from "lodash/fp";
 import _ from "lodash";
 
@@ -9,7 +11,7 @@ import ListActionBar from "../ListActionBar/ListActionBar.component";
 import SearchBox from "../SearchBox/SearchBox.component";
 import Pagination from "d2-ui/lib/pagination/Pagination.component";
 import OrgUnitsDialog from "d2-ui/lib/org-unit-dialog/OrgUnitsDialog.component";
-import SharingDialog from "d2-ui/lib/sharing/SharingDialog.component";
+import SharingDialogMultiple from "../components/sharing-dialog/SharingDialogMultiple";
 import "../Pagination/Pagination.scss";
 import snackActions from "../Snackbar/snack.actions";
 
@@ -41,6 +43,7 @@ import * as sharing from "../models/Sharing";
 import Settings from "../models/Settings";
 import periodsStore from "./periods.store";
 import PeriodsDialog from "./PeriodsDialog";
+import { save } from "../components/sharing-dialog/utils";
 
 const { SimpleCheckBox } = FormHelpers;
 
@@ -54,19 +57,21 @@ export function calculatePageValue(pager) {
     return `${startItem} - ${endItem > total ? total : endItem}`;
 }
 
-const DataSets = React.createClass({
+const sharingMeta = { allowPublicAccess: true, allowExternalAccess: false };
+
+const DataSets = createReactClass({
     propTypes: {
-        name: React.PropTypes.string,
+        name: PropTypes.string,
     },
 
     contextTypes: {
-        d2: React.PropTypes.object.isRequired,
+        d2: PropTypes.object.isRequired,
     },
 
     mixins: [ObserverRegistry, Translate],
 
     childContextTypes: {
-        d2: React.PropTypes.object,
+        d2: PropTypes.object,
     },
 
     getChildContext() {
@@ -114,6 +119,7 @@ const DataSets = React.createClass({
         this.registerDisposable(
             detailsStore.subscribe(detailsObject => this.setState({ detailsObject }))
         );
+
         this.registerDisposable(deleteStore.subscribe(_deleteObjects => this.getDataSets()));
         this.registerDisposable(this.subscribeToModelStore(sharingStore, "sharing"));
         this.registerDisposable(this.subscribeToModelStore(orgUnitsStore, "orgUnits"));
@@ -122,11 +128,9 @@ const DataSets = React.createClass({
     },
 
     subscribeToModelStore(store, modelName) {
-        const d2 = this.context.d2;
-
-        return store.subscribe(datasets => {
+        return store.subscribe(async datasets => {
             if (datasets) {
-                const d2Datasets = datasets.map(dataset => d2.models.dataSets.create(dataset));
+                const d2Datasets = await getDataSetsWithOwnerFields(datasets);
                 this.setState({ [modelName]: { models: d2Datasets } });
             } else {
                 this.setState({ [modelName]: null });
@@ -287,14 +291,30 @@ const DataSets = React.createClass({
         this.setState({ helpOpen: false });
     },
 
-    _onSharingClose(sharings) {
-        const { updated, all } = sharing.getChanges(this.state.dataRows, sharings);
+    _onSharingClose() {
+        const { updated, all } = sharing.getChanges(this.state.dataRows, this.state.sharing.models);
 
         if (!_(updated).isEmpty()) {
             log("change sharing settings", "success", updated);
             this.setState({ dataRows: all });
         }
         listActions.hideSharingBox();
+    },
+
+    _onSharingSearch(key) {
+        return this.context.d2.Api.getApi().get("sharing/search", { key });
+    },
+
+    async _onSharingSave(attributes, strategy) {
+        const { d2 } = this.context;
+        const currentDataSets = this.state.sharing.models;
+        const { status, dataSets } = await save(d2, currentDataSets, attributes, strategy);
+
+        if (status) {
+            this.setState({ sharing: { models: dataSets } });
+        } else {
+            snackActions.show({ message: "Error" });
+        }
     },
 
     _onShowOnlyCreatedByAppCheck(ev) {
@@ -397,7 +417,7 @@ const DataSets = React.createClass({
 
         const renderSettingsButton = () => (
             <div style={{ float: "right" }}>
-                <IconButton onTouchTap={this.openSettings} tooltip={this.tr("settings")}>
+                <IconButton onClick={this.openSettings} tooltip={this.tr("settings")}>
                     <SettingsIcon />
                 </IconButton>
             </div>
@@ -491,15 +511,14 @@ const DataSets = React.createClass({
                 ) : null}
 
                 {this.state.sharing ? (
-                    <SharingDialog
-                        objectsToShare={this.state.sharing.models}
-                        open={true}
-                        onRequestClose={this._onSharingClose}
-                        onError={err => {
-                            log("change sharing settings", "failed", this.state.sharing.models);
-                            snackActions.show({ message: (err && err.message) || "Error" });
-                        }}
-                        bodyStyle={{ minHeight: "400px" }}
+                    <SharingDialogMultiple
+                        isOpen={!!this.state.sharing}
+                        isDataShareable={true}
+                        objects={this.state.sharing.models}
+                        meta={sharingMeta}
+                        onCancel={this._onSharingClose}
+                        onSharingChanged={this._onSharingSave}
+                        onSearchRequest={this._onSharingSearch}
                     />
                 ) : null}
 
@@ -580,5 +599,15 @@ const DataSets = React.createClass({
         );
     },
 });
+
+function getDataSetsWithOwnerFields(dataSets) {
+    const dataSetIds = dataSets.map(o => o.id).join(",");
+    return d2.models.dataSets
+        .list({
+            fields: ":owner",
+            filter: `id:in:[${dataSetIds}]`,
+        })
+        .then(c => c.toArray());
+}
 
 export default DataSets;

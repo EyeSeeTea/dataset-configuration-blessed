@@ -1,5 +1,6 @@
 import React from "react";
-
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import Dialog from "material-ui/Dialog";
 import RaisedButton from "material-ui/RaisedButton";
 import FlatButton from "material-ui/FlatButton";
@@ -229,6 +230,6 @@ class DataInputPeriods extends React.Component {
         );
     }
 }
-DataInputPeriods.contextTypes = { d2: React.PropTypes.any };
+DataInputPeriods.contextTypes = { d2: PropTypes.any };
 
 export default DataInputPeriods;
