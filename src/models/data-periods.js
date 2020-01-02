@@ -72,11 +72,12 @@ export async function saveDataSets(d2, store, dataSets) {
             ? { htmlCode: htmlCode.replace(regexp, newJsCode) }
             : await store.buildCustomForm(await getCachedCategoryCombos(d2));
 
+        const id = (dataSet.dataEntryForm ? dataSet.dataEntryForm.id : null) || generateUid();
         const dataEntryFormUpdated = {
-            id: generateUid(),
-            name: dataSet.id,
             ...dataSet.dataEntryForm,
             ...formPayload,
+            id: id,
+            name: [dataSet.id, id].join("-"),
         };
         dataSet.dataEntryForm = { id: dataEntryFormUpdated.id };
 

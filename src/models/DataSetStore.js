@@ -99,7 +99,7 @@ class Factory {
     getDataset(id) {
         const fields = [
             "*,dataSetElements[*,categoryCombo[*,categories[id,displayName]],dataElement[*,categoryCombo[*]]]",
-            "sections[*,href],organisationUnits[*]",
+            "sections[*,href],organisationUnits[*],dataEntryForm[id]",
         ].join(",");
         return this.d2.models.dataSets.get(id, { fields });
     }
@@ -311,29 +311,22 @@ export default class DataSetStore {
             .value();
     }
 
-    _getCustomForm(saving, categoryCombos) {
+    async _getCustomForm(saving, categoryCombos_) {
         const { richSections, dataset } = saving;
         const periodDates = this.getPeriodDates();
+        const categoryCombos =
+            categoryCombos_ ||
+            (await getCategoryCombos(this.d2, { cocFields: "id,categoryOptions[id]" }));
+        const id = (dataset.dataEntryForm ? dataset.dataEntryForm.id : null) || generateUid();
 
-        return getCustomForm(
-            this.d2,
-            dataset,
-            periodDates,
-            richSections,
-            categoryCombos
-        ).then(htmlCode => ({ style: "NORMAL", htmlCode }));
-    }
-
-    async _saveCustomForm(saving) {
-        const { dataset } = saving;
-        const categoryCombos = await getCategoryCombos(this.d2, {
-            cocFields: "id,categoryOptions[id]",
-        });
-        const api = this.d2.Api.getApi();
-
-        return this._getCustomForm(saving, categoryCombos).then(payload => {
-            return api.post(["dataSets", dataset.id, "form"].join("/"), payload).then(() => saving);
-        });
+        return getCustomForm(this.d2, dataset, periodDates, richSections, categoryCombos).then(
+            htmlCode => ({
+                id: id,
+                style: "NORMAL",
+                htmlCode,
+                name: [dataset.id, id].join("-"), // Form name must be unique
+            })
+        );
     }
 
     getDataInputPeriods({ dataInputStartDate: startDate, dataInputEndDate: endDate }) {
@@ -600,8 +593,11 @@ export default class DataSetStore {
         return _.imerge(saving, { dataset: update(dataset, { id: datasetId }) });
     }
 
-    _saveDataset(saving) {
+    async _saveDataset(saving) {
         const { dataset } = saving;
+
+        const form = await this._getCustomForm(saving);
+
         // Cleanup dataSetElements to avoid "circular references" error on POST
         const datasetPayload = getOwnedPropertyJSON(dataset);
         const newDataSetElements = dataset.dataSetElements.map(dataSetElement => ({
@@ -610,8 +606,14 @@ export default class DataSetStore {
             categoryCombo: { id: getCategoryCombo(dataSetElement).id },
         }));
         datasetPayload.dataSetElements = newDataSetElements;
+        datasetPayload.dataEntryForm = { id: form.id };
 
-        return this._addMetadataOp(saving, { create_and_update: { dataSets: [datasetPayload] } });
+        return this._addMetadataOp(saving, {
+            create_and_update: {
+                dataSets: [datasetPayload],
+                dataEntryForms: [form],
+            },
+        });
     }
 
     _setDatasetCode(saving) {
@@ -859,7 +861,6 @@ export default class DataSetStore {
             this._saveDataset,
             this._runMetadataOps,
             this._addOrgUnitsToProject,
-            this._saveCustomForm,
             this._sendNotificationMessages,
         ]);
     }
