@@ -296,13 +296,21 @@ export default class DataSetStore {
 
         return _(periodDates)
             .mapValues((datesByYear, type) => {
-                const valueForFirstYear = periodDates[type][firstYear];
+                const datesFirstYear = periodDates[type][firstYear];
                 const applyToAll = periodDatesApplyToAll[type];
                 return _(years)
                     .map((year, index) => {
-                        const value = applyToAll
-                            ? _.mapValues(valueForFirstYear, date => processDate(date, index))
-                            : _.mapValues(datesByYear[year], date => processDate(date, 0));
+                        const dates = datesByYear[year];
+                        const value =
+                            applyToAll && datesFirstYear
+                                ? {
+                                      start: processDate(datesFirstYear.start, 0),
+                                      end: processDate(datesFirstYear.end, index),
+                                  }
+                                : {
+                                      start: dates ? processDate(dates.start, 0) : undefined,
+                                      end: dates ? processDate(dates.end, 0) : undefined,
+                                  };
                         return [year, value];
                     })
                     .fromPairs()
