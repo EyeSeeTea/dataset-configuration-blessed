@@ -93,7 +93,7 @@ getManifest("./manifest.webapp")
         const baseUrl =
             process.env.NODE_ENV === "production" ? manifest.getBaseUrl() : dhisDevConfig.baseUrl;
         config.siteUrl = baseUrl;
-        config.baseUrl = `${baseUrl}/api/26`;
+        config.baseUrl = `${baseUrl}/api`;
         log.info(`Loading: ${manifest.name} v${manifest.version}`);
         log.info(`Built ${manifest.manifest_generated_at}`);
     })
