@@ -649,7 +649,7 @@ export default class DataSetStore {
         return update(categoryCombo, sharing.object);
     }
 
-    _getUserRoleName(coreCompetency, country) {
+    _getUserGroupName(coreCompetency, country) {
         const countryCode = getCountryCode(country);
         const key = coreCompetency.name.toLocaleLowerCase().replace(/\W+/g, "");
         return `${countryCode}__dataset_${key}`;
@@ -661,6 +661,13 @@ export default class DataSetStore {
 
     _addSharingToDataset(saving) {
         const { dataset } = saving;
+        const { coreCompetencies } = this.associations;
+
+        _.cartesianProduct(coreCompetencies, saving.countryCodes).map(([coreCompetency, countryCode]) => 
+            const name = this._getUserGroupName(coreCompetency, countryCode)
+            return [name, { access: "r-rw----" }]
+        );
+
         const userGroupSharingByName = _(saving.countryCodes)
             .flatMap(countryCode => [
                 [countryCode + "_Users", { access: "r-rw----" }],
