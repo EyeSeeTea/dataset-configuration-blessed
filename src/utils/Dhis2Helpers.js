@@ -188,17 +188,20 @@ function getSharing(d2, object) {
 }
 
 function buildSharingFromUserGroupNames(baseSharing, userGroups, userGroupSharingByName) {
-    const userGroupsByName = _(userGroups)
-        .keyBy("name")
-        .value();
+    const userGroupsByName = _.keyBy(userGroups, userGroup => userGroup.name)
     const userGroupAccesses = _(userGroupSharingByName)
-        .map((sharing, name) =>
-            _(userGroupsByName).has(name)
-                ? _.imerge(sharing, { id: userGroupsByName[name].id })
-                : null
-        )
+        .map((sharing, name) => {
+            const userGroup = userGroupsByName[name];
+            if (userGroup) {
+                return _.imerge(sharing, { id: userGroup.id })
+            } else {
+                console.log(`User has no access to user group: ${name}`)
+                return null;
+            }
+        })
         .compact()
         .value();
+
     return buildSharing(deepMerge(baseSharing, { object: { userGroupAccesses } }));
 }
 

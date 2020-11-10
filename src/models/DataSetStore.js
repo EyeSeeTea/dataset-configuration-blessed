@@ -649,10 +649,10 @@ export default class DataSetStore {
         return update(categoryCombo, sharing.object);
     }
 
-    _getUserGroupName(coreCompetency, country) {
-        const countryCode = getCountryCode(country);
+    _getUserGroupName(coreCompetency, countryCode) {
+        // coreCompetency.name = "FOOD SECURITY" -> "${countryCode}_foodsecurityUsers"
         const key = coreCompetency.name.toLocaleLowerCase().replace(/\W+/g, "");
-        return `${countryCode}__dataset_${key}`;
+        return `${countryCode}_${key}Users`;
     }
 
     _addWarnings(saving, msgs) {
@@ -663,9 +663,11 @@ export default class DataSetStore {
         const { dataset } = saving;
         const { coreCompetencies } = this.associations;
 
-        _.cartesianProduct(coreCompetencies, saving.countryCodes).map(([coreCompetency, countryCode]) => 
-            const name = this._getUserGroupName(coreCompetency, countryCode)
-            return [name, { access: "r-rw----" }]
+        const coreCompetenciesSharing = _.cartesianProduct(coreCompetencies, saving.countryCodes).map(
+            ([coreCompetency, countryCode]) => {
+                const userGroupName = this._getUserGroupName(coreCompetency, countryCode);
+                return [userGroupName, { access: "r-rw----" }];
+            }
         );
 
         const userGroupSharingByName = _(saving.countryCodes)
@@ -673,9 +675,11 @@ export default class DataSetStore {
                 [countryCode + "_Users", { access: "r-rw----" }],
                 [countryCode + "_Administrators", { access: "rwrw----" }],
             ])
+            .concat(coreCompetenciesSharing)
+            .concat([["GL_GlobalAdministrator", { access: "rwrw----" }]])
             .fromPairs()
-            .set("GL_GlobalAdministrator", { access: "rwrw----" })
             .value();
+
 
         const baseSharing = { object: { publicAccess: dataset.publicAccess } };
         const sharing = buildSharingFromUserGroupNames(
