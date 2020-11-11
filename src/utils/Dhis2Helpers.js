@@ -187,11 +187,15 @@ function getSharing(d2, object) {
     return api.get(`sharing?type=${object.modelDefinition.name}&id=${object.id}`);
 }
 
+function getKey(s) {
+    return s.toLocaleLowerCase();
+}
+
 function buildSharingFromUserGroupNames(baseSharing, userGroups, userGroupSharingByName) {
-    const userGroupsByName = _.keyBy(userGroups, userGroup => userGroup.name)
+    const userGroupsByName = _.keyBy(userGroups, userGroup => getKey(userGroup.name))
     const userGroupAccesses = _(userGroupSharingByName)
         .map((sharing, name) => {
-            const userGroup = userGroupsByName[name];
+            const userGroup = userGroupsByName[getKey(name)];
             if (userGroup) {
                 return _.imerge(sharing, { id: userGroup.id })
             } else {
