@@ -9,7 +9,7 @@ import Row from "d2-ui/lib/layout/Row.component";
 import SelectField from "material-ui/SelectField/SelectField";
 import MenuItem from "material-ui/MenuItem/MenuItem";
 import Translate from "d2-ui/lib/i18n/Translate.component";
-import { collectionToArray } from "../utils/Dhis2Helpers";
+import { collectionToArray, getDseId } from "../utils/Dhis2Helpers";
 import _ from "lodash";
 
 const enhance = compose(
@@ -120,7 +120,7 @@ function DataSetElementList(
 
     const dataSetElementsRows = _.flatMap(dataSetElementsGroups, dseGroup => {
         const { categoryCombo = {}, dataElement = {} } = dseGroup[0];
-        const dseIds = dseGroup.map(dse => dse.id);
+        const dseIds = dseGroup.map(dse => getDseId(dse));
         const dataElementCategoryIds = new Set(
             toArray(dataElement.categoryCombo.categories).map(cat => cat.id)
         );

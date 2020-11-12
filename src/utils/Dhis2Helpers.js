@@ -187,18 +187,25 @@ function getSharing(d2, object) {
     return api.get(`sharing?type=${object.modelDefinition.name}&id=${object.id}`);
 }
 
+function getKey(s) {
+    return s.toLocaleLowerCase();
+}
+
 function buildSharingFromUserGroupNames(baseSharing, userGroups, userGroupSharingByName) {
-    const userGroupsByName = _(userGroups)
-        .keyBy("name")
-        .value();
+    const userGroupsByName = _.keyBy(userGroups, userGroup => getKey(userGroup.name))
     const userGroupAccesses = _(userGroupSharingByName)
-        .map((sharing, name) =>
-            _(userGroupsByName).has(name)
-                ? _.imerge(sharing, { id: userGroupsByName[name].id })
-                : null
-        )
+        .map((sharing, name) => {
+            const userGroup = userGroupsByName[getKey(name)];
+            if (userGroup) {
+                return _.imerge(sharing, { id: userGroup.id })
+            } else {
+                console.log(`User has no access to user group: ${name}`)
+                return null;
+            }
+        })
         .compact()
         .value();
+
     return buildSharing(deepMerge(baseSharing, { object: { userGroupAccesses } }));
 }
 
@@ -535,7 +542,13 @@ function setAttributes(initialAttributeValues, valuesByAttributeId) {
         }, initialAttributeValues);
 }
 
+function getDseId(dse) {
+    const parts = [dse.dataSet, dse.dataElement, dse.categoryCombo]
+    return _(parts).compact().map(obj => obj.id).join(".");
+}
+
 export {
+    getDseId,
     accesses,
     redirectToLogin,
     getCategoryCombos,

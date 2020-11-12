@@ -292,11 +292,11 @@ const DataSets = createReactClass({
     },
 
     _onSharingClose() {
-        const { updated, all } = sharing.getChanges(this.state.dataRows, this.state.sharing.models);
+        const { updated } = sharing.getChanges(this.state.dataRows, this.state.sharing.models);
 
         if (!_(updated).isEmpty()) {
             log("change sharing settings", "success", updated);
-            this.setState({ dataRows: all });
+            this.getDataSets({ clearPage: false })
         }
         listActions.hideSharingBox();
     },

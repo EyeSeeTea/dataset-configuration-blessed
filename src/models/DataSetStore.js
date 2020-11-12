@@ -75,7 +75,6 @@ class Factory {
                 dip.id = generateUid();
             });
             dataset.dataSetElements.forEach(dse => {
-                dse.id = generateUid();
                 dse.dataSet = { id: undefined };
             });
             toArray(dataset.sections).forEach(section => {
@@ -520,7 +519,7 @@ export default class DataSetStore {
         const project$ = project
             ? this.d2.models.categoryOption.get(project.id)
             : Promise.resolve(null);
-        const categoryCombos$ = getCategoryCombos(this.d2, { cocFields: "id" });
+        const categoryCombos$ = getCategoryCombos(this.d2, { cocFields: "id,categoryOptions[id]" });
         const countryCodes = _(countries)
             .map(getCountryCode)
             .compact()
@@ -587,7 +586,12 @@ export default class DataSetStore {
 
         dataset.sections = removeUnusedGreyedFields(dataset.sections, newCategoryCombos);
 
-        return this._addMetadataOp(saving, {
+        const savingWithAllCategoryCombos = {
+            ...saving,
+            categoryCombos: saving.categoryCombos.toArray().concat(newCategoryCombos),
+        }
+
+        return this._addMetadataOp(savingWithAllCategoryCombos, {
             create_and_update: {
                 categoryCombos: newCategoryCombos,
                 categoryOptionCombos: newCategoryComboOptions,
@@ -602,9 +606,9 @@ export default class DataSetStore {
     }
 
     async _saveDataset(saving) {
-        const { dataset } = saving;
+        const { dataset, categoryCombos } = saving;
 
-        const form = await this._getCustomForm(saving);
+        const form = await this._getCustomForm(saving, categoryCombos);
 
         // Cleanup dataSetElements to avoid "circular references" error on POST
         const datasetPayload = getOwnedPropertyJSON(dataset);
@@ -657,10 +661,10 @@ export default class DataSetStore {
         return update(categoryCombo, sharing.object);
     }
 
-    _getUserRoleName(coreCompetency, country) {
-        const countryCode = getCountryCode(country);
+    _getUserGroupName(coreCompetency, countryCode) {
+        // coreCompetency.name = "FOOD SECURITY" -> "${countryCode}_foodsecurityUsers"
         const key = coreCompetency.name.toLocaleLowerCase().replace(/\W+/g, "");
-        return `${countryCode}__dataset_${key}`;
+        return `${countryCode}_${key}Users`;
     }
 
     _addWarnings(saving, msgs) {
@@ -669,14 +673,25 @@ export default class DataSetStore {
 
     _addSharingToDataset(saving) {
         const { dataset } = saving;
+        const { coreCompetencies } = this.associations;
+
+        const coreCompetenciesSharing = _.cartesianProduct(coreCompetencies, saving.countryCodes).map(
+            ([coreCompetency, countryCode]) => {
+                const userGroupName = this._getUserGroupName(coreCompetency, countryCode);
+                return [userGroupName, { access: "r-rw----" }];
+            }
+        );
+
         const userGroupSharingByName = _(saving.countryCodes)
             .flatMap(countryCode => [
                 [countryCode + "_Users", { access: "r-rw----" }],
                 [countryCode + "_Administrators", { access: "rwrw----" }],
             ])
+            .concat(coreCompetenciesSharing)
+            .concat([["GL_GlobalAdministrator", { access: "rwrw----" }]])
             .fromPairs()
-            .set("GL_GlobalAdministrator", { access: "rwrw----" })
             .value();
+
 
         const baseSharing = { object: { publicAccess: dataset.publicAccess } };
         const sharing = buildSharingFromUserGroupNames(
