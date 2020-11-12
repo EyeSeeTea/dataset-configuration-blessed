@@ -542,7 +542,13 @@ function setAttributes(initialAttributeValues, valuesByAttributeId) {
         }, initialAttributeValues);
 }
 
+function getDseId(dse) {
+    const parts = [dse.dataSet, dse.dataElement, dse.categoryCombo]
+    return _(parts).compact().map(obj => obj.id).join(".");
+}
+
 export {
+    getDseId,
     accesses,
     redirectToLogin,
     getCategoryCombos,

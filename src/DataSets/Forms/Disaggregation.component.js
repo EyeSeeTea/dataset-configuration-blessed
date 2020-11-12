@@ -6,7 +6,7 @@ import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import ObserverRegistry from "../../utils/ObserverRegistry.mixin";
 import LinearProgress from "material-ui/LinearProgress/LinearProgress";
 import DataSetElementCategoryComboSelectionDialog from "../../forms/DataSetElementCategoryComboSelectionDialog.component";
-import { getCategoryCombos, getDisaggregationForCategories } from "../../utils/Dhis2Helpers";
+import { getCategoryCombos, getDisaggregationForCategories, getDseId } from "../../utils/Dhis2Helpers";
 import SearchBox from "../../SearchBox/SearchBox.component";
 import { getSections } from "../../models/Section";
 
@@ -84,7 +84,7 @@ const Disaggregation = createReactClass({
         const { categoryCombos } = this.state;
 
         _(dataSetElementIds).each(dseId => {
-            const dataSetElementToUpdate = _(dataSetElements).find(dse => dse.id === dseId);
+            const dataSetElementToUpdate = _(dataSetElements).find(dse => getDseId(dse) === dseId);
             const customCategoryCombo = getDisaggregationForCategories(
                 d2,
                 dataSetElementToUpdate.dataElement,

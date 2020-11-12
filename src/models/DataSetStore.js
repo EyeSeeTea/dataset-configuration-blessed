@@ -75,7 +75,6 @@ class Factory {
                 dip.id = generateUid();
             });
             dataset.dataSetElements.forEach(dse => {
-                dse.id = generateUid();
                 dse.dataSet = { id: undefined };
             });
             toArray(dataset.sections).forEach(section => {
@@ -512,7 +511,7 @@ export default class DataSetStore {
         const project$ = project
             ? this.d2.models.categoryOption.get(project.id)
             : Promise.resolve(null);
-        const categoryCombos$ = getCategoryCombos(this.d2, { cocFields: "id" });
+        const categoryCombos$ = getCategoryCombos(this.d2, { cocFields: "id,categoryOptions[id]" });
         const countryCodes = _(countries)
             .map(getCountryCode)
             .compact()
@@ -579,7 +578,12 @@ export default class DataSetStore {
 
         dataset.sections = removeUnusedGreyedFields(dataset.sections, newCategoryCombos);
 
-        return this._addMetadataOp(saving, {
+        const savingWithAllCategoryCombos = {
+            ...saving,
+            categoryCombos: saving.categoryCombos.toArray().concat(newCategoryCombos),
+        }
+
+        return this._addMetadataOp(savingWithAllCategoryCombos, {
             create_and_update: {
                 categoryCombos: newCategoryCombos,
                 categoryOptionCombos: newCategoryComboOptions,
@@ -594,9 +598,9 @@ export default class DataSetStore {
     }
 
     async _saveDataset(saving) {
-        const { dataset } = saving;
+        const { dataset, categoryCombos } = saving;
 
-        const form = await this._getCustomForm(saving);
+        const form = await this._getCustomForm(saving, categoryCombos);
 
         // Cleanup dataSetElements to avoid "circular references" error on POST
         const datasetPayload = getOwnedPropertyJSON(dataset);
