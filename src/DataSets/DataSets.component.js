@@ -296,7 +296,7 @@ const DataSets = createReactClass({
 
         if (!_(updated).isEmpty()) {
             log("change sharing settings", "success", updated);
-            this.getDataSets();
+            this.getDataSets({ clearPage: false })
         }
         listActions.hideSharingBox();
     },
