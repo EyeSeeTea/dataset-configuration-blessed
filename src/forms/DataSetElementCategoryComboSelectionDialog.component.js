@@ -1,4 +1,5 @@
-import React, { PropTypes } from "react";
+import React from "react";
+import PropTypes from "prop-types";
 import withState from "recompose/withState";
 import withHandlers from "recompose/withHandlers";
 import compose from "recompose/compose";
@@ -8,7 +9,7 @@ import Row from "d2-ui/lib/layout/Row.component";
 import SelectField from "material-ui/SelectField/SelectField";
 import MenuItem from "material-ui/MenuItem/MenuItem";
 import Translate from "d2-ui/lib/i18n/Translate.component";
-import { collectionToArray } from "../utils/Dhis2Helpers";
+import { collectionToArray, getDseId } from "../utils/Dhis2Helpers";
 import _ from "lodash";
 
 const enhance = compose(
@@ -118,8 +119,8 @@ function DataSetElementList(
         .value();
 
     const dataSetElementsRows = _.flatMap(dataSetElementsGroups, dseGroup => {
-        const { categoryCombo = {}, dataElement = {}, id } = dseGroup[0];
-        const dseIds = dseGroup.map(dse => dse.id);
+        const { categoryCombo = {}, dataElement = {} } = dseGroup[0];
+        const dseIds = dseGroup.map(dse => getDseId(dse));
         const dataElementCategoryIds = new Set(
             toArray(dataElement.categoryCombo.categories).map(cat => cat.id)
         );
@@ -136,10 +137,13 @@ function DataSetElementList(
         );
 
         return (
-            <Row key={id} style={{ alignItems: "center", marginBottom: canEdit ? 0 : 10 }}>
+            <Row
+                key={dataElement.id}
+                style={{ alignItems: "center", marginBottom: canEdit ? 0 : 10 }}
+            >
                 <div style={styles.elementListItemDataElement}>
                     {dseGroup.map(dse => (
-                        <div key={dse.id}>{dse.dataElement.displayName}</div>
+                        <div key={dse.dataElement.id}>{dse.dataElement.displayName}</div>
                     ))}
                     <span title={categoryOptions} style={styles.originalCategoryCombo}>
                         {dataElement.categoryCombo.displayName}

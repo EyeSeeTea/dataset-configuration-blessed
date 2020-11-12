@@ -1,4 +1,6 @@
 import React, { Component } from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import TextField from "material-ui/TextField/TextField";
 import Action from "d2-ui/lib/action/Action";
 
@@ -34,7 +36,7 @@ export default class TextFormField extends Component {
         }
     }
 
-    componentWillReceiveProps(newProps) {
+    UNSAFE_componentWillReceiveProps(newProps) {
         // Keep local state in sync with the passed in value
         if (newProps.value !== this.props.value) {
             this.setState({
@@ -90,6 +92,6 @@ export default class TextFormField extends Component {
     }
 }
 TextFormField.propTypes = {
-    labelText: React.PropTypes.string.isRequired,
-    multiLine: React.PropTypes.bool,
+    labelText: PropTypes.string.isRequired,
+    multiLine: PropTypes.bool,
 };

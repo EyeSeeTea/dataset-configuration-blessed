@@ -10,7 +10,7 @@ snackActions.show.subscribe(actionConfig => {
         message,
         action,
         autoHideDuration,
-        onActionTouchTap,
+        onActionClick,
         translate,
         route,
     } = actionConfig.data;
@@ -24,8 +24,8 @@ snackActions.show.subscribe(actionConfig => {
             message: translate ? d2.i18n.getTranslation(message) : message,
             action: action || "ok",
             autoHideDuration,
-            onActionTouchTap:
-                onActionTouchTap ||
+            onActionClick:
+                onActionClick ||
                 (() => {
                     snackActions.hide();
                 }),

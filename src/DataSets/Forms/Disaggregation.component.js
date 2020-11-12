@@ -1,10 +1,12 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import ObserverRegistry from "../../utils/ObserverRegistry.mixin";
 import LinearProgress from "material-ui/LinearProgress/LinearProgress";
 import DataSetElementCategoryComboSelectionDialog from "../../forms/DataSetElementCategoryComboSelectionDialog.component";
-import { getCategoryCombos, getDisaggregationForCategories } from "../../utils/Dhis2Helpers";
+import { getCategoryCombos, getDisaggregationForCategories, getDseId } from "../../utils/Dhis2Helpers";
 import SearchBox from "../../SearchBox/SearchBox.component";
 import { getSections } from "../../models/Section";
 
@@ -25,11 +27,11 @@ const SearchBoxWrapper = props => {
     );
 };
 
-const Disaggregation = React.createClass({
+const Disaggregation = createReactClass({
     mixins: [Translate, ObserverRegistry],
 
     propTypes: {
-        validateOnRender: React.PropTypes.bool,
+        validateOnRender: PropTypes.bool,
     },
 
     getInitialState() {
@@ -51,7 +53,7 @@ const Disaggregation = React.createClass({
         );
     },
 
-    componentWillReceiveProps(props) {
+    UNSAFE_componentWillReceiveProps(props) {
         if (props.validateOnRender) props.formStatus(true);
     },
 
@@ -82,7 +84,7 @@ const Disaggregation = React.createClass({
         const { categoryCombos } = this.state;
 
         _(dataSetElementIds).each(dseId => {
-            const dataSetElementToUpdate = _(dataSetElements).find(dse => dse.id === dseId);
+            const dataSetElementToUpdate = _(dataSetElements).find(dse => getDseId(dse) === dseId);
             const customCategoryCombo = getDisaggregationForCategories(
                 d2,
                 dataSetElementToUpdate.dataElement,

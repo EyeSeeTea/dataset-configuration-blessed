@@ -1,16 +1,18 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import DropDown from "./drop-down";
 import { getInstance } from "d2/lib/d2";
 import QuickAddLink from "./helpers/QuickAddLink.component";
 import RefreshMask from "./helpers/RefreshMask.component";
 
-export default React.createClass({
+export default createReactClass({
     propTypes: {
-        referenceType: React.PropTypes.string.isRequired,
-        value: React.PropTypes.shape({
-            id: React.PropTypes.string.isRequired,
+        referenceType: PropTypes.string.isRequired,
+        value: PropTypes.shape({
+            id: PropTypes.string.isRequired,
         }),
-        onChange: React.PropTypes.func.isRequired,
+        onChange: PropTypes.func.isRequired,
     },
 
     getInitialState() {
@@ -97,7 +99,7 @@ export default React.createClass({
     // TODO: Remove this hack to update the categoryCombo property when the domainType is set to TRACKER
     // This should probably be done in the objectActions, however there we currently do not have any knowledge of the options
     // It might be worth loading the categoryOption with name `default` just for this.
-    componentWillReceiveProps(newProps) {
+    UNSAFE_componentWillReceiveProps(newProps) {
         const defaultOption = this.state.options.find(option => {
             return option.model.name === "default";
         });

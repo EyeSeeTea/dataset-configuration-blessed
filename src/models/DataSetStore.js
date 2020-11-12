@@ -75,7 +75,6 @@ class Factory {
                 dip.id = generateUid();
             });
             dataset.dataSetElements.forEach(dse => {
-                dse.id = generateUid();
                 dse.dataSet = { id: undefined };
             });
             toArray(dataset.sections).forEach(section => {
@@ -99,7 +98,7 @@ class Factory {
     getDataset(id) {
         const fields = [
             "*,dataSetElements[*,categoryCombo[*,categories[id,displayName]],dataElement[*,categoryCombo[*]]]",
-            "sections[*,href],organisationUnits[*]",
+            "sections[*,href],organisationUnits[*],dataEntryForm[id]",
         ].join(",");
         return this.d2.models.dataSets.get(id, { fields });
     }
@@ -296,13 +295,21 @@ export default class DataSetStore {
 
         return _(periodDates)
             .mapValues((datesByYear, type) => {
-                const valueForFirstYear = periodDates[type][firstYear];
+                const datesFirstYear = periodDates[type][firstYear];
                 const applyToAll = periodDatesApplyToAll[type];
                 return _(years)
                     .map((year, index) => {
-                        const value = applyToAll
-                            ? _.mapValues(valueForFirstYear, date => processDate(date, index))
-                            : _.mapValues(datesByYear[year], date => processDate(date, 0));
+                        const dates = datesByYear[year];
+                        const value =
+                            applyToAll && datesFirstYear
+                                ? {
+                                      start: processDate(datesFirstYear.start, 0),
+                                      end: processDate(datesFirstYear.end, index),
+                                  }
+                                : {
+                                      start: dates ? processDate(dates.start, 0) : undefined,
+                                      end: dates ? processDate(dates.end, 0) : undefined,
+                                  };
                         return [year, value];
                     })
                     .fromPairs()
@@ -311,25 +318,22 @@ export default class DataSetStore {
             .value();
     }
 
-    _getCustomForm(saving, categoryCombos) {
+    async _getCustomForm(saving, categoryCombos_) {
         const { richSections, dataset } = saving;
         const periodDates = this.getPeriodDates();
+        const categoryCombos =
+            categoryCombos_ ||
+            (await getCategoryCombos(this.d2, { cocFields: "id,categoryOptions[id]" }));
+        const id = (dataset.dataEntryForm ? dataset.dataEntryForm.id : null) || generateUid();
 
         return getCustomForm(this.d2, dataset, periodDates, richSections, categoryCombos).then(
-            htmlCode => ({ style: "NORMAL", htmlCode })
+            htmlCode => ({
+                id: id,
+                style: "NORMAL",
+                htmlCode,
+                name: [dataset.id, id].join("-"), // Form name must be unique
+            })
         );
-    }
-
-    async _saveCustomForm(saving) {
-        const { dataset } = saving;
-        const categoryCombos = await getCategoryCombos(this.d2, {
-            cocFields: "id,categoryOptions[id]",
-        });
-        const api = this.d2.Api.getApi();
-
-        return this._getCustomForm(saving, categoryCombos).then(payload => {
-            return api.post(["dataSets", dataset.id, "form"].join("/"), payload).then(() => saving);
-        });
     }
 
     getDataInputPeriods({ dataInputStartDate: startDate, dataInputEndDate: endDate }) {
@@ -481,19 +485,6 @@ export default class DataSetStore {
         }
     }
 
-    validateUserRoles() {
-        const isAdmin = this.d2.currentUser.authorities.has("ALL");
-        if (isAdmin) {
-            return { valid: true, missing: [] };
-        } else {
-            const missingUserRoles = _(this._getRequiredUserRoles())
-                .difference(this.associations.userRoles.map(ur => ur.name))
-                .sortBy()
-                .value();
-            return { valid: _(missingUserRoles).isEmpty(), missing: missingUserRoles };
-        }
-    }
-
     updateField(fieldPath, newValue) {
         const oldValue = fp.get(fieldPath, this);
         _.set(this, fieldPath, newValue);
@@ -520,14 +511,6 @@ export default class DataSetStore {
         return collectionToArray(this.dataset.sections).length > 0;
     }
 
-    _getRequiredUserRoles() {
-        const { countries, coreCompetencies } = this.associations;
-        return _(coreCompetencies)
-            .cartesianProduct(countries)
-            .map(([coreCompetency, country]) => this._getUserRoleName(coreCompetency, country))
-            .value();
-    }
-
     /* Save */
 
     _getInitialSaving() {
@@ -536,7 +519,7 @@ export default class DataSetStore {
         const project$ = project
             ? this.d2.models.categoryOption.get(project.id)
             : Promise.resolve(null);
-        const categoryCombos$ = getCategoryCombos(this.d2, { cocFields: "id" });
+        const categoryCombos$ = getCategoryCombos(this.d2, { cocFields: "id,categoryOptions[id]" });
         const countryCodes = _(countries)
             .map(getCountryCode)
             .compact()
@@ -603,7 +586,12 @@ export default class DataSetStore {
 
         dataset.sections = removeUnusedGreyedFields(dataset.sections, newCategoryCombos);
 
-        return this._addMetadataOp(saving, {
+        const savingWithAllCategoryCombos = {
+            ...saving,
+            categoryCombos: saving.categoryCombos.toArray().concat(newCategoryCombos),
+        }
+
+        return this._addMetadataOp(savingWithAllCategoryCombos, {
             create_and_update: {
                 categoryCombos: newCategoryCombos,
                 categoryOptionCombos: newCategoryComboOptions,
@@ -617,8 +605,11 @@ export default class DataSetStore {
         return _.imerge(saving, { dataset: update(dataset, { id: datasetId }) });
     }
 
-    _saveDataset(saving) {
-        const { dataset } = saving;
+    async _saveDataset(saving) {
+        const { dataset, categoryCombos } = saving;
+
+        const form = await this._getCustomForm(saving, categoryCombos);
+
         // Cleanup dataSetElements to avoid "circular references" error on POST
         const datasetPayload = getOwnedPropertyJSON(dataset);
         const newDataSetElements = dataset.dataSetElements.map(dataSetElement => ({
@@ -627,8 +618,14 @@ export default class DataSetStore {
             categoryCombo: { id: getCategoryCombo(dataSetElement).id },
         }));
         datasetPayload.dataSetElements = newDataSetElements;
+        datasetPayload.dataEntryForm = { id: form.id };
 
-        return this._addMetadataOp(saving, { create_and_update: { dataSets: [datasetPayload] } });
+        return this._addMetadataOp(saving, {
+            create_and_update: {
+                dataSets: [datasetPayload],
+                dataEntryForms: [form],
+            },
+        });
     }
 
     _setDatasetCode(saving) {
@@ -664,67 +661,37 @@ export default class DataSetStore {
         return update(categoryCombo, sharing.object);
     }
 
-    _getUserRoleName(coreCompetency, country) {
-        const countryCode = getCountryCode(country);
+    _getUserGroupName(coreCompetency, countryCode) {
+        // coreCompetency.name = "FOOD SECURITY" -> "${countryCode}_foodsecurityUsers"
         const key = coreCompetency.name.toLocaleLowerCase().replace(/\W+/g, "");
-        return `${countryCode}__dataset_${key}`;
+        return `${countryCode}_${key}Users`;
     }
 
     _addWarnings(saving, msgs) {
         return _.imerge(saving, { warnings: saving.warnings.concat(msgs) });
     }
 
-    _addDataSetToUserRoles(saving) {
-        const { dataset } = saving;
-        const getAssociatedUserRoles = userRoleNames => {
-            const filter = "name:in:[" + userRoleNames.join(",") + "]";
-            return this.d2.models.userRoles
-                .list({ paging: false, filter })
-                .then(toArray)
-                .then(userRoles =>
-                    _(userRoles)
-                        .keyBy("name")
-                        .value()
-                )
-                .then(userRolesByName =>
-                    _(userRoleNames)
-                        .map(name => [name, null])
-                        .fromPairs()
-                        .imerge(userRolesByName)
-                );
-        };
-        const addDataset = userRolesByName => {
-            const warnings$ = mapPromise(userRolesByName.toPairs(), ([name, userRole]) => {
-                if (userRole) {
-                    return this.api
-                        .post(`/userRoles/${userRole.id}/dataSets`, {
-                            additions: [{ id: dataset.id }],
-                        })
-                        .catch(
-                            err =>
-                                `Error adding dataset to userRole ${name}: ${JSON.stringify(err)}`
-                        );
-                } else {
-                    return Promise.resolve(`This user cannot update the user role: ${name}`);
-                }
-            });
-            return warnings$.then(warnings => this._addWarnings(saving, _.compact(warnings)));
-        };
-        const userRoleNamesForCoreCompetencies = this._getRequiredUserRoles();
-
-        return getAssociatedUserRoles(userRoleNamesForCoreCompetencies).then(addDataset);
-    }
-
     _addSharingToDataset(saving) {
         const { dataset } = saving;
+        const { coreCompetencies } = this.associations;
+
+        const coreCompetenciesSharing = _.cartesianProduct(coreCompetencies, saving.countryCodes).map(
+            ([coreCompetency, countryCode]) => {
+                const userGroupName = this._getUserGroupName(coreCompetency, countryCode);
+                return [userGroupName, { access: "r-rw----" }];
+            }
+        );
+
         const userGroupSharingByName = _(saving.countryCodes)
             .flatMap(countryCode => [
-                [countryCode + "_Users", { access: "r-------" }],
-                [countryCode + "_Administrators", { access: "rw------" }],
+                [countryCode + "_Users", { access: "r-rw----" }],
+                [countryCode + "_Administrators", { access: "rwrw----" }],
             ])
+            .concat(coreCompetenciesSharing)
+            .concat([["GL_GlobalAdministrator", { access: "rwrw----" }]])
             .fromPairs()
-            .set("GL_GlobalAdministrator", { access: "rw------" })
             .value();
+
 
         const baseSharing = { object: { publicAccess: dataset.publicAccess } };
         const sharing = buildSharingFromUserGroupNames(
@@ -917,8 +884,6 @@ export default class DataSetStore {
             this._saveDataset,
             this._runMetadataOps,
             this._addOrgUnitsToProject,
-            this._addDataSetToUserRoles,
-            this._saveCustomForm,
             this._sendNotificationMessages,
         ]);
     }

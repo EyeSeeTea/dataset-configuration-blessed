@@ -1,15 +1,17 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import _ from "lodash";
 import Store from "d2-ui/lib/store/Store";
 import GroupEditor from "d2-ui/lib/group-editor/GroupEditor.component";
 
-const MultiSelect = React.createClass({
+const MultiSelect = createReactClass({
     propTypes: {
-        options: React.PropTypes.arrayOf(React.PropTypes.object),
-        selected: React.PropTypes.arrayOf(React.PropTypes.string),
-        onChange: React.PropTypes.func.isRequired,
-        label: React.PropTypes.string,
-        errors: React.PropTypes.arrayOf(React.PropTypes.string),
+        options: PropTypes.arrayOf(PropTypes.object),
+        selected: PropTypes.arrayOf(PropTypes.string),
+        onChange: PropTypes.func.isRequired,
+        label: PropTypes.string,
+        errors: PropTypes.arrayOf(PropTypes.string),
     },
 
     getInitialState() {
@@ -20,7 +22,7 @@ const MultiSelect = React.createClass({
         return { availableStore, assignedStore };
     },
 
-    componentWillReceiveProps(nextProps) {
+    UNSAFE_componentWillReceiveProps(nextProps) {
         this.state.availableStore.setState(nextProps.options);
         this.state.assignedStore.setState(nextProps.selected);
     },
