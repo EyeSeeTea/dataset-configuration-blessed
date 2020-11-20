@@ -383,6 +383,7 @@ function setPeriodDates(periodDates_) {
         if (window.datasetConfigurationCustomFormLoaded) return;
         window.datasetConfigurationCustomFormLoaded = true;
         $(document).on("dhis2.de.event.formLoaded", applyChangesToForm);
+        applyChangesToForm();
         $("#selectedPeriodId").change(applyPeriodDates);
         loadJs("../dhis-web-commons/bootstrap/js/bootstrap.min.js");
         loadCss("../dhis-web-commons/bootstrap/css/bootstrap.min.css");

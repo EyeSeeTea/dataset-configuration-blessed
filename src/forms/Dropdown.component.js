@@ -1,4 +1,6 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import SelectField from "material-ui/SelectField/SelectField";
 import TextField from "material-ui/TextField";
 import isString from "d2-utilizr/lib/isString";
@@ -24,7 +26,7 @@ class Dropdown extends React.Component {
         };
     }
 
-    componentWillReceiveProps(newProps) {
+    UNSAFE_componentWillReceiveProps(newProps) {
         this.setState({
             // value: this.state.value || ((newProps.defaultValue !== undefined && newProps.defaultValue !== null) ? newProps.defaultValue : ''),
             options: this.getOptions(newProps.options, newProps.isRequired),
@@ -202,24 +204,24 @@ class Dropdown extends React.Component {
 }
 
 Dropdown.propTypes = {
-    defaultValue: React.PropTypes.oneOfType([
-        React.PropTypes.string,
-        React.PropTypes.number,
-        React.PropTypes.bool,
+    defaultValue: PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.number,
+        PropTypes.bool,
     ]),
-    onFocus: React.PropTypes.func,
-    onBlur: React.PropTypes.func,
-    options: React.PropTypes.array.isRequired,
-    isRequired: React.PropTypes.bool,
-    labelText: React.PropTypes.string.isRequired,
-    translateOptions: React.PropTypes.bool,
-    limit: React.PropTypes.number,
+    onFocus: PropTypes.func,
+    onBlur: PropTypes.func,
+    options: PropTypes.array.isRequired,
+    isRequired: PropTypes.bool,
+    labelText: PropTypes.string.isRequired,
+    translateOptions: PropTypes.bool,
+    limit: PropTypes.number,
 };
 Dropdown.defaultProps = {
     limit: 50,
 };
 Dropdown.contextTypes = {
-    d2: React.PropTypes.any,
+    d2: PropTypes.any,
 };
 
 export default Dropdown;

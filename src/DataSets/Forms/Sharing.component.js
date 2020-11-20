@@ -1,11 +1,13 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import FormBuilder from "d2-ui/lib/forms/FormBuilder.component";
 import FormHelpers from "../../forms/FormHelpers";
 import { getCountryCode } from "../../utils/Dhis2Helpers";
 
-const Sharing = React.createClass({
+const Sharing = createReactClass({
     mixins: [Translate],
 
     getInitialState() {
@@ -17,10 +19,10 @@ const Sharing = React.createClass({
     },
 
     propTypes: {
-        validateOnRender: React.PropTypes.bool,
+        validateOnRender: PropTypes.bool,
     },
 
-    componentWillReceiveProps(props) {
+    UNSAFE_componentWillReceiveProps(props) {
         if (props.validateOnRender) {
             const { countries } = this.props.store.associations;
 

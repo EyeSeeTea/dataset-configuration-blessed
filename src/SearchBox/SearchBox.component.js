@@ -1,12 +1,14 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import ObservedEvents from "../utils/ObservedEvents.mixin";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import TextField from "material-ui/TextField";
 
-const SearchBox = React.createClass({
+const SearchBox = createReactClass({
     propTypes: {
-        searchObserverHandler: React.PropTypes.func.isRequired,
-        debounce: React.PropTypes.number,
+        searchObserverHandler: PropTypes.func.isRequired,
+        debounce: PropTypes.number,
     },
 
     mixins: [ObservedEvents, Translate],
@@ -17,7 +19,7 @@ const SearchBox = React.createClass({
         };
     },
 
-    componentWillMount() {
+    UNSAFE_componentWillMount() {
         this.searchBoxCb = this.createEventObserver("searchBox");
     },
 

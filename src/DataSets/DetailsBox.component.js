@@ -1,4 +1,6 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import classes from "classnames";
 import FontIcon from "material-ui/FontIcon";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
@@ -9,13 +11,13 @@ import moment from "moment";
 import { mapPromise, accesses } from "../utils/Dhis2Helpers";
 import { getCoreCompetencies, getProject } from "../models/dataset";
 
-export default React.createClass({
+export default createReactClass({
     propTypes: {
-        fields: React.PropTypes.array,
-        showDetailBox: React.PropTypes.bool,
-        source: React.PropTypes.object,
-        onClose: React.PropTypes.func,
-        config: React.PropTypes.object,
+        fields: PropTypes.array,
+        showDetailBox: PropTypes.bool,
+        source: PropTypes.object,
+        onClose: PropTypes.func,
+        config: PropTypes.object,
     },
 
     mixins: [Translate],
@@ -59,7 +61,7 @@ export default React.createClass({
         };
     },
 
-    componentWillReceiveProps(newProps) {
+    UNSAFE_componentWillReceiveProps(newProps) {
         const datasetChanged = this.props.source.id !== newProps.source.id;
 
         if (datasetChanged) {

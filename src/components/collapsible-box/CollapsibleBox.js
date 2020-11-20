@@ -1,4 +1,6 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import classNames from "classnames";
 import IconButton from "material-ui/IconButton/IconButton";
 import ArrowRight from "material-ui/svg-icons/hardware/keyboard-arrow-right.js";
@@ -6,17 +8,17 @@ import ArrowLeft from "material-ui/svg-icons/hardware/keyboard-arrow-left.js";
 import _ from "../../utils/lodash-mixins";
 import "./CollapsibleBox.scss";
 
-const CollapsibleBox = React.createClass({
+const CollapsibleBox = createReactClass({
     propTypes: {
-        open: React.PropTypes.bool,
-        onToggle: React.PropTypes.func,
-        styles: React.PropTypes.shape({
-            wrapper: React.PropTypes.shape({
-                open: React.PropTypes.object,
-                close: React.PropTypes.object,
+        open: PropTypes.bool,
+        onToggle: PropTypes.func,
+        styles: PropTypes.shape({
+            wrapper: PropTypes.shape({
+                open: PropTypes.object,
+                close: PropTypes.object,
             }),
-            iconButton: React.PropTypes.object,
-            content: React.PropTypes.object,
+            iconButton: PropTypes.object,
+            content: PropTypes.object,
         }),
     },
 
@@ -31,7 +33,7 @@ const CollapsibleBox = React.createClass({
         return { open: this.props.open };
     },
 
-    componentWillReceiveProps: function(newProps) {
+    UNSAFE_componentWillReceiveProps: function(newProps) {
         if (this.props.open !== newProps.open) {
             this.setState({ open: newProps.open });
         }

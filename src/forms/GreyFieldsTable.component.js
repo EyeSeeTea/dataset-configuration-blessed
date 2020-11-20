@@ -1,4 +1,6 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import DropDown from "../forms/form-fields/drop-down";
 import LinearProgress from "material-ui/LinearProgress/LinearProgress";
 import { getCategoryCombos, getCategoryCombo } from "../utils/Dhis2Helpers";
@@ -398,12 +400,12 @@ class GreyFieldsTable extends React.Component {
     }
 }
 
-GreyFieldsTable.contextTypes = { d2: React.PropTypes.any.isRequired };
+GreyFieldsTable.contextTypes = { d2: PropTypes.any.isRequired };
 
 GreyFieldsTable.propTypes = {
-    sections: React.PropTypes.any.isRequired,
-    dataSet: React.PropTypes.any.isRequired,
-    onClose: React.PropTypes.func,
+    sections: PropTypes.any.isRequired,
+    dataSet: PropTypes.any.isRequired,
+    onClose: PropTypes.func,
 };
 
 export default GreyFieldsTable;
