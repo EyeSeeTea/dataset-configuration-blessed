@@ -1,4 +1,6 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import ObservedEvents from "../utils/ObservedEvents.mixin";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import Dialog from "material-ui/Dialog/Dialog";
@@ -28,10 +30,10 @@ const TabCard = ({ fields, onUpdateFormStatus, onUpdateField }) => (
     </Card>
 );
 
-const SettingsDialog = React.createClass({
+const SettingsDialog = createReactClass({
     propTypes: {
-        open: React.PropTypes.bool.isRequired,
-        onRequestClose: React.PropTypes.func.isRequired,
+        open: PropTypes.bool.isRequired,
+        onRequestClose: PropTypes.func.isRequired,
     },
 
     mixins: [ObservedEvents, Translate],
@@ -72,7 +74,7 @@ const SettingsDialog = React.createClass({
         return { loaded: false };
     },
 
-    componentWillReceiveProps(newProps) {
+    UNSAFE_componentWillReceiveProps(newProps) {
         if (newProps.open) {
             this.loadConfig();
         }
@@ -155,7 +157,7 @@ const SettingsDialog = React.createClass({
         const actions = [
             <FlatButton
                 label={this.getTranslation("cancel")}
-                onTouchTap={this.props.onRequestClose}
+                onClick={this.props.onRequestClose}
                 style={{ marginRight: 16 }}
             />,
             loaded ? (
@@ -163,7 +165,7 @@ const SettingsDialog = React.createClass({
                     primary
                     label={this.getTranslation("save")}
                     disabled={!saveIsEnabled}
-                    onTouchTap={this.save}
+                    onClick={this.save}
                 />
             ) : null,
         ];

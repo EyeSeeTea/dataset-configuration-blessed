@@ -1,4 +1,6 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import Toolbar from "material-ui/Toolbar/Toolbar";
@@ -12,13 +14,13 @@ import Dialog from "material-ui/Dialog/Dialog";
 import FlatButton from "material-ui/FlatButton/FlatButton";
 import Steps from "react-steps";
 
-const Wizard = React.createClass({
+const Wizard = createReactClass({
     mixins: [Translate],
 
     propTypes: {
-        fields: React.PropTypes.arrayOf(React.PropTypes.object),
-        buttons: React.PropTypes.arrayOf(React.PropTypes.object),
-        onFieldsChange: React.PropTypes.func,
+        fields: PropTypes.arrayOf(PropTypes.object),
+        buttons: PropTypes.arrayOf(PropTypes.object),
+        onFieldsChange: PropTypes.func,
     },
 
     getDefaultProps: function() {
@@ -150,12 +152,12 @@ const Wizard = React.createClass({
                         <RaisedButton
                             label={"← " + this.getTranslation("previous")}
                             disabled={this.props.previousEnabled === false || !showPrevious}
-                            onTouchTap={this._onPreviousClicked}
+                            onClick={this._onPreviousClicked}
                         />
                         <RaisedButton
                             label={this.getTranslation("next") + " →"}
                             disabled={this.props.nextEnabled === false || !showNext}
-                            onTouchTap={this._onNextClicked}
+                            onClick={this._onNextClicked}
                         />
                     </ToolbarGroup>
 
@@ -165,7 +167,7 @@ const Wizard = React.createClass({
                                 <RaisedButton
                                     key={button.id}
                                     label={button.label}
-                                    onTouchTap={button.onClick}
+                                    onClick={button.onClick}
                                 />
                             ) : null
                         )}

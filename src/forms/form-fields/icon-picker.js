@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import IconPicker from "d2-ui/lib/icon-picker/IconPicker.component";
 
 export default function IconPickerField(props) {

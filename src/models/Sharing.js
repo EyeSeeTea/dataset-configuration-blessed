@@ -20,7 +20,7 @@ function getNormalizedSharing(data) {
 
 export function getChanges(models, newSharings) {
     const sharingById = _(newSharings)
-        .keyBy(sharing => sharing.model.id)
+        .keyBy(sharing => sharing.id)
         .value();
     const newModels = models.map(model => {
         const sharing = sharingById[model.id];

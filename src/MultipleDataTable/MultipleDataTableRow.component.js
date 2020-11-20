@@ -1,4 +1,6 @@
 import React, { isValidElement } from "react";
+import createReactClass from "create-react-class";
+import PropTypes from "prop-types";
 import classes from "classnames";
 import isObject from "d2-utilizr/lib/isObject";
 import isString from "d2-utilizr/lib/isString";
@@ -42,17 +44,17 @@ function getValueAfterValueTypeGuess(dataSource, columnName) {
     return dataSource[columnName];
 }
 
-const MultipleDataTableRow = React.createClass({
+const MultipleDataTableRow = createReactClass({
     propTypes: {
-        columns: React.PropTypes.array.isRequired,
-        dataSource: React.PropTypes.object,
-        isActive: React.PropTypes.bool,
-        isEven: React.PropTypes.bool,
-        isOdd: React.PropTypes.bool,
-        hideActionsIcon: React.PropTypes.bool,
-        itemClicked: React.PropTypes.func.isRequired,
-        primaryClick: React.PropTypes.func.isRequired,
-        style: React.PropTypes.object,
+        columns: PropTypes.array.isRequired,
+        dataSource: PropTypes.object,
+        isActive: PropTypes.bool,
+        isEven: PropTypes.bool,
+        isOdd: PropTypes.bool,
+        hideActionsIcon: PropTypes.bool,
+        itemClicked: PropTypes.func.isRequired,
+        primaryClick: PropTypes.func.isRequired,
+        style: PropTypes.object,
     },
 
     mixins: [Translate],
@@ -94,19 +96,7 @@ const MultipleDataTableRow = React.createClass({
 
             // TODO: PublicAccess Hack - need to make it so that value transformers can be registered
             if (columnName === "publicAccess") {
-                if (dataSource[columnName]) {
-                    if (dataSource[columnName] === "rw------") {
-                        displayValue = this.getTranslation("public_can_edit");
-                    }
-
-                    if (dataSource[columnName] === "r-------") {
-                        displayValue = this.getTranslation("public_can_view");
-                    }
-
-                    if (dataSource[columnName] === "--------") {
-                        displayValue = this.getTranslation("public_none");
-                    }
-                }
+                displayValue = this.getDataMetadaAccessText(dataSource[columnName]);
             }
 
             return (
@@ -155,6 +145,29 @@ const MultipleDataTableRow = React.createClass({
 
     handleClick(event) {
         this.props.primaryClick(event, this.props.dataSource);
+    },
+
+    getDataMetadaAccessText(value) {
+        if (value) {
+            const accessMetadata = value.slice(0, 2);
+            const accessData = value.slice(2, 4);
+            const get = this.getAccessText;
+            return `Data: ${get(accessMetadata)}, Metadata: ${get(accessData)}`;
+        } else {
+            return "?";
+        }
+    },
+
+    getAccessText(value) {
+        if (!value) {
+            return "?";
+        } else if (value === "rw") {
+            return this.getTranslation("public_can_edit");
+        } else if (value === "r-") {
+            return this.getTranslation("public_can_view");
+        } else if (value === "--") {
+            return this.getTranslation("public_none");
+        }
     },
 });
 

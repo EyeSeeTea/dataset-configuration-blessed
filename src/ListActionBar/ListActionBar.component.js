@@ -1,16 +1,18 @@
 import React from "react";
+import createReactClass from 'create-react-class';
+import PropTypes from "prop-types";
 import FloatingActionButton from "material-ui/FloatingActionButton";
 import FontIcon from "material-ui/FontIcon";
 import Auth from "d2-ui/lib/auth/Auth.mixin";
 import { goToRoute } from "../router";
 
-const ListActionBar = React.createClass({
+const ListActionBar = createReactClass({
     propTypes: {
-        route: React.PropTypes.string,
+        route: PropTypes.string,
     },
 
     contextTypes: {
-        d2: React.PropTypes.object.isRequired,
+        d2: PropTypes.object.isRequired,
     },
 
     mixins: [Auth],

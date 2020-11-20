@@ -13,7 +13,7 @@ export function getCoreCompetencies(d2, config, dataset) {
 
     return d2.models.dataElementGroups
         .filter()
-        .on("dataElementGroupSet.id")
+        .on("groupSets.id")
         .equals(config.dataElementGroupSetCoreCompetencyId)
         .list({
             paging: false,

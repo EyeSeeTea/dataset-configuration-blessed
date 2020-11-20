@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 
 import headerBarStore$ from "d2-ui/lib/app-header/headerBar.store";
 import withStateFrom from "d2-ui/lib/component-helpers/withStateFrom";
@@ -8,18 +9,29 @@ import LoadingMask from "../LoadingMask/LoadingMask.component";
 import MainContent from "d2-ui/lib/layout/main-content/MainContent.component";
 import SinglePanelLayout from "d2-ui/lib/layout/SinglePanel.component";
 import { getInstance } from "d2/lib/d2";
-import MuiThemeProvider from "material-ui/styles/MuiThemeProvider";
+import OldMuiThemeProvider from "material-ui/styles/MuiThemeProvider";
 import appTheme from "./app.theme";
 import SnackbarContainer from "../Snackbar/SnackbarContainer.component";
 import SessionDialog from "../SessionDialog/SessionDialog.component";
 import feedbackOptions from "../config/feedback";
+import { MuiThemeProvider } from "@material-ui/core/styles";
+import { createGenerateClassName, StylesProvider } from "@material-ui/styles";
+import { muiTheme } from "./dhis2.theme";
 
 const HeaderBar = withStateFrom(headerBarStore$, HeaderBarComponent);
+
+const generateClassName = createGenerateClassName({
+    productionPrefix: "c",
+});
 
 class App extends AppWithD2 {
     getChildContext() {
         return super.getChildContext();
     }
+
+    childContextTypes = {
+        d2: PropTypes.object,
+    };
 
     componentDidMount() {
         super.componentDidMount();
@@ -32,22 +44,26 @@ class App extends AppWithD2 {
             return <LoadingMask />;
         }
         return (
-            <MuiThemeProvider muiTheme={appTheme}>
-                <div>
-                    <HeaderBar
-                        showAppTitle="dataset-configuration"
-                        styles={{ background: "#3c3c3c" }}
-                    />
+            <StylesProvider generateClassName={generateClassName}>
+                <MuiThemeProvider theme={muiTheme}>
+                    <OldMuiThemeProvider muiTheme={appTheme}>
+                        <div>
+                            <HeaderBar
+                                showAppTitle="Dataset-Configuration"
+                                styles={{ background: "#3c3c3c" }}
+                            />
 
-                    <SinglePanelLayout style={{ marginTop: "3.5rem" }}>
-                        <MainContent>{this.props.children}</MainContent>
-                    </SinglePanelLayout>
+                            <SinglePanelLayout style={{ marginTop: "3.5rem" }}>
+                                <MainContent>{this.props.children}</MainContent>
+                            </SinglePanelLayout>
 
-                    <SnackbarContainer />
+                            <SnackbarContainer />
 
-                    <SessionDialog />
-                </div>
-            </MuiThemeProvider>
+                            <SessionDialog />
+                        </div>
+                    </OldMuiThemeProvider>
+                </MuiThemeProvider>
+            </StylesProvider>
         );
     }
 }
@@ -55,7 +71,5 @@ class App extends AppWithD2 {
 App.defaultProps = {
     d2: getInstance(),
 };
-
-App.childContextTypes = AppWithD2.childContextTypes;
 
 export default App;

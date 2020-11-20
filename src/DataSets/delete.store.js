@@ -9,7 +9,7 @@ export default Store.create({
             snackActions.show({
                 message: d2.i18n.getTranslation("confirm_delete_dataset"),
                 action: "confirm",
-                onActionTouchTap: () => {
+                onActionClick: () => {
                     const payload = { dataSets: datasets.map(ds => ({ id: ds.id })) };
                     d2.Api.getApi()
                         .post(`metadata?importStrategy=DELETE`, payload)

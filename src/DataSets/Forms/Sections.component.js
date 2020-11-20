@@ -1,4 +1,6 @@
 import React from "react";
+import createReactClass from "create-react-class";
+import PropTypes from "prop-types";
 import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import LinearProgress from "material-ui/LinearProgress/LinearProgress";
@@ -79,7 +81,7 @@ const SectionsSidebar = props => {
     );
 };
 
-const SectionConfig = React.createClass({
+const SectionConfig = createReactClass({
     mixins: [Translate, ObserverRegistry],
 
     _onOpen(ev) {
@@ -181,15 +183,15 @@ const ThemeTabs = ({ title, items, allLabel, onSelected, visible = true }) => {
     );
 };
 
-const Sections = React.createClass({
+const Sections = createReactClass({
     mixins: [Translate, ObserverRegistry],
 
     propTypes: {
-        validateOnRender: React.PropTypes.bool,
-        type: React.PropTypes.oneOf(["all", "core", "nonCore"]),
+        validateOnRender: PropTypes.bool,
+        type: PropTypes.oneOf(["all", "core", "nonCore"]),
     },
 
-    componentWillReceiveProps(props) {
+    UNSAFE_componentWillReceiveProps(props) {
         if (props.validateOnRender) {
             const isValid = this._processDatasetSections({ showErrors: true });
             props.formStatus(isValid);
@@ -197,7 +199,7 @@ const Sections = React.createClass({
     },
 
     componentWillUnmount() {
-        // Save state on back button (forward button saves state in componentWillReceiveProps)
+        // Save state on back button (forward button saves state in UNSAFE_componentWillReceiveProps)
         if (!this.props.validateOnRender) {
             this._processDatasetSections({ showErrors: false });
         }

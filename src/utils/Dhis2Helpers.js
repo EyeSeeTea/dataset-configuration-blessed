@@ -187,18 +187,25 @@ function getSharing(d2, object) {
     return api.get(`sharing?type=${object.modelDefinition.name}&id=${object.id}`);
 }
 
+function getKey(s) {
+    return s.toLocaleLowerCase();
+}
+
 function buildSharingFromUserGroupNames(baseSharing, userGroups, userGroupSharingByName) {
-    const userGroupsByName = _(userGroups)
-        .keyBy("name")
-        .value();
+    const userGroupsByName = _.keyBy(userGroups, userGroup => getKey(userGroup.name))
     const userGroupAccesses = _(userGroupSharingByName)
-        .map((sharing, name) =>
-            _(userGroupsByName).has(name)
-                ? _.imerge(sharing, { id: userGroupsByName[name].id })
-                : null
-        )
+        .map((sharing, name) => {
+            const userGroup = userGroupsByName[getKey(name)];
+            if (userGroup) {
+                return _.imerge(sharing, { id: userGroup.id })
+            } else {
+                console.log(`User has no access to user group: ${name}`)
+                return null;
+            }
+        })
         .compact()
         .value();
+
     return buildSharing(deepMerge(baseSharing, { object: { userGroupAccesses } }));
 }
 
@@ -307,7 +314,7 @@ function postMetadata(d2, metadata) {
                 objs.map(obj => (obj.modelDefinition ? getOwnedPropertyJSON(obj) : obj))
             )
             .value();
-        const path = `metadata?mergeMode=MERGE&importStrategy=${strategy.toUpperCase()}`;
+        const path = `metadata?mergeMode=REPLACE&importStrategy=${strategy.toUpperCase()}`;
 
         return api.post(path, jsonPayload).then(response => {
             if (response.status !== "OK") {
@@ -433,7 +440,7 @@ async function getFilteredDatasets(d2, config, page, sorting, filters) {
     const fields =
         "id,name,displayName,displayDescription,shortName,created,lastUpdated,externalAccess," +
         "publicAccess,userAccesses,userGroupAccesses,user,access,attributeValues," +
-        "sections[id,name],dataInputPeriods~paging(1;1)";
+        "periodType,sections[id,name],dataInputPeriods~paging(1;1)";
     const cleanOptions = options =>
         _.omitBy(options, value => _.isArray(value) && _.isEmpty(value));
     const baseFilters = _.compact([searchValue ? `displayName:ilike:${searchValue}` : null]);
@@ -535,7 +542,13 @@ function setAttributes(initialAttributeValues, valuesByAttributeId) {
         }, initialAttributeValues);
 }
 
+function getDseId(dse) {
+    const parts = [dse.dataSet, dse.dataElement, dse.categoryCombo]
+    return _(parts).compact().map(obj => obj.id).join(".");
+}
+
 export {
+    getDseId,
     accesses,
     redirectToLogin,
     getCategoryCombos,
