@@ -589,7 +589,7 @@ export default class DataSetStore {
         const savingWithAllCategoryCombos = {
             ...saving,
             categoryCombos: saving.categoryCombos.toArray().concat(newCategoryCombos),
-        }
+        };
 
         return this._addMetadataOp(savingWithAllCategoryCombos, {
             create_and_update: {
@@ -675,12 +675,13 @@ export default class DataSetStore {
         const { dataset } = saving;
         const { coreCompetencies } = this.associations;
 
-        const coreCompetenciesSharing = _.cartesianProduct(coreCompetencies, saving.countryCodes).map(
-            ([coreCompetency, countryCode]) => {
-                const userGroupName = this._getUserGroupName(coreCompetency, countryCode);
-                return [userGroupName, { access: "r-rw----" }];
-            }
-        );
+        const coreCompetenciesSharing = _.cartesianProduct(
+            coreCompetencies,
+            saving.countryCodes
+        ).map(([coreCompetency, countryCode]) => {
+            const userGroupName = this._getUserGroupName(coreCompetency, countryCode);
+            return [userGroupName, { access: "r-rw----" }];
+        });
 
         const userGroupSharingByName = _(saving.countryCodes)
             .flatMap(countryCode => [
@@ -691,7 +692,6 @@ export default class DataSetStore {
             .concat([["GL_GlobalAdministrator", { access: "rwrw----" }]])
             .fromPairs()
             .value();
-
 
         const baseSharing = { object: { publicAccess: dataset.publicAccess } };
         const sharing = buildSharingFromUserGroupNames(
