@@ -764,9 +764,21 @@ export default class DataSetStore {
         const orgUnits = collectionToArray(dataset.organisationUnits);
 
         if (project && !_(orgUnits).isEmpty()) {
-            const payload = { additions: orgUnits.map(ou => ({ id: ou.id })) };
+            // Add data set org units to project (categoryOption), but do not remove previously assigned.
+            // POST with {additions: [...]} is not working (https://jira.dhis2.org/browse/DHIS2-10010)
+            // so perform an update (GET + PUT).
             return this.api
-                .post(`/categoryOptions/${project.id}/organisationUnits`, payload)
+                .get(`/categoryOptions/${project.id}`, { fields: ":owner" })
+                .then(categoryOption => {
+                    const payload = {
+                        ...categoryOption,
+                        organisationUnits: _(categoryOption.organisationUnits || [])
+                            .concat(orgUnits.map(ou => ({ id: ou.id })))
+                            .uniqBy(ou => ou.id)
+                            .value(),
+                    };
+                    return this.api.update(`/categoryOptions/${project.id}`, payload);
+                })
                 .then(() => saving)
                 .catch(err =>
                     this._addWarnings(saving, [
