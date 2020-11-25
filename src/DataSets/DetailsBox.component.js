@@ -1,5 +1,5 @@
 import React from "react";
-import createReactClass from 'create-react-class';
+import createReactClass from "create-react-class";
 import PropTypes from "prop-types";
 import classes from "classnames";
 import FontIcon from "material-ui/FontIcon";
@@ -99,7 +99,7 @@ export default createReactClass({
                 ),
             linkedProject: () =>
                 getProject(d2, this.props.config, this.props.source).then(project =>
-                    project ? project.name : this.getTranslation("no_project_linked")
+                    project ? project.displayName : this.getTranslation("no_project_linked")
                 ),
         };
     },
