@@ -1,5 +1,5 @@
 import React from "react";
-import createReactClass from 'create-react-class';
+import createReactClass from "create-react-class";
 import PropTypes from "prop-types";
 import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
@@ -110,7 +110,7 @@ const Save = createReactClass({
                         />
                         <ListItem
                             field="linked_project"
-                            value={associations.project && associations.project.name}
+                            value={associations.project && associations.project.displayName}
                         />
                         <ListItem
                             field="orgunits_settings"
