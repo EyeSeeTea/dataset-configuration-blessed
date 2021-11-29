@@ -184,7 +184,18 @@ function getUserGroups(d2, names) {
 
 function getSharing(d2, object) {
     const api = d2.Api.getApi();
-    return api.get(`sharing?type=${object.modelDefinition.name}&id=${object.id}`);
+    const fields = [
+        "id",
+        "name",
+        "publicAccess",
+        "userAccesses",
+        "userGroupAccesses",
+        "externalAccess",
+    ].join(",");
+
+    return api
+        .get(`${object.modelDefinition.plural}/${object.id}?fields=${fields}`)
+        .then(object => ({ object }));
 }
 
 function getKey(s) {
