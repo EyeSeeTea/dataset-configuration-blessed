@@ -443,7 +443,7 @@ const DataSets = createReactClass({
 
         const showCreatedByAppCheck = !!config.createdByDataSetConfigurationAttributeId;
         const olderLogLiteral = logsPageLast < 0 ? this.tr("logs_no_older") : this.tr("logs_older");
-        const dateString = new Date(logsOldestDate || Date()).toLocaleString();
+        const dateString = new Date(logsOldestDate || new Date()).toLocaleString();
         const label = olderLogLiteral + " " + dateString;
 
         const logLoadMoreButton = logsHasMore ? (
