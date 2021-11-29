@@ -145,6 +145,7 @@ class Factory {
                 .then(sharing =>
                     _(sharing.object.userGroupAccesses)
                         .map(getCode)
+                        .compact()
                         .uniq()
                         .value()
                 )
