@@ -192,14 +192,14 @@ function getKey(s) {
 }
 
 function buildSharingFromUserGroupNames(baseSharing, userGroups, userGroupSharingByName) {
-    const userGroupsByName = _.keyBy(userGroups, userGroup => getKey(userGroup.name))
+    const userGroupsByName = _.keyBy(userGroups, userGroup => getKey(userGroup.name));
     const userGroupAccesses = _(userGroupSharingByName)
         .map((sharing, name) => {
             const userGroup = userGroupsByName[getKey(name)];
             if (userGroup) {
-                return _.imerge(sharing, { id: userGroup.id })
+                return _.imerge(sharing, { id: userGroup.id });
             } else {
-                console.log(`User has no access to user group: ${name}`)
+                console.log(`User has no access to user group: ${name}`);
                 return null;
             }
         })
@@ -543,8 +543,11 @@ function setAttributes(initialAttributeValues, valuesByAttributeId) {
 }
 
 function getDseId(dse) {
-    const parts = [dse.dataSet, dse.dataElement, dse.categoryCombo]
-    return _(parts).compact().map(obj => obj.id).join(".");
+    const parts = [dse.dataSet, dse.dataElement, dse.categoryCombo];
+    return _(parts)
+        .compact()
+        .map(obj => obj.id)
+        .join(".");
 }
 
 export {
