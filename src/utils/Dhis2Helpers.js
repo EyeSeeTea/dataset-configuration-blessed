@@ -1,5 +1,5 @@
+import { getJSONForProperties } from "d2/lib/model/helpers/json";
 import { generateUid } from "d2/lib/uid";
-import { getOwnedPropertyJSON } from "d2/lib/model/helpers/json";
 import _ from "./lodash-mixins";
 
 function collectionToArray(collectionOrArray) {
@@ -561,6 +561,17 @@ function getDseId(dse) {
         .join(".");
 }
 
+function getOwnedPropertyJSON(model) {
+    const ownedProperties = [
+        ...model.modelDefinition.getOwnedPropertyNames(),
+        "publicAccess",
+        "userAccesses",
+        "userGroupAccesses",
+    ]
+
+    return getJSONForProperties(model, ownedProperties);
+}
+
 export {
     getDseId,
     accesses,
@@ -594,4 +605,5 @@ export {
     subQuery,
     getCategoryCombo,
     setAttributes,
+    getOwnedPropertyJSON,
 };

@@ -1,9 +1,8 @@
 import moment from "moment";
-import { getOwnedPropertyJSON } from "d2/lib/model/helpers/json";
 import { generateUid } from "d2/lib/uid";
 
 import _ from "../utils/lodash-mixins";
-import { setAttributes, postMetadata, getCategoryCombos, mapPromise } from "../utils/Dhis2Helpers";
+import { setAttributes, postMetadata, getCategoryCombos, mapPromise, getOwnedPropertyJSON } from "../utils/Dhis2Helpers";
 import Settings from "./Settings";
 import DataSetStore from "./DataSetStore";
 

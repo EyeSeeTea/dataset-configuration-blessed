@@ -603,8 +603,9 @@ const DataSets = createReactClass({
 function getDataSetsWithOwnerFields(dataSets) {
     const dataSetIds = dataSets.map(o => o.id).join(",");
     return d2.models.dataSets
+        // access fields are not in :owner anymore (2.36), ask for them explictly
         .list({
-            fields: ":owner",
+            fields: ":owner,publicAccess,userAccesses,userGroupAccesses",
             filter: `id:in:[${dataSetIds}]`,
         })
         .then(c => c.toArray());

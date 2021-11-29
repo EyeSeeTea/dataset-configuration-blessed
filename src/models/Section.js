@@ -1,8 +1,7 @@
 import { generateUid } from "d2/lib/uid";
 import _ from "lodash";
-import { update, collectionToArray, subQuery } from "../utils/Dhis2Helpers";
+import { update, collectionToArray, subQuery, getOwnedPropertyJSON } from "../utils/Dhis2Helpers";
 import fp from "lodash/fp";
-import { getOwnedPropertyJSON } from "d2/lib/model/helpers/json";
 import memoize from "nano-memoize";
 
 const toArray = collectionToArray;
