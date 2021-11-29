@@ -478,14 +478,14 @@ async function getFilteredDatasets(d2, config, page, sorting, filters) {
         );
         // Truncate IDs to avoid 413 URL too large
         const maxUids = (8192 - paramsSize - 1000) / (11 + 3);
-        const filters = [
+        const fullFilters = [
             ...baseFilters,
             `id:in:[${_(datasetsByApp)
                 .take(maxUids)
                 .map("id")
                 .join(",")}]`,
         ];
-        return model.list(cleanOptions({ order, fields, filter: filters, page }));
+        return model.list(cleanOptions({ order, fields, filter: fullFilters, page }));
     } else {
         return model.list(cleanOptions({ order, fields, filter: baseFilters, page }));
     }

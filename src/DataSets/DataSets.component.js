@@ -128,9 +128,11 @@ const DataSets = createReactClass({
     },
 
     subscribeToModelStore(store, modelName) {
+        const d2 = this.context.d2;
+
         return store.subscribe(async datasets => {
             if (datasets) {
-                const d2Datasets = await getDataSetsWithOwnerFields(datasets);
+                const d2Datasets = await getDataSetsWithOwnerFields(d2, datasets);
                 this.setState({ [modelName]: { models: d2Datasets } });
             } else {
                 this.setState({ [modelName]: null });
@@ -600,7 +602,7 @@ const DataSets = createReactClass({
     },
 });
 
-function getDataSetsWithOwnerFields(dataSets) {
+function getDataSetsWithOwnerFields(d2, dataSets) {
     const dataSetIds = dataSets.map(o => o.id).join(",");
     return d2.models.dataSets
         // access fields are not in :owner anymore (2.36), ask for them explictly
