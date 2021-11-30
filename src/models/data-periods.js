@@ -26,7 +26,11 @@ export async function getDataSets(d2, ids) {
 
 export function getAttributeValues(store, dataset) {
     const { config } = store;
-    const attributeKeys = ["dataPeriodOutputDatesAttributeId", "dataPeriodOutcomeDatesAttributeId"];
+    const attributeKeys = [
+        "dataPeriodOutputDatesAttributeId",
+        "dataPeriodOutcomeDatesAttributeId",
+        "dataPeriodIntervalDatesAttributeId",
+    ];
     const missingAttributeKeys = attributeKeys.filter(key => !config[key]);
     const oldAttributeValues = (dataset && dataset.attributeValues) || [];
 
@@ -37,9 +41,15 @@ export function getAttributeValues(store, dataset) {
 
     const periodDates = store.getPeriodDates();
     const years = store.getPeriodYears();
+    const dataInterval = [
+        formatDate(store.associations.dataInputStartDate),
+        formatDate(store.associations.dataInputEndDate),
+    ].join("-");
+
     const valuesByKey = {
         dataPeriodOutputDatesAttributeId: formatPeriodDates(periodDates.output, years),
         dataPeriodOutcomeDatesAttributeId: formatPeriodDates(periodDates.outcome, years),
+        dataPeriodIntervalDatesAttributeId: dataInterval,
     };
     const newValues = _.mapKeys(valuesByKey, (_value, key) => config[key]);
 
