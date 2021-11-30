@@ -38,6 +38,16 @@ export default class Settings {
             defaultValue: 0,
         },
         {
+            name: "outputEndDate",
+            type: "yearlyDate",
+            defaultValue: { month: 4, day: 1 },
+        },
+        {
+            name: "outcomeEndDate",
+            type: "yearlyDate",
+            defaultValue: { month: 5, day: 1 },
+        },
+        {
             name: "dataElementGroupOutputId",
             type: "d2-object",
             model: "dataElementGroup",
@@ -220,6 +230,7 @@ export default class Settings {
                     .list({ filter: fieldDefinition.defaultFilter, fields: "id" })
                     .then(collection => collection.toArray().map(obj => obj.id)[0]);
             case "value":
+            case "yearlyDate":
                 return Promise.resolve(fieldDefinition.defaultValue);
             default:
                 throw new Error(`Unknown field type: ${fieldDefinition.type}`);
@@ -235,6 +246,7 @@ export default class Settings {
             case "d2-object":
                 return _.imerge(base, { options: optionsForModel[fieldDefinition.model] });
             case "value":
+            case "yearlyDate":
                 return base;
             default:
                 throw new Error(`Unknown field type: ${fieldDefinition.type}`);
