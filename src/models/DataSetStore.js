@@ -265,6 +265,11 @@ export default class DataSetStore {
         return factory.cloneFromDB(datasetId);
     }
 
+    static getPeriodAssociations(d2, config, dataset) {
+        const factory = new Factory(d2, config);
+        return factory.getPeriodAssociations(dataset);
+    }
+
     isSharingStepVisible() {
         return !this.associations.project;
     }
