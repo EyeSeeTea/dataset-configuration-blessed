@@ -212,13 +212,7 @@ const MultipleDataTable = createReactClass({
     },
 
     _hideContextMenu() {
-        this.setState(
-            {
-                activeRows: [],
-                showContextMenu: false,
-            },
-            this.notifyActiveRows
-        );
+        this.setState({ showContextMenu: false }, this.notifyActiveRows);
     },
 
     updateContextSelection(rowSource) {
