@@ -7,7 +7,12 @@ import RaisedButton from "material-ui/RaisedButton/RaisedButton";
 import DataSetPeriods from "./DataSetPeriods";
 import LinearProgress from "material-ui/LinearProgress/LinearProgress";
 import snackActions from "../Snackbar/snack.actions";
-import { getDataSetsForPeriods, getDataSetsForPeriodsEndDate, saveDataSets, saveDataSetsEndDate } from "../models/data-periods";
+import {
+    getDataSetsForPeriods,
+    getDataSetsForPeriodsEndDate,
+    saveDataSets,
+    saveDataSetsEndDate,
+} from "../models/data-periods";
 
 export default class PeriodsDialog extends React.Component {
     static propTypes = {
@@ -43,13 +48,11 @@ export default class PeriodsDialog extends React.Component {
     }
 
     async componentDidMount() {
-        const { dataSets, store, warning, error } = await this
-            .getDataSetsForPeriods(
-                this.context.d2,
-                this.props.dataSets.map(ds => ds.id),
-                this.props.endYear
-            )
-            .catch(err => ({ error: err.message }));
+        const { dataSets, store, warning, error } = await this.getDataSetsForPeriods(
+            this.context.d2,
+            this.props.dataSets.map(ds => ds.id),
+            this.props.endYear
+        ).catch(err => ({ error: err.message }));
 
         if (error) {
             snackActions.show({ message: error });
@@ -112,12 +115,14 @@ export default class PeriodsDialog extends React.Component {
 
         if (!store) return <LinearProgress />;
 
+        const title = this.getTranslation("period_dates") + ": " + this.getNames(dataSets);
+
         return (
             <Dialog
                 autoScrollBodyContent
                 autoDetectWindowHeight
                 repositionOnUpdate
-                title={this.getTranslation("period_dates") + ` [${dataSets.length}]`}
+                title={title}
                 style={this.styles.noMaxWidth}
                 contentStyle={this.styles.noMaxWidth}
                 open={true}
@@ -135,5 +140,19 @@ export default class PeriodsDialog extends React.Component {
                 />
             </Dialog>
         );
+    }
+
+    getNames(dataSets) {
+        const maxShown = 5;
+        const remanining = dataSets.length - maxShown;
+
+        const baseNames = _(dataSets)
+            .take(maxShown)
+            .map(ds => ds.displayName)
+            .join(", ");
+
+        return remanining > 0
+            ? this.getTranslation("this_and_n_others", { this: baseNames, n: remanining })
+            : baseNames;
     }
 }

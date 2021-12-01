@@ -17,7 +17,7 @@ const dataInputPeriodDatesFormat = "YYYYMMDD";
 export async function getDataSets(d2, ids) {
     return await d2.models.dataSets
         .list({
-            fields: "id,attributeValues,dataInputPeriods[id,openingDate,closingDate,period]",
+            fields: "id,displayName,attributeValues,dataInputPeriods[id,openingDate,closingDate,period]",
             filter: `id:in:[${ids.join(",")}]`,
             paging: false,
         })
