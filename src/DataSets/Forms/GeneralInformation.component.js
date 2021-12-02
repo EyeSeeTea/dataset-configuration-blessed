@@ -1,5 +1,5 @@
 import React from "react";
-import createReactClass from 'create-react-class';
+import createReactClass from "create-react-class";
 import PropTypes from "prop-types";
 import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
@@ -9,6 +9,7 @@ import LinearProgress from "material-ui/LinearProgress/LinearProgress";
 import FormHelpers from "../../forms/FormHelpers";
 import { currentUserHasAdminRole } from "../../utils/Dhis2Helpers";
 import DataSetPeriods from "../DataSetPeriods";
+import snackActions from "../../Snackbar/snack.actions";
 
 const GeneralInformation = createReactClass({
     mixins: [Translate],
@@ -48,10 +49,6 @@ const GeneralInformation = createReactClass({
                     categoryCombinations,
                 })
             );
-    },
-
-    _onUpdateField(fieldPath, newValue) {
-        this.props.onFieldsChange(fieldPath, newValue);
     },
 
     async _validateNameUniqueness(name) {
@@ -139,16 +136,35 @@ const GeneralInformation = createReactClass({
         );
     },
 
+    _onUpdateField(fieldPath, newValue) {
+        this.props.onFieldsChange(fieldPath, newValue);
+    },
+
     _onUpdateFormStatus(status) {
-        const isValid = !status.validating && status.valid;
-        this.setState({ isValid });
+        const isValidFromStatus = Boolean(!status.validating && status.valid);
+        this.setState({ isValid: isValidFromStatus });
+        const isValid = isValidFromStatus && this.validate({ showErrors: false });
         this.props.formStatus(isValid);
     },
 
-    async UNSAFE_componentWillReceiveProps(props) {
-        if (props.validateOnRender) {
-            this.props.formStatus(this.state.isValid);
+    validate({ showErrors }) {
+        const { dataInputStartDate, dataInputEndDate } = this.props.store.associations;
+        const dataInputDatesAreValid = Boolean(
+            (dataInputStartDate && dataInputEndDate) || (!dataInputStartDate && !dataInputEndDate)
+        );
+
+        if (showErrors && !dataInputDatesAreValid) {
+            const message = this.getTranslation("cannot_set_only_start_or_end_dates");
+            snackActions.show({ message });
         }
+
+        return dataInputDatesAreValid;
+    },
+
+    async UNSAFE_componentWillReceiveProps(props) {
+        if (!props.validateOnRender) return;
+        const isValid = this.state.isValid && this.validate({ showErrors: true });
+        this.props.formStatus(isValid);
     },
 
     render() {
