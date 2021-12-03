@@ -10,6 +10,7 @@ import FormHelpers from "../../forms/FormHelpers";
 import { currentUserHasAdminRole } from "../../utils/Dhis2Helpers";
 import DataSetPeriods from "../DataSetPeriods";
 import snackActions from "../../Snackbar/snack.actions";
+import { validateStartEndDate } from "../../models/data-periods";
 
 const GeneralInformation = createReactClass({
     mixins: [Translate],
@@ -140,30 +141,25 @@ const GeneralInformation = createReactClass({
         this.props.onFieldsChange(fieldPath, newValue);
     },
 
-    _onUpdateFormStatus(status) {
-        const isValidFromStatus = Boolean(!status.validating && status.valid);
-        this.setState({ isValid: isValidFromStatus });
-        const isValid = isValidFromStatus && this.validate({ showErrors: false });
-        this.props.formStatus(isValid);
+    getErrorMessage() {
+        return validateStartEndDate(this.props.store);
     },
 
-    validate({ showErrors }) {
-        const { dataInputStartDate, dataInputEndDate } = this.props.store.associations;
-        const dataInputDatesAreValid = Boolean(
-            (dataInputStartDate && dataInputEndDate) || (!dataInputStartDate && !dataInputEndDate)
-        );
+    _onUpdateFormStatus(status) {
+        const statusIsValid = Boolean(!status.validating && status.valid);
+        const isValid = statusIsValid && !this.getErrorMessage();
 
-        if (showErrors && !dataInputDatesAreValid) {
-            const message = this.getTranslation("cannot_set_only_start_or_end_dates");
-            snackActions.show({ message });
-        }
-
-        return dataInputDatesAreValid;
+        this.setState({ isValid: statusIsValid });
+        this.props.formStatus(isValid);
     },
 
     async UNSAFE_componentWillReceiveProps(props) {
         if (!props.validateOnRender) return;
-        const isValid = this.state.isValid && this.validate({ showErrors: true });
+
+        const message = this.getErrorMessage();
+        const isValid = this.state.isValid && !message;
+
+        if (message) snackActions.show({ message: this.getTranslation(message) });
         this.props.formStatus(isValid);
     },
 

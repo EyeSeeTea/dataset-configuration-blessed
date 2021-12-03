@@ -17,7 +17,8 @@ const dataInputPeriodDatesFormat = "YYYYMMDD";
 export async function getDataSets(d2, ids) {
     return await d2.models.dataSets
         .list({
-            fields: "id,displayName,attributeValues,dataInputPeriods[id,openingDate,closingDate,period]",
+            fields:
+                "id,displayName,attributeValues,dataInputPeriods[id,openingDate,closingDate,period]",
             filter: `id:in:[${ids.join(",")}]`,
             paging: false,
         })
@@ -154,7 +155,7 @@ export async function saveDataSetsWithMapper(d2, store, dataSets, mapper) {
 }
 
 function areDatesUniq(dates) {
-    const uniqValues = _.uniq(dates.map(date => date ? date.toISOString() : null))
+    const uniqValues = _.uniq(dates.map(date => (date ? date.toISOString() : null)));
     return uniqValues.length === 1 && uniqValues[0];
 }
 
@@ -279,4 +280,14 @@ function formatPeriodDates(dates, years) {
         .filter(([year, _period]) => years.includes(parseInt(year)))
         .map(([year, { start, end }]) => `${year}=${formatDate(start)}-${formatDate(end)}`)
         .join(",");
+}
+
+export function validateStartEndDate(store) {
+    const { dataInputStartDate, dataInputEndDate } = store.associations;
+
+    const areBothDataInputDatesSetOrUnset = Boolean(
+        (dataInputStartDate && dataInputEndDate) || (!dataInputStartDate && !dataInputEndDate)
+    );
+
+    return areBothDataInputDatesSetOrUnset ? null : "cannot_set_only_start_or_end_dates";
 }
