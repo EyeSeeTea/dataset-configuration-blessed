@@ -112,6 +112,7 @@ class Factory {
 
     getInitialModel() {
         return this.d2.models.dataSet.create({
+            attributeValues: [],
             name: undefined,
             code: undefined,
             description: undefined,
