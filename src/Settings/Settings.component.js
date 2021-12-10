@@ -48,6 +48,7 @@ const SettingsDialog = createReactClass({
             "createdByDataSetConfigurationAttributeId",
             "dataPeriodOutputDatesAttributeId",
             "dataPeriodOutcomeDatesAttributeId",
+            "dataPeriodIntervalDatesAttributeId",
         ],
         sections: {
             partition: [

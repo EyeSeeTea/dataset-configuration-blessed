@@ -2,7 +2,13 @@ import moment from "moment";
 import { generateUid } from "d2/lib/uid";
 
 import _ from "../utils/lodash-mixins";
-import { setAttributes, postMetadata, getCategoryCombos, mapPromise, getOwnedPropertyJSON } from "../utils/Dhis2Helpers";
+import {
+    setAttributes,
+    postMetadata,
+    getCategoryCombos,
+    mapPromise,
+    getOwnedPropertyJSON,
+} from "../utils/Dhis2Helpers";
 import Settings from "./Settings";
 import DataSetStore from "./DataSetStore";
 
@@ -20,7 +26,11 @@ export async function getDataSets(d2, ids) {
 
 export function getAttributeValues(store, dataset) {
     const { config } = store;
-    const attributeKeys = ["dataPeriodOutputDatesAttributeId", "dataPeriodOutcomeDatesAttributeId"];
+    const attributeKeys = [
+        "dataPeriodOutputDatesAttributeId",
+        "dataPeriodOutcomeDatesAttributeId",
+        "dataPeriodIntervalDatesAttributeId",
+    ];
     const missingAttributeKeys = attributeKeys.filter(key => !config[key]);
     const oldAttributeValues = (dataset && dataset.attributeValues) || [];
 
@@ -31,9 +41,15 @@ export function getAttributeValues(store, dataset) {
 
     const periodDates = store.getPeriodDates();
     const years = store.getPeriodYears();
+    const dataInterval = [
+        formatDate(store.associations.dataInputStartDate),
+        formatDate(store.associations.dataInputEndDate),
+    ].join("-");
+
     const valuesByKey = {
         dataPeriodOutputDatesAttributeId: formatPeriodDates(periodDates.output, years),
         dataPeriodOutcomeDatesAttributeId: formatPeriodDates(periodDates.outcome, years),
+        dataPeriodIntervalDatesAttributeId: dataInterval,
     };
     const newValues = _.mapKeys(valuesByKey, (_value, key) => config[key]);
 
@@ -106,7 +122,7 @@ export async function getDataSetsForPeriods(d2, dataSetIds) {
     const config = await new Settings(d2).get();
     const store = await DataSetStore.edit(d2, config, dataSetIds[0]);
     const [startDates, endDates] = _(dataSets)
-        .map(getDataInputDates)
+        .map(dataset => getDataInputDates(dataset, config))
         .map(o => [o.dataInputStartDate, o.dataInputEndDate])
         .unzip()
         .value();
@@ -136,26 +152,35 @@ export async function getDataSetsForPeriods(d2, dataSetIds) {
     return { store, dataSets, allDatesEqual };
 }
 
-export function getDataInputDates(dataset) {
+export function getDataInputDates(dataset, config) {
     const getDate = value => (value ? new Date(value) : undefined);
 
-    const dataInputStartDate = getDate(
-        _(dataset.dataInputPeriods)
-            .map("openingDate")
-            .compact()
-            .min()
-    );
-    const dataInputEndDate = getDate(
-        _(dataset.dataInputPeriods)
-            .map("closingDate")
-            .compact()
-            .max()
+    const adjustDateString = value =>
+        value ? [value.slice(0, 4), value.slice(4, 6), value.slice(6, 8)].join("-") : undefined;
+
+    const startFromDataInputPeriods = _(dataset.dataInputPeriods)
+        .map("openingDate")
+        .compact()
+        .min();
+    const endFromDataInputPeriods = _(dataset.dataInputPeriods)
+        .map("closingDate")
+        .compact()
+        .max();
+
+    const attributeValueInterval = dataset.attributeValues.find(
+        av => av.attribute.id === config.dataPeriodIntervalDatesAttributeId
     );
 
-    return { dataInputStartDate, dataInputEndDate };
+    const interval = attributeValueInterval ? attributeValueInterval.value : "";
+    const [startFromAttribute, endFromAttribute] = interval.split("-").map(adjustDateString);
+
+    return {
+        dataInputStartDate: getDate(startFromAttribute || startFromDataInputPeriods),
+        dataInputEndDate: getDate(endFromAttribute || endFromDataInputPeriods),
+    };
 }
 
-function formatDate(value) {
+export function formatDate(value) {
     const date = moment(value);
     return value && date.isValid() ? date.format(dataInputPeriodDatesFormat) : "";
 }

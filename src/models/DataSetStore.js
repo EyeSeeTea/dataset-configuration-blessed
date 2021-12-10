@@ -192,7 +192,7 @@ class Factory {
                 sections: collectionToArray(dataset.sections),
                 countries: sharingCountries,
                 userRoles,
-                ...dataPeriods.getDataInputDates(dataset),
+                ...dataPeriods.getDataInputDates(dataset, this.config),
                 ...this.getPeriodAssociations(dataset),
             })
         );
@@ -337,25 +337,33 @@ export default class DataSetStore {
         );
     }
 
-    getDataInputPeriods({ dataInputStartDate: startDate, dataInputEndDate: endDate }) {
-        if (startDate && endDate) {
-            const endDate_ = moment(endDate);
-            let currentDate = moment(startDate);
-            let periods = [];
+    getDataInputPeriods(options) {
+        const { dataInputStartDate: startDate, dataInputEndDate: endDate, periodDates } = options;
+        if (!startDate || !endDate) return [];
 
-            while (currentDate <= endDate_) {
-                periods.push({
-                    id: generateUid(),
-                    period: { id: currentDate.format("YYYYMM") },
-                    openingDate: startDate,
-                    closingDate: endDate,
-                });
-                currentDate.add(1, "month").startOf("month");
-            }
-            return periods;
-        } else {
-            return [];
+        const outputStart = _.min(_.values(periodDates.output).map(x => x.start));
+        const outputEnd = _.max(_.values(periodDates.output).map(x => x.end));
+        const outcomeStart = _.min(_.values(periodDates.outcome).map(x => x.start));
+        const outcomeEnd = _.max(_.values(periodDates.outcome).map(x => x.end));
+
+        const dataInputStart = _.min([startDate, outputStart, outcomeStart]);
+        const dataInputEnd = _.max([endDate, outputEnd, outcomeEnd]);
+
+        const endDateM = moment(endDate);
+        let currentDateM = moment(startDate);
+        let periods = [];
+
+        while (currentDateM <= endDateM) {
+            periods.push({
+                id: generateUid(),
+                period: { id: currentDateM.format("YYYYMM") },
+                openingDate: dataInputStart,
+                closingDate: dataInputEnd,
+            });
+            currentDateM.add(1, "month").startOf("month");
         }
+
+        return periods;
     }
 
     getOpenFuturePeriods(endDate) {
@@ -482,6 +490,9 @@ export default class DataSetStore {
                 this.associations.countries = this.getSharingCountries();
                 break;
             default:
+                if (fieldPath.startsWith("associations.periodDates")) {
+                    this.dataset.dataInputPeriods = this.getDataInputPeriods(associations);
+                }
                 break;
         }
     }
@@ -851,7 +862,10 @@ export default class DataSetStore {
     }
 
     _setAttributes(saving) {
-        const attributeKeys = ["createdByDataSetConfigurationAttributeId"];
+        const attributeKeys = [
+            "createdByDataSetConfigurationAttributeId",
+            "dataPeriodIntervalDatesAttributeId",
+        ];
 
         const missingAttributeKeys = attributeKeys.filter(key => !this.config[key]);
 
@@ -862,9 +876,15 @@ export default class DataSetStore {
             return Promise.resolve(saving);
         }
 
+        const dataInterval = [
+            dataPeriods.formatDate(this.associations.dataInputStartDate),
+            dataPeriods.formatDate(this.associations.dataInputEndDate),
+        ].join("-");
+
         const attributeValues = dataPeriods.getAttributeValues(this, saving.dataset);
         const valuesByKey = {
             createdByDataSetConfigurationAttributeId: "true",
+            dataPeriodIntervalDatesAttributeId: dataInterval,
         };
         const values = _.mapKeys(valuesByKey, (_value, key) => this.config[key]);
         const newAttributeValues = setAttributes(attributeValues, values);

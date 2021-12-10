@@ -128,6 +128,12 @@ export default class Settings {
             defaultFilter: "code:eq:GL_OUTCOME_DATES",
         },
         {
+            name: "dataPeriodIntervalDatesAttributeId",
+            type: "d2-object",
+            model: "attributes",
+            defaultFilter: "code:eq:GL_INTERVAL_DATES",
+        },
+        {
             name: "exclusionRuleCoreUserGroupId",
             type: "d2-object",
             model: "userGroup",
