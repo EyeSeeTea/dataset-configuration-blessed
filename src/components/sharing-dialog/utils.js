@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { getOwnedPropertyJSON } from "d2/lib/model/helpers/json";
+import { getOwnedPropertyJSON } from "../../utils/Dhis2Helpers";
 
 export const cachedAccessTypeToString = (canView, canEdit) => {
     if (canView) {

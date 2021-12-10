@@ -1,6 +1,5 @@
 import React from "react";
 import createReactClass from "create-react-class";
-import PropTypes from "prop-types";
 import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import Wizard from "../Wizard/Wizard.component";

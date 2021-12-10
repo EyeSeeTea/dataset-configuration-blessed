@@ -1,5 +1,4 @@
 import React from "react";
-import createReactClass from 'create-react-class';
 import PropTypes from "prop-types";
 import DropDown from "../forms/form-fields/drop-down";
 import LinearProgress from "material-ui/LinearProgress/LinearProgress";

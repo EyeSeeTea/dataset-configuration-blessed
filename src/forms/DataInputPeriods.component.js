@@ -1,5 +1,4 @@
 import React from "react";
-import createReactClass from 'create-react-class';
 import PropTypes from "prop-types";
 import Dialog from "material-ui/Dialog";
 import RaisedButton from "material-ui/RaisedButton";

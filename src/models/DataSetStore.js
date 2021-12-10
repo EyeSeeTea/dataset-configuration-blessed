@@ -2,7 +2,6 @@ import fp from "lodash/fp";
 import _ from "../utils/lodash-mixins";
 import { generateUid } from "d2/lib/uid";
 import moment from "moment";
-import { getOwnedPropertyJSON } from "d2/lib/model/helpers/json";
 import {
     getCategoryCombos,
     collectionToArray,
@@ -20,6 +19,7 @@ import {
     sendMessageToGroups,
     getCategoryCombo,
     setAttributes,
+    getOwnedPropertyJSON,
 } from "../utils/Dhis2Helpers";
 
 import { getCoreCompetencies, getProject } from "./dataset";
@@ -145,6 +145,7 @@ class Factory {
                 .then(sharing =>
                     _(sharing.object.userGroupAccesses)
                         .map(getCode)
+                        .compact()
                         .uniq()
                         .value()
                 )

@@ -1,5 +1,5 @@
+import { getJSONForProperties } from "d2/lib/model/helpers/json";
 import { generateUid } from "d2/lib/uid";
-import { getOwnedPropertyJSON } from "d2/lib/model/helpers/json";
 import _ from "./lodash-mixins";
 
 function collectionToArray(collectionOrArray) {
@@ -184,7 +184,18 @@ function getUserGroups(d2, names) {
 
 function getSharing(d2, object) {
     const api = d2.Api.getApi();
-    return api.get(`sharing?type=${object.modelDefinition.name}&id=${object.id}`);
+    const fields = [
+        "id",
+        "name",
+        "publicAccess",
+        "userAccesses",
+        "userGroupAccesses",
+        "externalAccess",
+    ].join(",");
+
+    return api
+        .get(`${object.modelDefinition.plural}/${object.id}?fields=${fields}`)
+        .then(object => ({ object }));
 }
 
 function getKey(s) {
@@ -192,14 +203,14 @@ function getKey(s) {
 }
 
 function buildSharingFromUserGroupNames(baseSharing, userGroups, userGroupSharingByName) {
-    const userGroupsByName = _.keyBy(userGroups, userGroup => getKey(userGroup.name))
+    const userGroupsByName = _.keyBy(userGroups, userGroup => getKey(userGroup.name));
     const userGroupAccesses = _(userGroupSharingByName)
         .map((sharing, name) => {
             const userGroup = userGroupsByName[getKey(name)];
             if (userGroup) {
-                return _.imerge(sharing, { id: userGroup.id })
+                return _.imerge(sharing, { id: userGroup.id });
             } else {
-                console.log(`User has no access to user group: ${name}`)
+                console.log(`User has no access to user group: ${name}`);
                 return null;
             }
         })
@@ -467,14 +478,14 @@ async function getFilteredDatasets(d2, config, page, sorting, filters) {
         );
         // Truncate IDs to avoid 413 URL too large
         const maxUids = (8192 - paramsSize - 1000) / (11 + 3);
-        const filters = [
+        const fullFilters = [
             ...baseFilters,
             `id:in:[${_(datasetsByApp)
                 .take(maxUids)
                 .map("id")
                 .join(",")}]`,
         ];
-        return model.list(cleanOptions({ order, fields, filter: filters, page }));
+        return model.list(cleanOptions({ order, fields, filter: fullFilters, page }));
     } else {
         return model.list(cleanOptions({ order, fields, filter: baseFilters, page }));
     }
@@ -543,8 +554,22 @@ function setAttributes(initialAttributeValues, valuesByAttributeId) {
 }
 
 function getDseId(dse) {
-    const parts = [dse.dataSet, dse.dataElement, dse.categoryCombo]
-    return _(parts).compact().map(obj => obj.id).join(".");
+    const parts = [dse.dataSet, dse.dataElement, dse.categoryCombo];
+    return _(parts)
+        .compact()
+        .map(obj => obj.id)
+        .join(".");
+}
+
+function getOwnedPropertyJSON(model) {
+    const ownedProperties = [
+        ...model.modelDefinition.getOwnedPropertyNames(),
+        "publicAccess",
+        "userAccesses",
+        "userGroupAccesses",
+    ]
+
+    return getJSONForProperties(model, ownedProperties);
 }
 
 export {
@@ -580,4 +605,5 @@ export {
     subQuery,
     getCategoryCombo,
     setAttributes,
+    getOwnedPropertyJSON,
 };
