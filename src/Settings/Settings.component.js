@@ -47,7 +47,6 @@ const SettingsDialog = createReactClass({
             "categoryProjectsId",
             "categoryComboId",
             "dataElementGroupSetCoreCompetencyId",
-            "expiryDays",
             "outputEndDate",
             "outcomeEndDate",
             "outputLastYearEndDate",

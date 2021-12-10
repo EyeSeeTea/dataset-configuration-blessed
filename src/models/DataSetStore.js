@@ -116,7 +116,7 @@ class Factory {
             name: undefined,
             code: undefined,
             description: undefined,
-            expiryDays: parseInt(this.config.expiryDays) || 0,
+            expiryDays: 0,
             openFuturePeriods: 1,
             periodType: "Monthly",
             dataInputPeriods: [],
@@ -647,6 +647,7 @@ export default class DataSetStore {
         }));
         datasetPayload.dataSetElements = newDataSetElements;
         datasetPayload.dataEntryForm = { id: form.id };
+        datasetPayload.expiryDays = 0;
 
         return this._addMetadataOp(saving, {
             create_and_update: {
