@@ -459,7 +459,7 @@ export default class DataSetStore {
                     const baseEndM = moment([year + 1, month - 1, day]);
                     const endM =
                         year === lastYear && units && value ? baseEndM.add(value, units) : baseEndM;
-                    const start = startYear === year ? dataInputStartDate : new Date(year, 0, 1);
+                    const start = dataInputStartDate;
                     const period = { start, end: endM.toDate() };
                     return [year, period];
                 })
