@@ -44,7 +44,7 @@ export default class DataSetPeriods extends React.Component {
 
         const generateDateFieldPairs = type => {
             return _.flatMap(years, (year, index) => {
-                const disabled = index > 0 && associations.periodDatesApplyToAll[type];
+                const disabled = !endYear && index > 0 && associations.periodDatesApplyToAll[type];
                 const showApplyToAllYearsCheckbox = !endYear && index === 0 && years.length > 1;
                 const validators = [
                     {
