@@ -34,8 +34,8 @@ export default class PeriodsDialog extends React.Component {
     };
 
     styles = {
-        warning: { color: "red", marginBottom: -10 },
-        error: { fontSize: "0.8em", color: "red" },
+        warning: { color: "rgb(255, 152, 0)", marginBottom: -10 },
+        error: { fontSize: "1m", color: "red", marginTop: 15 },
         noMaxWidth: { maxWidth: "none" },
     };
 
@@ -139,13 +139,14 @@ export default class PeriodsDialog extends React.Component {
             >
                 {saving && <LinearProgress />}
                 {warning && <p style={this.styles.warning}> {warning}</p>}
-                {error && <pre style={this.styles.error}>{error}</pre>}
 
                 <DataSetPeriods
                     store={store}
                     onFieldChange={this.onUpdateField}
                     endYear={endYear}
                 />
+
+                {error && <div style={this.styles.error}>{error}</div>}
             </Dialog>
         );
     }
