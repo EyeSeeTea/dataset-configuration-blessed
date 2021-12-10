@@ -12,6 +12,7 @@ import {
     getDataSetsForPeriodsEndDate,
     saveDataSets,
     saveDataSetsEndDate,
+    validateStartEndDate,
 } from "../models/data-periods";
 
 export default class PeriodsDialog extends React.Component {
@@ -34,7 +35,7 @@ export default class PeriodsDialog extends React.Component {
 
     styles = {
         warning: { color: "red", marginBottom: -10 },
-        error: { fontSize: "0.8em" },
+        error: { fontSize: "0.8em", color: "red" },
         noMaxWidth: { maxWidth: "none" },
     };
 
@@ -85,6 +86,13 @@ export default class PeriodsDialog extends React.Component {
         const { d2 } = this.context;
         const { onRequestClose, endYear } = this.props;
         const { store, dataSets } = this.state;
+
+        const message = validateStartEndDate(store);
+        if (message) {
+            this.setState({ error: this.getTranslation(message) });
+            return;
+        }
+
         this.setState({ saving: true, error: null });
 
         try {

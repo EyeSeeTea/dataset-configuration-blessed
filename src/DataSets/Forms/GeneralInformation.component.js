@@ -1,5 +1,5 @@
 import React from "react";
-import createReactClass from 'create-react-class';
+import createReactClass from "create-react-class";
 import PropTypes from "prop-types";
 import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
@@ -9,6 +9,8 @@ import LinearProgress from "material-ui/LinearProgress/LinearProgress";
 import FormHelpers from "../../forms/FormHelpers";
 import { currentUserHasAdminRole } from "../../utils/Dhis2Helpers";
 import DataSetPeriods from "../DataSetPeriods";
+import snackActions from "../../Snackbar/snack.actions";
+import { validateStartEndDate } from "../../models/data-periods";
 
 const GeneralInformation = createReactClass({
     mixins: [Translate],
@@ -48,10 +50,6 @@ const GeneralInformation = createReactClass({
                     categoryCombinations,
                 })
             );
-    },
-
-    _onUpdateField(fieldPath, newValue) {
-        this.props.onFieldsChange(fieldPath, newValue);
     },
 
     async _validateNameUniqueness(name) {
@@ -139,16 +137,30 @@ const GeneralInformation = createReactClass({
         );
     },
 
+    _onUpdateField(fieldPath, newValue) {
+        this.props.onFieldsChange(fieldPath, newValue);
+    },
+
+    getErrorMessage() {
+        return validateStartEndDate(this.props.store);
+    },
+
     _onUpdateFormStatus(status) {
-        const isValid = !status.validating && status.valid;
-        this.setState({ isValid });
+        const statusIsValid = Boolean(!status.validating && status.valid);
+        const isValid = statusIsValid && !this.getErrorMessage();
+
+        this.setState({ isValid: statusIsValid });
         this.props.formStatus(isValid);
     },
 
     async UNSAFE_componentWillReceiveProps(props) {
-        if (props.validateOnRender) {
-            this.props.formStatus(this.state.isValid);
-        }
+        if (!props.validateOnRender) return;
+
+        const message = this.getErrorMessage();
+        const isValid = this.state.isValid && !message;
+
+        if (message) snackActions.show({ message: this.getTranslation(message) });
+        this.props.formStatus(isValid);
     },
 
     render() {
