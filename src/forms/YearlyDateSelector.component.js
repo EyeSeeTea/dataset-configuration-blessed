@@ -35,6 +35,7 @@ class YearlyDateSelector extends React.Component {
 
     getMonthOptions() {
         return moment
+            .localeData("en")
             .monthsShort()
             .map(shortName => this.getTranslation(shortName.toLowerCase()))
             .map((name, index) => ({ text: name, value: index + 1 }));
