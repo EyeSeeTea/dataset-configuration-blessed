@@ -432,12 +432,13 @@ export default class DataSetStore {
     }
 
     setDefaultPeriodValues() {
+        const { outputEndDate, outcomeEndDate } = this.config;
         const { dataInputStartDate, dataInputEndDate } = this.associations;
         if (!(dataInputStartDate && dataInputEndDate)) return;
 
         const years = this.getPeriodYears();
 
-        const getPeriodDates = (years, { month }) =>
+        const getPeriodDates = (years, { month = 4, day = 1 }) =>
             _(years)
                 .map(year => {
                     const period = {
@@ -445,7 +446,7 @@ export default class DataSetStore {
                             dataInputStartDate.getFullYear() === year
                                 ? dataInputStartDate
                                 : new Date(year, 0, 1),
-                        end: new Date(year + 1, month - 1, 1),
+                        end: new Date(year + 1, month - 1, day),
                     };
                     return [year, period];
                 })
@@ -458,8 +459,8 @@ export default class DataSetStore {
                 outcome: false,
             },
             periodDates: {
-                output: getPeriodDates(years, { month: 4 }),
-                outcome: getPeriodDates(years, { month: 5 }),
+                output: getPeriodDates(years, outputEndDate),
+                outcome: getPeriodDates(years, outcomeEndDate),
             },
         });
     }
