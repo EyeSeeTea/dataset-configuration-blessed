@@ -95,7 +95,11 @@ export async function saveDataSetsEndDate(d2, store, dataSets, endYear) {
             ),
         };
 
-        const newAssociations = { ...associations, periodDates: newPeriodDates };
+        const newAssociations = {
+            ...associations,
+            periodDatesApplyToAll: { output: false, outcome: false },
+            periodDates: newPeriodDates,
+        };
         store.associations = newAssociations;
 
         const newDataset = {
