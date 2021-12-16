@@ -125,7 +125,11 @@ export default class PeriodsDialog extends React.Component {
 
         if (!store) return <LinearProgress />;
 
-        const title = this.getTranslation("period_dates") + ": " + this.getNames(dataSets);
+        const baseTitle = endYear
+            ? this.getTranslation("period_dates_for_year", { year: endYear })
+            : this.getTranslation("period_dates");
+
+        const title = baseTitle + ": " + this.getNames(dataSets);
 
         return (
             <Dialog
