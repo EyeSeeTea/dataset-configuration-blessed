@@ -65,7 +65,7 @@ export default class PeriodsDialog extends React.Component {
 
     getActions() {
         const { onRequestClose } = this.props;
-        const { saving } = this.state;
+        const { saving, error } = this.state;
 
         return [
             <FlatButton
@@ -76,7 +76,7 @@ export default class PeriodsDialog extends React.Component {
             <RaisedButton
                 primary
                 label={this.getTranslation("save")}
-                disabled={saving}
+                disabled={saving || error}
                 onClick={this.save}
             />,
         ];

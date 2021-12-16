@@ -288,10 +288,6 @@ function formatPeriodDates(dates, years) {
 
 export function validateStartEndDate(store) {
     const { dataInputStartDate, dataInputEndDate } = store.associations;
-
-    const areBothDataInputDatesSetOrUnset = Boolean(
-        (dataInputStartDate && dataInputEndDate) || (!dataInputStartDate && !dataInputEndDate)
-    );
-
-    return areBothDataInputDatesSetOrUnset ? null : "cannot_set_only_start_or_end_dates";
+    const areBothDataInputDatesSet = Boolean(dataInputStartDate && dataInputEndDate);
+    return areBothDataInputDatesSet ? null : "cannot_set_only_start_or_end_dates";
 }
