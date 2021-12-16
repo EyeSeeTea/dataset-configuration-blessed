@@ -450,6 +450,7 @@ export default class DataSetStore {
         const years = this.getPeriodYears();
         const startYear = dataInputStartDate.getFullYear();
         const lastYear = _.last(years);
+        const dataInputEndDateM = moment(dataInputEndDate);
 
         const getPeriodDates = (years, endDate, endDateOffset) => {
             const { month = 4, day = 1 } = endDate;
@@ -457,9 +458,12 @@ export default class DataSetStore {
 
             return _(years)
                 .map(year => {
-                    const baseEndM = moment([year + 1, month - 1, day]);
-                    const endM =
-                        year === lastYear && units && value ? baseEndM.add(value, units) : baseEndM;
+                    const defaultEndM = moment([year + 1, month - 1, day]);
+                    const lastYearEndDateM =
+                        units && value
+                            ? dataInputEndDateM.clone().add(value, units)
+                            : dataInputEndDateM;
+                    const endM = year === lastYear ? lastYearEndDateM : defaultEndM;
                     const start = dataInputStartDate;
                     const period = { start, end: endM.toDate() };
                     return [year, period];
