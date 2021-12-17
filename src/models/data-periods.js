@@ -85,12 +85,18 @@ export async function saveDataSetsEndDate(d2, store, dataSets, endYear) {
         const newPeriodDates = {
             output: _.mapValues(periodDates.output, (interval, year) =>
                 parseInt(year) === endYear
-                    ? { start: interval.start, end: newPartialPeriodDates.output[year].end }
+                    ? {
+                          start: interval.start,
+                          end: newPartialPeriodDates.output[year].end || interval.end,
+                      }
                     : interval
             ),
             outcome: _.mapValues(periodDates.outcome, (interval, year) =>
                 parseInt(year) === endYear
-                    ? { start: interval.start, end: newPartialPeriodDates.outcome[year].end }
+                    ? {
+                          start: interval.start,
+                          end: newPartialPeriodDates.outcome[year].end || interval.end,
+                      }
                     : interval
             ),
         };
