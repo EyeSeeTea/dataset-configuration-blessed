@@ -97,6 +97,7 @@ export async function saveDataSetsEndDate(d2, store, dataSets, endYear) {
 
         const newAssociations = {
             ...associations,
+            ...getDataInputDates(dataSet, config),
             periodDatesApplyToAll: { output: false, outcome: false },
             periodDates: newPeriodDates,
         };
