@@ -46,9 +46,9 @@ function safeGetUserSettings() {
         return Promise.reject(err || "Cannot connect to server");
     };
 
-    return getUserSettings()
-        .then(settings => (typeof settings === "object" ? settings : Promise.reject()))
-        .catch(redirect);
+    return getUserSettings().then(settings =>
+        typeof settings === "object" ? settings : Promise.reject()
+    );
 }
 
 function configI18n(userSettings) {

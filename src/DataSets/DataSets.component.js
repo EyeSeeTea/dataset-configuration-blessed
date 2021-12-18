@@ -20,7 +20,13 @@ import MultipleDataTable from "../MultipleDataTable/MultipleDataTable.component"
 
 import DetailsBoxWithScroll from "./DetailsBoxWithScroll.component";
 import listActions from "./list.actions";
-import { contextActions, contextMenuIcons, isContextActionAllowed } from "./context.actions";
+import {
+    contextActions,
+    contextMenuIcons,
+    endDateForYearStore,
+    isContextActionAllowed,
+    actions,
+} from "./context.actions";
 import detailsStore from "./details.store";
 import logsStore from "./logs.store";
 import deleteStore from "./delete.store";
@@ -98,6 +104,7 @@ const DataSets = createReactClass({
             searchValue: null,
             orgUnits: null,
             periods: null,
+            endDateForYear: null,
             helpOpen: false,
             logs: null,
             logsHasMore: null,
@@ -121,17 +128,23 @@ const DataSets = createReactClass({
         );
 
         this.registerDisposable(deleteStore.subscribe(_deleteObjects => this.getDataSets()));
+        this.registerDisposable(logsStore.subscribe(datasets => this.openLogs(datasets)));
+
         this.registerDisposable(this.subscribeToModelStore(sharingStore, "sharing"));
         this.registerDisposable(this.subscribeToModelStore(orgUnitsStore, "orgUnits"));
         this.registerDisposable(this.subscribeToModelStore(periodsStore, "periods"));
-        this.registerDisposable(logsStore.subscribe(datasets => this.openLogs(datasets)));
+        this.registerDisposable(this.subscribeToModelStore(endDateForYearStore, "endDateForYear"));
     },
 
     subscribeToModelStore(store, modelName) {
-        return store.subscribe(async datasets => {
+        const d2 = this.context.d2;
+
+        return store.subscribe(async data => {
+            const { datasets, options } = data || {};
+
             if (datasets) {
-                const d2Datasets = await getDataSetsWithOwnerFields(datasets);
-                this.setState({ [modelName]: { models: d2Datasets } });
+                const d2Datasets = await getDataSetsWithOwnerFields(d2, datasets);
+                this.setState({ [modelName]: { models: d2Datasets, options } });
             } else {
                 this.setState({ [modelName]: null });
             }
@@ -296,7 +309,7 @@ const DataSets = createReactClass({
 
         if (!_(updated).isEmpty()) {
             log("change sharing settings", "success", updated);
-            this.getDataSets({ clearPage: false })
+            this.getDataSets({ clearPage: false });
         }
         listActions.hideSharingBox();
     },
@@ -439,11 +452,12 @@ const DataSets = createReactClass({
             logsHasMore,
             showOnlyCreatedByApp,
             periods,
+            endDateForYear,
         } = this.state;
 
         const showCreatedByAppCheck = !!config.createdByDataSetConfigurationAttributeId;
         const olderLogLiteral = logsPageLast < 0 ? this.tr("logs_no_older") : this.tr("logs_older");
-        const dateString = new Date(logsOldestDate || Date()).toLocaleString();
+        const dateString = new Date(logsOldestDate || new Date()).toLocaleString();
         const label = olderLogLiteral + " " + dateString;
 
         const logLoadMoreButton = logsHasMore ? (
@@ -510,6 +524,17 @@ const DataSets = createReactClass({
                     />
                 ) : null}
 
+                {this.state.endDateForYear ? (
+                    <PeriodsDialog
+                        dataSets={endDateForYear.models}
+                        endYear={endDateForYear.options.year}
+                        onSave={datasets => log("set end date for year", "success", datasets)}
+                        onRequestClose={() => endDateForYearStore.setState(null)}
+                        contentStyle={styles.dialogContentStyle}
+                        bodyStyle={styles.dialogBodyStyle}
+                    />
+                ) : null}
+
                 {this.state.sharing ? (
                     <SharingDialogMultiple
                         isOpen={!!this.state.sharing}
@@ -556,6 +581,7 @@ const DataSets = createReactClass({
                             rows={rows}
                             columns={columns}
                             onColumnSort={this._onColumnSort}
+                            actionsDefinition={actions}
                             contextMenuActions={contextActions}
                             contextMenuIcons={contextMenuIcons}
                             primaryAction={contextActions.details}
@@ -600,14 +626,17 @@ const DataSets = createReactClass({
     },
 });
 
-function getDataSetsWithOwnerFields(dataSets) {
+function getDataSetsWithOwnerFields(d2, dataSets) {
     const dataSetIds = dataSets.map(o => o.id).join(",");
-    return d2.models.dataSets
-        .list({
-            fields: ":owner",
-            filter: `id:in:[${dataSetIds}]`,
-        })
-        .then(c => c.toArray());
+    return (
+        d2.models.dataSets
+            // access fields are not in :owner anymore (2.36), ask for them explictly
+            .list({
+                fields: ":owner,publicAccess,userAccesses,userGroupAccesses",
+                filter: `id:in:[${dataSetIds}]`,
+            })
+            .then(c => c.toArray())
+    );
 }
 
 export default DataSets;
