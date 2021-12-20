@@ -10,7 +10,7 @@ export default class Settings {
     adminRoleAttributes = {
         name: "DataSet Configuration admin",
         description: "Can change settings of the DataSet Configuration app",
-        authorities: ["See DataSet Configuration", "M_dhis-web-maintenance-appmanager"],
+        authorities: ["M_Dataset_Configuration"],
     };
 
     fieldDefinitions = [

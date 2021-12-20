@@ -404,7 +404,7 @@ function collectionString(d2, objects, field, maxShown) {
 
 function currentUserHasAdminRole(d2) {
     const authorities = d2.currentUser.authorities;
-    return authorities.has("M_dhis-web-maintenance-appmanager") || authorities.has("ALL");
+    return authorities.has("ALL");
 }
 
 const requiredAuthorities = ["F_SECTION_DELETE", "F_SECTION_ADD"];
@@ -567,7 +567,7 @@ function getOwnedPropertyJSON(model) {
         "publicAccess",
         "userAccesses",
         "userGroupAccesses",
-    ]
+    ];
 
     return getJSONForProperties(model, ownedProperties);
 }
