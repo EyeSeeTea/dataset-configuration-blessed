@@ -255,7 +255,9 @@ export function getDataInputDates(dataset, config) {
     const getDate = value => (value ? new Date(value) : undefined);
 
     const adjustDateString = value =>
-        value ? [value.slice(0, 4), value.slice(4, 6), value.slice(6, 8)].join("-") : undefined;
+        value
+            ? [value.slice(0, 4), value.slice(4, 6), value.slice(6, 8)].join("-") + "T00:00:00.000"
+            : undefined;
 
     const startFromDataInputPeriods = _(dataset.dataInputPeriods)
         .map("openingDate")
