@@ -347,13 +347,13 @@ export default class DataSetStore {
         const { dataInputStartDate: startDate, dataInputEndDate: endDate, periodDates } = options;
         if (!startDate || !endDate) return [];
 
-        const outputStart = _.min(_.values(periodDates.output).map(x => x.start));
-        const outputEnd = _.max(_.values(periodDates.output).map(x => x.end));
-        const outcomeStart = _.min(_.values(periodDates.outcome).map(x => x.start));
-        const outcomeEnd = _.max(_.values(periodDates.outcome).map(x => x.end));
+        const outputStart = _.min(_.compact(_.values(periodDates.output).map(x => x.start)));
+        const outputEnd = _.max(_.compact(_.values(periodDates.output).map(x => x.end)));
+        const outcomeStart = _.min(_.compact(_.values(periodDates.outcome).map(x => x.start)));
+        const outcomeEnd = _.max(_.compact(_.values(periodDates.outcome).map(x => x.end)));
 
-        const dataInputStart = _.min([startDate, outputStart, outcomeStart]);
-        const dataInputEnd = _.max([endDate, outputEnd, outcomeEnd]);
+        const dataInputStart = _.min(_.compact([startDate, outputStart, outcomeStart]));
+        const dataInputEnd = _.max(_.compact([endDate, outputEnd, outcomeEnd]));
 
         const endDateM = moment(endDate);
         let currentDateM = moment(startDate);
@@ -363,8 +363,8 @@ export default class DataSetStore {
             periods.push({
                 id: generateUid(),
                 period: { id: currentDateM.format("YYYYMM") },
-                openingDate: dataInputStart,
-                closingDate: dataInputEnd,
+                openingDate: formatDateToISO(dataInputStart),
+                closingDate: formatDateToISO(dataInputEnd),
             });
             currentDateM.add(1, "month").startOf("month");
         }
@@ -941,4 +941,19 @@ export default class DataSetStore {
             this._sendNotificationMessages,
         ]);
     }
+}
+
+function formatDateToISO(date) {
+    if (!date) return undefined;
+
+    const dateParts = [
+        padDigits(date.getFullYear(), 4),
+        padDigits(date.getMonth() + 1, 2),
+        padDigits(date.getDate(), 2),
+    ];
+    return dateParts.join("-") + "T00:00:00.000";
+}
+
+function padDigits(number: number, digits: number): string {
+    return Array(Math.max(digits - String(number).length + 1, 0)).join("0") + number;
 }
