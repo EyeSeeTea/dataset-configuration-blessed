@@ -83,7 +83,7 @@ TimePeriodSelector.contextTypes = {
 
 const styles = {
     wrapper: { display: "flex" },
-    value: { marginRight: 20, width: "25em" },
+    value: { marginRight: 20, width: "28em" },
     unitsSelector: {},
 };
 

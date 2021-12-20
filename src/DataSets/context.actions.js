@@ -89,7 +89,8 @@ const { contextActions, contextMenuIcons, isContextActionAllowed, actions } = se
         name: "period_dates",
         multiple: true,
         icon: "timeline",
-        isActive: canUpdate,
+        isActive: (d2, datasets) =>
+            canUpdate(d2, datasets) && (currentUserHasAdminRole(d2) || datasets.length === 1),
         onClick: datasets => periodsStore.setState({ datasets }),
     },
     {

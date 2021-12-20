@@ -85,18 +85,25 @@ export async function saveDataSetsEndDate(d2, store, dataSets, endYear) {
         const newPeriodDates = {
             output: _.mapValues(periodDates.output, (interval, year) =>
                 parseInt(year) === endYear
-                    ? { start: interval.start, end: newPartialPeriodDates.output[year].end }
+                    ? {
+                          start: interval.start,
+                          end: newPartialPeriodDates.output[year].end || interval.end,
+                      }
                     : interval
             ),
             outcome: _.mapValues(periodDates.outcome, (interval, year) =>
                 parseInt(year) === endYear
-                    ? { start: interval.start, end: newPartialPeriodDates.outcome[year].end }
+                    ? {
+                          start: interval.start,
+                          end: newPartialPeriodDates.outcome[year].end || interval.end,
+                      }
                     : interval
             ),
         };
 
         const newAssociations = {
             ...associations,
+            ...getDataInputDates(dataSet, config),
             periodDatesApplyToAll: { output: false, outcome: false },
             periodDates: newPeriodDates,
         };
@@ -248,7 +255,9 @@ export function getDataInputDates(dataset, config) {
     const getDate = value => (value ? new Date(value) : undefined);
 
     const adjustDateString = value =>
-        value ? [value.slice(0, 4), value.slice(4, 6), value.slice(6, 8)].join("-") : undefined;
+        value
+            ? [value.slice(0, 4), value.slice(4, 6), value.slice(6, 8)].join("-") + "T00:00:00.000"
+            : undefined;
 
     const startFromDataInputPeriods = _(dataset.dataInputPeriods)
         .map("openingDate")
@@ -288,10 +297,6 @@ function formatPeriodDates(dates, years) {
 
 export function validateStartEndDate(store) {
     const { dataInputStartDate, dataInputEndDate } = store.associations;
-
-    const areBothDataInputDatesSetOrUnset = Boolean(
-        (dataInputStartDate && dataInputEndDate) || (!dataInputStartDate && !dataInputEndDate)
-    );
-
-    return areBothDataInputDatesSetOrUnset ? null : "cannot_set_only_start_or_end_dates";
+    const areBothDataInputDatesSet = Boolean(dataInputStartDate && dataInputEndDate);
+    return areBothDataInputDatesSet ? null : "cannot_set_only_start_or_end_dates";
 }

@@ -65,7 +65,7 @@ export default class PeriodsDialog extends React.Component {
 
     getActions() {
         const { onRequestClose } = this.props;
-        const { saving } = this.state;
+        const { saving, error } = this.state;
 
         return [
             <FlatButton
@@ -76,7 +76,7 @@ export default class PeriodsDialog extends React.Component {
             <RaisedButton
                 primary
                 label={this.getTranslation("save")}
-                disabled={saving}
+                disabled={saving || error}
                 onClick={this.save}
             />,
         ];
@@ -125,7 +125,11 @@ export default class PeriodsDialog extends React.Component {
 
         if (!store) return <LinearProgress />;
 
-        const title = this.getTranslation("period_dates") + ": " + this.getNames(dataSets);
+        const baseTitle = endYear
+            ? this.getTranslation("period_dates_for_year", { year: endYear })
+            : this.getTranslation("period_dates");
+
+        const title = baseTitle + ": " + this.getNames(dataSets);
 
         return (
             <Dialog
