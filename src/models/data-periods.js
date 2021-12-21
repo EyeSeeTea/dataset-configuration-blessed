@@ -1,9 +1,14 @@
 import moment from "moment";
-import { getOwnedPropertyJSON } from "d2/lib/model/helpers/json";
 import { generateUid } from "d2/lib/uid";
 
 import _ from "../utils/lodash-mixins";
-import { setAttributes, postMetadata, getCategoryCombos, mapPromise } from "../utils/Dhis2Helpers";
+import {
+    setAttributes,
+    postMetadata,
+    getCategoryCombos,
+    mapPromise,
+    getOwnedPropertyJSON,
+} from "../utils/Dhis2Helpers";
 import Settings from "./Settings";
 import DataSetStore from "./DataSetStore";
 
@@ -12,7 +17,8 @@ const dataInputPeriodDatesFormat = "YYYYMMDD";
 export async function getDataSets(d2, ids) {
     return await d2.models.dataSets
         .list({
-            fields: "id,attributeValues,dataInputPeriods[id,openingDate,closingDate,period]",
+            fields:
+                "id,displayName,attributeValues,dataInputPeriods[id,openingDate,closingDate,period]",
             filter: `id:in:[${ids.join(",")}]`,
             paging: false,
         })
@@ -21,7 +27,11 @@ export async function getDataSets(d2, ids) {
 
 export function getAttributeValues(store, dataset) {
     const { config } = store;
-    const attributeKeys = ["dataPeriodOutputDatesAttributeId", "dataPeriodOutcomeDatesAttributeId"];
+    const attributeKeys = [
+        "dataPeriodOutputDatesAttributeId",
+        "dataPeriodOutcomeDatesAttributeId",
+        "dataPeriodIntervalDatesAttributeId",
+    ];
     const missingAttributeKeys = attributeKeys.filter(key => !config[key]);
     const oldAttributeValues = (dataset && dataset.attributeValues) || [];
 
@@ -32,9 +42,15 @@ export function getAttributeValues(store, dataset) {
 
     const periodDates = store.getPeriodDates();
     const years = store.getPeriodYears();
+    const dataInterval = [
+        formatDate(store.associations.dataInputStartDate),
+        formatDate(store.associations.dataInputEndDate),
+    ].join("-");
+
     const valuesByKey = {
         dataPeriodOutputDatesAttributeId: formatPeriodDates(periodDates.output, years),
         dataPeriodOutcomeDatesAttributeId: formatPeriodDates(periodDates.outcome, years),
+        dataPeriodIntervalDatesAttributeId: dataInterval,
     };
     const newValues = _.mapKeys(valuesByKey, (_value, key) => config[key]);
 
@@ -50,8 +66,60 @@ async function getCachedCategoryCombos(d2) {
 }
 
 export async function saveDataSets(d2, store, dataSets) {
-    const { dataset: storeDataset, associations } = store;
+    return saveDataSetsWithMapper(d2, store, dataSets, dataSet => ({
+        ...getOwnedPropertyJSON(dataSet),
+        attributeValues: getAttributeValues(store, dataSet),
+        dataInputPeriods: store.getDataInputPeriods(store.associations),
+        openFuturePeriods: store.dataset.openFuturePeriods,
+    }));
+}
 
+export async function saveDataSetsEndDate(d2, store, dataSets, endYear) {
+    const { config, associations } = store;
+    const newPartialPeriodDates = associations.periodDates;
+
+    return saveDataSetsWithMapper(d2, store, dataSets, dataSet => {
+        const { periodDates } = DataSetStore.getPeriodAssociations(d2, config, dataSet);
+
+        // Modify only periodDates for end date and endYear.
+        const newPeriodDates = {
+            output: _.mapValues(periodDates.output, (interval, year) =>
+                parseInt(year) === endYear
+                    ? {
+                          start: interval.start,
+                          end: newPartialPeriodDates.output[year].end || interval.end,
+                      }
+                    : interval
+            ),
+            outcome: _.mapValues(periodDates.outcome, (interval, year) =>
+                parseInt(year) === endYear
+                    ? {
+                          start: interval.start,
+                          end: newPartialPeriodDates.outcome[year].end || interval.end,
+                      }
+                    : interval
+            ),
+        };
+
+        const newAssociations = {
+            ...associations,
+            ...getDataInputDates(dataSet, config),
+            periodDatesApplyToAll: { output: false, outcome: false },
+            periodDates: newPeriodDates,
+        };
+        store.associations = newAssociations;
+
+        const newDataset = {
+            ...getOwnedPropertyJSON(dataSet),
+            attributeValues: getAttributeValues(store, dataSet),
+            dataInputPeriods: store.getDataInputPeriods(newAssociations),
+        };
+
+        return newDataset;
+    });
+}
+
+export async function saveDataSetsWithMapper(d2, store, dataSets, mapper) {
     const dataSetsWithForms = await d2.models.dataSets
         .list({
             fields: ":owner,dataEntryForm[:owner]",
@@ -85,12 +153,7 @@ export async function saveDataSets(d2, store, dataSets) {
     });
     const [dataSetsClean, dataEntryFormsUpdated] = _.unzip(pairs);
 
-    const dataSetsUpdated = dataSetsClean.map(dataSet => ({
-        ...getOwnedPropertyJSON(dataSet),
-        attributeValues: getAttributeValues(store, dataSet),
-        dataInputPeriods: store.getDataInputPeriods(associations),
-        openFuturePeriods: storeDataset.openFuturePeriods,
-    }));
+    const dataSetsUpdated = dataSetsClean.map(dataSet => mapper(dataSet));
 
     const payload = {
         create_and_update: {
@@ -102,15 +165,63 @@ export async function saveDataSets(d2, store, dataSets) {
     return postMetadata(d2, payload);
 }
 
+function areDatesUniq(dates) {
+    const uniqValues = _.uniq(dates.map(date => (date ? date.toISOString() : null)));
+    return uniqValues.length === 1 && uniqValues[0];
+}
+
+export async function getDataSetsForPeriodsEndDate(d2, dataSetIds, endYear) {
+    const dataSets = await getDataSets(d2, dataSetIds);
+    const config = await new Settings(d2).get();
+    const store = await DataSetStore.edit(d2, config, dataSetIds[0]);
+    const t = d2.i18n.getTranslation.bind(d2.i18n);
+
+    const [startDates, endDates] = _(dataSets)
+        .map(dataset => getDataInputDates(dataset, config))
+        .map(o => [o.dataInputStartDate, o.dataInputEndDate])
+        .unzip()
+        .value();
+
+    const allDataSetsContainYear =
+        _.every(startDates, startDate => startDate && startDate.getFullYear() <= endYear) &&
+        _.every(endDates, endDate => endDate && endDate.getFullYear() >= endYear);
+
+    if (!allDataSetsContainYear)
+        return { error: t("not_all_datasets_contain_year", { year: endYear }) };
+
+    const dataSetsData = dataSets.map(dataSet =>
+        DataSetStore.getPeriodAssociations(d2, config, dataSet)
+    );
+
+    const outputEnds = dataSetsData.map(data => data.periodDates.output[endYear].end);
+    const outputEnd = areDatesUniq(outputEnds) ? outputEnds[0] : null;
+
+    const outcomeEnds = dataSetsData.map(data => data.periodDates.outcome[endYear].end);
+    const outcomeEnd = areDatesUniq(outcomeEnds) ? outcomeEnds[0] : null;
+
+    // If all datasets have the same date, pre-fill it; otherwise, show empty field.
+    _.assign(store.associations, {
+        periodDates: {
+            output: { [endYear]: { end: outputEnd } },
+            outcome: { [endYear]: { end: outcomeEnd } },
+        },
+    });
+
+    return { store, dataSets };
+}
+
 export async function getDataSetsForPeriods(d2, dataSetIds) {
     const dataSets = await getDataSets(d2, dataSetIds);
     const config = await new Settings(d2).get();
     const store = await DataSetStore.edit(d2, config, dataSetIds[0]);
+    const t = d2.i18n.getTranslation.bind(d2.i18n);
+
     const [startDates, endDates] = _(dataSets)
-        .map(getDataInputDates)
+        .map(dataset => getDataInputDates(dataset, config))
         .map(o => [o.dataInputStartDate, o.dataInputEndDate])
         .unzip()
         .value();
+
     const areDatesEqual = dates =>
         _(dates)
             .map(date => (date ? date.toISOString() : null))
@@ -134,29 +245,43 @@ export async function getDataSetsForPeriods(d2, dataSetIds) {
             },
         });
     }
-    return { store, dataSets, allDatesEqual };
+
+    const warning = allDatesEqual ? null : t("no_match_start_end_dates");
+
+    return { store, dataSets, warning };
 }
 
-export function getDataInputDates(dataset) {
+export function getDataInputDates(dataset, config) {
     const getDate = value => (value ? new Date(value) : undefined);
 
-    const dataInputStartDate = getDate(
-        _(dataset.dataInputPeriods)
-            .map("openingDate")
-            .compact()
-            .min()
-    );
-    const dataInputEndDate = getDate(
-        _(dataset.dataInputPeriods)
-            .map("closingDate")
-            .compact()
-            .max()
+    const adjustDateString = value =>
+        value
+            ? [value.slice(0, 4), value.slice(4, 6), value.slice(6, 8)].join("-") + "T00:00:00.000"
+            : undefined;
+
+    const startFromDataInputPeriods = _(dataset.dataInputPeriods)
+        .map("openingDate")
+        .compact()
+        .min();
+    const endFromDataInputPeriods = _(dataset.dataInputPeriods)
+        .map("closingDate")
+        .compact()
+        .max();
+
+    const attributeValueInterval = dataset.attributeValues.find(
+        av => av.attribute.id === config.dataPeriodIntervalDatesAttributeId
     );
 
-    return { dataInputStartDate, dataInputEndDate };
+    const interval = attributeValueInterval ? attributeValueInterval.value : "";
+    const [startFromAttribute, endFromAttribute] = interval.split("-").map(adjustDateString);
+
+    return {
+        dataInputStartDate: getDate(startFromAttribute || startFromDataInputPeriods),
+        dataInputEndDate: getDate(endFromAttribute || endFromDataInputPeriods),
+    };
 }
 
-function formatDate(value) {
+export function formatDate(value) {
     const date = moment(value);
     return value && date.isValid() ? date.format(dataInputPeriodDatesFormat) : "";
 }
@@ -168,4 +293,10 @@ function formatPeriodDates(dates, years) {
         .filter(([year, _period]) => years.includes(parseInt(year)))
         .map(([year, { start, end }]) => `${year}=${formatDate(start)}-${formatDate(end)}`)
         .join(",");
+}
+
+export function validateStartEndDate(store) {
+    const { dataInputStartDate, dataInputEndDate } = store.associations;
+    const areBothDataInputDatesSet = Boolean(dataInputStartDate && dataInputEndDate);
+    return areBothDataInputDatesSet ? null : "cannot_set_only_start_or_end_dates";
 }

@@ -2,7 +2,6 @@ import fp from "lodash/fp";
 import _ from "../utils/lodash-mixins";
 import { generateUid } from "d2/lib/uid";
 import moment from "moment";
-import { getOwnedPropertyJSON } from "d2/lib/model/helpers/json";
 import {
     getCategoryCombos,
     collectionToArray,
@@ -20,6 +19,7 @@ import {
     sendMessageToGroups,
     getCategoryCombo,
     setAttributes,
+    getOwnedPropertyJSON,
 } from "../utils/Dhis2Helpers";
 
 import { getCoreCompetencies, getProject } from "./dataset";
@@ -112,10 +112,11 @@ class Factory {
 
     getInitialModel() {
         return this.d2.models.dataSet.create({
+            attributeValues: [],
             name: undefined,
             code: undefined,
             description: undefined,
-            expiryDays: parseInt(this.config.expiryDays) || 0,
+            expiryDays: 0,
             openFuturePeriods: 1,
             periodType: "Monthly",
             dataInputPeriods: [],
@@ -145,6 +146,7 @@ class Factory {
                 .then(sharing =>
                     _(sharing.object.userGroupAccesses)
                         .map(getCode)
+                        .compact()
                         .uniq()
                         .value()
                 )
@@ -191,7 +193,7 @@ class Factory {
                 sections: collectionToArray(dataset.sections),
                 countries: sharingCountries,
                 userRoles,
-                ...dataPeriods.getDataInputDates(dataset),
+                ...dataPeriods.getDataInputDates(dataset, this.config),
                 ...this.getPeriodAssociations(dataset),
             })
         );
@@ -262,6 +264,11 @@ export default class DataSetStore {
     static clone(d2, config, datasetId) {
         const factory = new Factory(d2, config);
         return factory.cloneFromDB(datasetId);
+    }
+
+    static getPeriodAssociations(d2, config, dataset) {
+        const factory = new Factory(d2, config);
+        return factory.getPeriodAssociations(dataset);
     }
 
     isSharingStepVisible() {
@@ -336,25 +343,33 @@ export default class DataSetStore {
         );
     }
 
-    getDataInputPeriods({ dataInputStartDate: startDate, dataInputEndDate: endDate }) {
-        if (startDate && endDate) {
-            const endDate_ = moment(endDate);
-            let currentDate = moment(startDate);
-            let periods = [];
+    getDataInputPeriods(options) {
+        const { dataInputStartDate: startDate, dataInputEndDate: endDate, periodDates } = options;
+        if (!startDate || !endDate) return [];
 
-            while (currentDate <= endDate_) {
-                periods.push({
-                    id: generateUid(),
-                    period: { id: currentDate.format("YYYYMM") },
-                    openingDate: startDate,
-                    closingDate: endDate,
-                });
-                currentDate.add(1, "month").startOf("month");
-            }
-            return periods;
-        } else {
-            return [];
+        const outputStart = _.min(_.compact(_.values(periodDates.output).map(x => x.start)));
+        const outputEnd = _.max(_.compact(_.values(periodDates.output).map(x => x.end)));
+        const outcomeStart = _.min(_.compact(_.values(periodDates.outcome).map(x => x.start)));
+        const outcomeEnd = _.max(_.compact(_.values(periodDates.outcome).map(x => x.end)));
+
+        const dataInputStart = _.min(_.compact([startDate, outputStart, outcomeStart]));
+        const dataInputEnd = _.max(_.compact([endDate, outputEnd, outcomeEnd]));
+
+        const endDateM = moment(endDate);
+        let currentDateM = moment(startDate);
+        let periods = [];
+
+        while (currentDateM <= endDateM) {
+            periods.push({
+                id: generateUid(),
+                period: { id: currentDateM.format("YYYYMM") },
+                openingDate: formatDateToISO(dataInputStart),
+                closingDate: formatDateToISO(dataInputEnd),
+            });
+            currentDateM.add(1, "month").startOf("month");
         }
+
+        return periods;
     }
 
     getOpenFuturePeriods(endDate) {
@@ -423,25 +438,39 @@ export default class DataSetStore {
     }
 
     setDefaultPeriodValues() {
+        const {
+            outputEndDate,
+            outcomeEndDate,
+            outputLastYearEndDate,
+            outcomeLastYearEndDate,
+        } = this.config;
         const { dataInputStartDate, dataInputEndDate } = this.associations;
         if (!(dataInputStartDate && dataInputEndDate)) return;
 
         const years = this.getPeriodYears();
+        const startYear = dataInputStartDate.getFullYear();
+        const lastYear = _.last(years);
+        const dataInputEndDateM = moment(dataInputEndDate);
 
-        const getPeriodDates = (years, { month }) =>
-            _(years)
+        const getPeriodDates = (years, endDate, endDateOffset) => {
+            const { month = 4, day = 1 } = endDate;
+            const { units, value } = endDateOffset;
+
+            return _(years)
                 .map(year => {
-                    const period = {
-                        start:
-                            dataInputStartDate.getFullYear() === year
-                                ? dataInputStartDate
-                                : new Date(year, 0, 1),
-                        end: new Date(year + 1, month - 1, 1),
-                    };
+                    const defaultEndM = moment([year + 1, month - 1, day]);
+                    const lastYearEndDateM =
+                        units && value
+                            ? dataInputEndDateM.clone().add(value, units)
+                            : dataInputEndDateM;
+                    const endM = year === lastYear ? lastYearEndDateM : defaultEndM;
+                    const start = dataInputStartDate;
+                    const period = { start, end: endM.toDate() };
                     return [year, period];
                 })
                 .fromPairs()
                 .value();
+        };
 
         _.assign(this.associations, {
             periodDatesApplyToAll: {
@@ -449,8 +478,8 @@ export default class DataSetStore {
                 outcome: false,
             },
             periodDates: {
-                output: getPeriodDates(years, { month: 4 }),
-                outcome: getPeriodDates(years, { month: 5 }),
+                output: getPeriodDates(years, outputEndDate, outputLastYearEndDate),
+                outcome: getPeriodDates(years, outcomeEndDate, outcomeLastYearEndDate),
             },
         });
     }
@@ -481,6 +510,9 @@ export default class DataSetStore {
                 this.associations.countries = this.getSharingCountries();
                 break;
             default:
+                if (fieldPath.startsWith("associations.periodDates")) {
+                    this.dataset.dataInputPeriods = this.getDataInputPeriods(associations);
+                }
                 break;
         }
     }
@@ -619,6 +651,7 @@ export default class DataSetStore {
         }));
         datasetPayload.dataSetElements = newDataSetElements;
         datasetPayload.dataEntryForm = { id: form.id };
+        datasetPayload.expiryDays = 0;
 
         return this._addMetadataOp(saving, {
             create_and_update: {
@@ -850,7 +883,10 @@ export default class DataSetStore {
     }
 
     _setAttributes(saving) {
-        const attributeKeys = ["createdByDataSetConfigurationAttributeId"];
+        const attributeKeys = [
+            "createdByDataSetConfigurationAttributeId",
+            "dataPeriodIntervalDatesAttributeId",
+        ];
 
         const missingAttributeKeys = attributeKeys.filter(key => !this.config[key]);
 
@@ -861,9 +897,15 @@ export default class DataSetStore {
             return Promise.resolve(saving);
         }
 
+        const dataInterval = [
+            dataPeriods.formatDate(this.associations.dataInputStartDate),
+            dataPeriods.formatDate(this.associations.dataInputEndDate),
+        ].join("-");
+
         const attributeValues = dataPeriods.getAttributeValues(this, saving.dataset);
         const valuesByKey = {
             createdByDataSetConfigurationAttributeId: "true",
+            dataPeriodIntervalDatesAttributeId: dataInterval,
         };
         const values = _.mapKeys(valuesByKey, (_value, key) => this.config[key]);
         const newAttributeValues = setAttributes(attributeValues, values);
@@ -899,4 +941,19 @@ export default class DataSetStore {
             this._sendNotificationMessages,
         ]);
     }
+}
+
+function formatDateToISO(date) {
+    if (!date) return undefined;
+
+    const dateParts = [
+        padDigits(date.getFullYear(), 4),
+        padDigits(date.getMonth() + 1, 2),
+        padDigits(date.getDate(), 2),
+    ];
+    return dateParts.join("-") + "T00:00:00.000";
+}
+
+function padDigits(number: number, digits: number): string {
+    return Array(Math.max(digits - String(number).length + 1, 0)).join("0") + number;
 }

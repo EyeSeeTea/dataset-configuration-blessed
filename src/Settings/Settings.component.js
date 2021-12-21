@@ -1,8 +1,12 @@
 import React from "react";
-import createReactClass from 'create-react-class';
+import createReactClass from "create-react-class";
 import PropTypes from "prop-types";
-import ObservedEvents from "../utils/ObservedEvents.mixin";
+import fp from "lodash/fp";
+import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
+import Validators from "d2-ui/lib/forms/Validators";
+import FormBuilder from "d2-ui/lib/forms/FormBuilder.component";
+
 import Dialog from "material-ui/Dialog/Dialog";
 import FlatButton from "material-ui/FlatButton/FlatButton";
 import LinearProgress from "material-ui/LinearProgress/LinearProgress";
@@ -10,12 +14,12 @@ import RaisedButton from "material-ui/RaisedButton/RaisedButton";
 import Card from "material-ui/Card/Card";
 import CardText from "material-ui/Card/CardText";
 import { Tabs, Tab } from "material-ui/Tabs";
-import FormBuilder from "d2-ui/lib/forms/FormBuilder.component";
+
 import Settings from "../models/Settings";
-import Validators from "d2-ui/lib/forms/Validators";
 import FormHelpers from "../forms/FormHelpers";
-import fp from "lodash/fp";
-import _ from "lodash";
+import ObservedEvents from "../utils/ObservedEvents.mixin";
+import YearlyDateSelector from "../forms/YearlyDateSelector.component";
+import TimePeriodSelector from "../forms/TimePeriodSelector.component";
 
 const TabCard = ({ fields, onUpdateFormStatus, onUpdateField }) => (
     <Card style={{ padding: 10, margin: 10 }}>
@@ -43,11 +47,15 @@ const SettingsDialog = createReactClass({
             "categoryProjectsId",
             "categoryComboId",
             "dataElementGroupSetCoreCompetencyId",
-            "expiryDays",
+            "outputEndDate",
+            "outcomeEndDate",
+            "outputLastYearEndDate",
+            "outcomeLastYearEndDate",
             "organisationUnitLevelForCountriesId",
             "createdByDataSetConfigurationAttributeId",
             "dataPeriodOutputDatesAttributeId",
             "dataPeriodOutcomeDatesAttributeId",
+            "dataPeriodIntervalDatesAttributeId",
         ],
         sections: {
             partition: [
@@ -110,7 +118,25 @@ const SettingsDialog = createReactClass({
             .value();
 
         return tabFields.map(field => {
-            if (field.options) {
+            if (field.type === "yearlyDate") {
+                return {
+                    name: field.name,
+                    component: YearlyDateSelector,
+                    value: config[field.name],
+                    props: {
+                        labelText: this.getTranslation(field.i18n_key),
+                    },
+                };
+            } else if (field.type === "timePeriod") {
+                return {
+                    name: field.name,
+                    component: TimePeriodSelector,
+                    value: config[field.name],
+                    props: {
+                        labelText: this.getTranslation(field.i18n_key),
+                    },
+                };
+            } else if (field.options) {
                 return FormHelpers.getSelectField({
                     name: field.name,
                     label: this.getTranslation(field.i18n_key),

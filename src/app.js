@@ -20,6 +20,9 @@ import { redirectToLogin } from "./utils/Dhis2Helpers";
 import Settings from "./models/Settings";
 import i18n from "./components/sharing-dialog/i18n";
 
+// Scripts
+import updateDataSetsInputPeriods from "./scripts/update-datasets-input-periods";
+
 const dhisDevConfig = DHIS_CONFIG; // eslint-disable-line
 
 // This code will only be included in non-production builds of the app
@@ -46,9 +49,9 @@ function safeGetUserSettings() {
         return Promise.reject(err || "Cannot connect to server");
     };
 
-    return getUserSettings()
-        .then(settings => (typeof settings === "object" ? settings : Promise.reject()))
-        .catch(redirect);
+    return getUserSettings().then(settings =>
+        typeof settings === "object" ? settings : Promise.reject()
+    );
 }
 
 function configI18n(userSettings) {
@@ -74,6 +77,7 @@ function configI18n(userSettings) {
  */
 function startApp(d2) {
     window.d2 = d2;
+    window.scripts = { updateDataSetsInputPeriods };
     i18n.config.d2 = d2; // Init wrapper for component using gettext i18n
     render(routes, document.getElementById("app"));
 }

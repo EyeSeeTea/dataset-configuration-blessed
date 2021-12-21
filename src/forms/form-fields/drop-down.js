@@ -1,5 +1,4 @@
 import React from "react";
-import createReactClass from 'create-react-class';
 import PropTypes from "prop-types";
 import SelectField from "material-ui/SelectField/SelectField";
 import TextField from "material-ui/TextField";

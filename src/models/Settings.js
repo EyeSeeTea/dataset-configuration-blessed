@@ -10,7 +10,7 @@ export default class Settings {
     adminRoleAttributes = {
         name: "DataSet Configuration admin",
         description: "Can change settings of the DataSet Configuration app",
-        authorities: ["See DataSet Configuration", "M_dhis-web-maintenance-appmanager"],
+        authorities: ["M_Dataset_Configuration"],
     };
 
     fieldDefinitions = [
@@ -36,6 +36,26 @@ export default class Settings {
             name: "expiryDays",
             type: "value",
             defaultValue: 0,
+        },
+        {
+            name: "outputEndDate",
+            type: "yearlyDate",
+            defaultValue: { month: 4, day: 1 },
+        },
+        {
+            name: "outcomeEndDate",
+            type: "yearlyDate",
+            defaultValue: { month: 5, day: 1 },
+        },
+        {
+            name: "outputLastYearEndDate",
+            type: "timePeriod",
+            defaultValue: { units: "month", value: 0 },
+        },
+        {
+            name: "outcomeLastYearEndDate",
+            type: "timePeriod",
+            defaultValue: { units: "month", value: 0 },
         },
         {
             name: "dataElementGroupOutputId",
@@ -128,6 +148,12 @@ export default class Settings {
             defaultFilter: "code:eq:GL_OUTCOME_DATES",
         },
         {
+            name: "dataPeriodIntervalDatesAttributeId",
+            type: "d2-object",
+            model: "attributes",
+            defaultFilter: "code:eq:GL_INTERVAL_DATES",
+        },
+        {
             name: "exclusionRuleCoreUserGroupId",
             type: "d2-object",
             model: "userGroup",
@@ -214,6 +240,8 @@ export default class Settings {
                     .list({ filter: fieldDefinition.defaultFilter, fields: "id" })
                     .then(collection => collection.toArray().map(obj => obj.id)[0]);
             case "value":
+            case "yearlyDate":
+            case "timePeriod":
                 return Promise.resolve(fieldDefinition.defaultValue);
             default:
                 throw new Error(`Unknown field type: ${fieldDefinition.type}`);
@@ -229,6 +257,8 @@ export default class Settings {
             case "d2-object":
                 return _.imerge(base, { options: optionsForModel[fieldDefinition.model] });
             case "value":
+            case "yearlyDate":
+            case "timePeriod":
                 return base;
             default:
                 throw new Error(`Unknown field type: ${fieldDefinition.type}`);
