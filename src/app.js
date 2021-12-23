@@ -16,7 +16,6 @@ import moment from "moment";
 import routes from "./router";
 import appTheme from "./App/app.theme";
 import "./App/App.scss";
-import { redirectToLogin } from "./utils/Dhis2Helpers";
 import Settings from "./models/Settings";
 import i18n from "./components/sharing-dialog/i18n";
 
@@ -44,11 +43,6 @@ render(
 );
 
 function safeGetUserSettings() {
-    const redirect = err => {
-        redirectToLogin(config.siteUrl);
-        return Promise.reject(err || "Cannot connect to server");
-    };
-
     return getUserSettings().then(settings =>
         typeof settings === "object" ? settings : Promise.reject()
     );

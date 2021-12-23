@@ -450,7 +450,6 @@ export default class DataSetStore {
         if (!(dataInputStartDate && dataInputEndDate)) return;
 
         const years = this.getPeriodYears();
-        const startYear = dataInputStartDate.getFullYear();
         const lastYear = _.last(years);
         const dataInputEndDateM = moment(dataInputEndDate);
 
