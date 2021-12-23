@@ -187,6 +187,7 @@ class Factory {
             ([project, coreCompetencies, sharingCountries, userRoles]) => ({
                 project,
                 coreCompetencies,
+                initialOrgUnits: collectionToArray(dataset.organisationUnits),
                 initialSections: collectionToArray(dataset.sections),
                 initialCoreCompetencies: coreCompetencies,
                 processedCoreCompetencies: coreCompetencies,
@@ -794,32 +795,28 @@ export default class DataSetStore {
 
     _addOrgUnitsToProject(saving) {
         const { dataset, project } = saving;
-        const orgUnits = collectionToArray(dataset.organisationUnits);
 
-        if (project && !_(orgUnits).isEmpty()) {
-            // Add data set org units to project (categoryOption), but do not remove previously assigned.
-            // POST with {additions: [...]} is not working (https://jira.dhis2.org/browse/DHIS2-10010)
-            // so perform an update (GET + PUT).
+        const orgUnits = collectionToArray(dataset.organisationUnits);
+        const initialOrgUnitIds = _.sortBy(this.associations.initialOrgUnits.map(ou => ou.id));
+        const newOrgUnitIds = _.sortBy(toArray(dataset.organisationUnits).map(ou => ou.id));
+        const orgUnitsWereChanged = !_.isEqual(initialOrgUnitIds, newOrgUnitIds);
+
+        if (project && !_(orgUnits).isEmpty() && orgUnitsWereChanged) {
             return this.api
                 .get(`/categoryOptions/${project.id}`, { fields: ":owner" })
                 .then(categoryOption => {
                     const payload = {
                         ...categoryOption,
-                        organisationUnits: _(categoryOption.organisationUnits || [])
-                            .concat(orgUnits.map(ou => ({ id: ou.id })))
-                            .uniqBy(ou => ou.id)
-                            .value(),
+                        organisationUnits: orgUnits.map(ou => ({ id: ou.id })),
                     };
                     return this.api.update(`/categoryOptions/${project.id}`, payload);
                 })
                 .then(() => saving)
-                .catch(err =>
-                    this._addWarnings(saving, [
-                        `Error adding orgUnits to project ${project.displayName}: ${JSON.stringify(
-                            err
-                        )}`,
-                    ])
-                );
+                .catch(err => {
+                    const errStr = JSON.stringify(err);
+                    const msg = `Error adding orgUnits to ${project.displayName}: ${errStr}`;
+                    this._addWarnings(saving, [msg]);
+                });
         } else {
             return Promise.resolve(saving);
         }
