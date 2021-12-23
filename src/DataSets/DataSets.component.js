@@ -50,6 +50,7 @@ import Settings from "../models/Settings";
 import periodsStore from "./periods.store";
 import PeriodsDialog from "./PeriodsDialog";
 import { save } from "../components/sharing-dialog/utils";
+import { ProjectsService } from "../models/ProjectService";
 
 const { SimpleCheckBox } = FormHelpers;
 
@@ -334,6 +335,18 @@ const DataSets = createReactClass({
         this.setState({ showOnlyCreatedByApp: ev.target.checked }, this.getDataSets);
     },
 
+    async postOrgUnitsSave(dataSets) {
+        const api = this.context.d2.Api.getApi();
+        const service = new ProjectsService(api, this.state.config);
+
+        try {
+            await service.updateOrgUnitsFromDataSets(dataSets);
+            log("change organisation units", "success", dataSets);
+        } catch (err) {
+            snackActions.show({ message: err.message || err.toString() });
+        }
+    },
+
     render() {
         if (!this.state.config) return null;
 
@@ -507,7 +520,7 @@ const DataSets = createReactClass({
                     <OrgUnitsDialog
                         objects={this.state.orgUnits.models}
                         open={true}
-                        onSave={datasets => log("change organisation units", "success", datasets)}
+                        onSave={this.postOrgUnitsSave}
                         onRequestClose={listActions.hideOrgUnitsBox}
                         contentStyle={styles.dialogContentStyle}
                         bodyStyle={styles.dialogBodyStyle}

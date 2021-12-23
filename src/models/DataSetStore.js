@@ -26,6 +26,7 @@ import { getCoreCompetencies, getProject } from "./dataset";
 import * as Section from "./Section";
 import getCustomForm from "./CustomForm";
 import * as dataPeriods from "./data-periods";
+import { ProjectsService } from "./ProjectService";
 
 const toArray = collectionToArray;
 const dataInputPeriodDatesFormat = "YYYYMMDD";
@@ -800,22 +801,16 @@ export default class DataSetStore {
         const initialOrgUnitIds = _.sortBy(this.associations.initialOrgUnits.map(ou => ou.id));
         const newOrgUnitIds = _.sortBy(toArray(dataset.organisationUnits).map(ou => ou.id));
         const orgUnitsWereChanged = !_.isEqual(initialOrgUnitIds, newOrgUnitIds);
+        const projectsService = new ProjectsService(this.api, this.config);
 
         if (project && !_(orgUnits).isEmpty() && orgUnitsWereChanged) {
-            return this.api
-                .get(`/categoryOptions/${project.id}`, { fields: ":owner" })
-                .then(categoryOption => {
-                    const payload = {
-                        ...categoryOption,
-                        organisationUnits: orgUnits.map(ou => ({ id: ou.id })),
-                    };
-                    return this.api.update(`/categoryOptions/${project.id}`, payload);
-                })
+            return projectsService
+                .updateOrgUnits(project, orgUnits)
                 .then(() => saving)
                 .catch(err => {
                     const errStr = JSON.stringify(err);
                     const msg = `Error adding orgUnits to ${project.displayName}: ${errStr}`;
-                    this._addWarnings(saving, [msg]);
+                    return this._addWarnings(saving, [msg]);
                 });
         } else {
             return Promise.resolve(saving);
