@@ -107,23 +107,6 @@ export default class DataSetPeriods extends React.Component {
         ];
     }
 
-    renderEndYearWarnings() {
-        const { store, endYear } = this.props;
-        const { associations } = store;
-        if (!endYear) return null;
-
-        const outputEndYear = associations.periodDates.output[endYear];
-        const outcomeEndYear = associations.periodDates.outcome[endYear];
-        const someEmptyValues = !outputEndYear.end || !outcomeEndYear.end;
-        if (!someEmptyValues) return null;
-
-        return (
-            <div style={{ marginTop: 10, color: "orange" }}>
-                {this.getTranslation("end_dates_empty")}
-            </div>
-        );
-    }
-
     render() {
         const { store, onFieldChange, endYear } = this.props;
         const { associations } = store;
@@ -153,15 +136,7 @@ export default class DataSetPeriods extends React.Component {
         ];
 
         return (
-            <div>
-                <FormBuilder
-                    key={formKey}
-                    fields={_.compact(fields)}
-                    onUpdateField={onFieldChange}
-                />
-
-                {this.renderEndYearWarnings()}
-            </div>
+            <FormBuilder key={formKey} fields={_.compact(fields)} onUpdateField={onFieldChange} />
         );
     }
 }
