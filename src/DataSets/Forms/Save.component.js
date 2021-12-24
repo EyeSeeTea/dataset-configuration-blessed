@@ -85,6 +85,15 @@ const Save = createReactClass({
             );
         };
 
+        const projectName = associations.project ? (
+            associations.project.displayName
+        ) : (
+            <span>
+                <span>- </span>
+                <span style={{ color: "red" }}>[{this.getTranslation("select_a_project")}]</span>
+            </span>
+        );
+
         if (saveState === this.saveStates.SHOW || saveState === this.saveStates.SAVING) {
             return (
                 <div style={{ fontSize: "1.2em", marginTop: 10 }}>
@@ -108,10 +117,7 @@ const Save = createReactClass({
                             field="core_competencies"
                             value={associations.coreCompetencies.map(cc => cc.name).join(", ")}
                         />
-                        <ListItem
-                            field="linked_project"
-                            value={associations.project && associations.project.displayName}
-                        />
+                        <ListItem field="linked_project" value={projectName} />
                         <ListItem
                             field="orgunits_settings"
                             value={collectionString(
