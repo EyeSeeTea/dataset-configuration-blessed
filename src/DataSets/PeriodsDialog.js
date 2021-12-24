@@ -106,7 +106,9 @@ export default class PeriodsDialog extends React.Component {
     };
 
     onUpdateField = (fieldPath, newValue) => {
-        this.state.store.updateField(fieldPath, newValue);
+        const { store } = this.state;
+
+        store.updateField(fieldPath, newValue);
         this.forceUpdate();
     };
 
