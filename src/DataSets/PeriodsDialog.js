@@ -12,7 +12,7 @@ import {
     getDataSetsForPeriodsEndDate,
     saveDataSets,
     saveDataSetsEndDate,
-    validateStartEndDate,
+    getPeriodsValidationsErrors,
 } from "../models/data-periods";
 
 export default class PeriodsDialog extends React.Component {
@@ -63,9 +63,9 @@ export default class PeriodsDialog extends React.Component {
         }
     }
 
-    getActions() {
+    getActions(validationErrors) {
         const { onRequestClose } = this.props;
-        const { saving, error } = this.state;
+        const { saving } = this.state;
 
         return [
             <FlatButton
@@ -76,7 +76,7 @@ export default class PeriodsDialog extends React.Component {
             <RaisedButton
                 primary
                 label={this.getTranslation("save")}
-                disabled={saving || error}
+                disabled={saving || validationErrors.length > 0}
                 onClick={this.save}
             />,
         ];
@@ -86,12 +86,6 @@ export default class PeriodsDialog extends React.Component {
         const { d2 } = this.context;
         const { onRequestClose, endYear } = this.props;
         const { store, dataSets } = this.state;
-
-        const message = validateStartEndDate(store);
-        if (message) {
-            this.setState({ error: this.getTranslation(message) });
-            return;
-        }
 
         this.setState({ saving: true, error: null });
 
@@ -112,18 +106,21 @@ export default class PeriodsDialog extends React.Component {
     };
 
     onUpdateField = (fieldPath, newValue) => {
-        this.state.store.updateField(fieldPath, newValue);
+        const { store } = this.state;
+
+        store.updateField(fieldPath, newValue);
         this.forceUpdate();
-        const message = validateStartEndDate(store);
-        this.setState({ error: message ? this.getTranslation(message) : null });
     };
 
     render() {
         const { onRequestClose, endYear } = this.props;
-        const { saving, dataSets, store, warning, error } = this.state;
-        const actions = this.getActions();
+        const { saving, dataSets, store, warning } = this.state;
 
         if (!store) return <LinearProgress />;
+
+        const validationErrors = this.getValidationErrors();
+        const errors = _.compact([this.state.error, ...validationErrors]);
+        const actions = this.getActions(validationErrors);
 
         const baseTitle = endYear
             ? this.getTranslation("period_dates_for_year", { year: endYear })
@@ -152,8 +149,38 @@ export default class PeriodsDialog extends React.Component {
                     endYear={endYear}
                 />
 
-                {error && <div style={this.styles.error}>{error}</div>}
+                <div style={this.styles.error}>
+                    {errors.map(error => (
+                        <div key={error}>{error}</div>
+                    ))}
+                </div>
+
+                {this.renderEndYearWarnings()}
             </Dialog>
+        );
+    }
+
+    getValidationErrors() {
+        return getPeriodsValidationsErrors(this.state.store, {
+            validateOutputOutcome: !this.props.endYear,
+        });
+    }
+
+    renderEndYearWarnings() {
+        const { store } = this.state;
+        const { endYear } = this.props;
+        const { associations } = store;
+        if (!endYear) return null;
+
+        const outputEndYear = associations.periodDates.output[endYear];
+        const outcomeEndYear = associations.periodDates.outcome[endYear];
+        const someEmptyValues = !outputEndYear.end || !outcomeEndYear.end;
+        if (!someEmptyValues) return null;
+
+        return (
+            <div style={{ marginTop: 10, color: "orange" }}>
+                {this.getTranslation("end_dates_empty")}
+            </div>
         );
     }
 

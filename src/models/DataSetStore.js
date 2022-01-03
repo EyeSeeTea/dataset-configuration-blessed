@@ -26,6 +26,7 @@ import { getCoreCompetencies, getProject } from "./dataset";
 import * as Section from "./Section";
 import getCustomForm from "./CustomForm";
 import * as dataPeriods from "./data-periods";
+import { ProjectsService } from "./ProjectService";
 
 const toArray = collectionToArray;
 const dataInputPeriodDatesFormat = "YYYYMMDD";
@@ -187,6 +188,7 @@ class Factory {
             ([project, coreCompetencies, sharingCountries, userRoles]) => ({
                 project,
                 coreCompetencies,
+                initialOrgUnits: collectionToArray(dataset.organisationUnits),
                 initialSections: collectionToArray(dataset.sections),
                 initialCoreCompetencies: coreCompetencies,
                 processedCoreCompetencies: coreCompetencies,
@@ -448,7 +450,6 @@ export default class DataSetStore {
         if (!(dataInputStartDate && dataInputEndDate)) return;
 
         const years = this.getPeriodYears();
-        const startYear = dataInputStartDate.getFullYear();
         const lastYear = _.last(years);
         const dataInputEndDateM = moment(dataInputEndDate);
 
@@ -794,32 +795,22 @@ export default class DataSetStore {
 
     _addOrgUnitsToProject(saving) {
         const { dataset, project } = saving;
-        const orgUnits = collectionToArray(dataset.organisationUnits);
 
-        if (project && !_(orgUnits).isEmpty()) {
-            // Add data set org units to project (categoryOption), but do not remove previously assigned.
-            // POST with {additions: [...]} is not working (https://jira.dhis2.org/browse/DHIS2-10010)
-            // so perform an update (GET + PUT).
-            return this.api
-                .get(`/categoryOptions/${project.id}`, { fields: ":owner" })
-                .then(categoryOption => {
-                    const payload = {
-                        ...categoryOption,
-                        organisationUnits: _(categoryOption.organisationUnits || [])
-                            .concat(orgUnits.map(ou => ({ id: ou.id })))
-                            .uniqBy(ou => ou.id)
-                            .value(),
-                    };
-                    return this.api.update(`/categoryOptions/${project.id}`, payload);
-                })
+        const orgUnits = collectionToArray(dataset.organisationUnits);
+        const initialOrgUnitIds = _.sortBy(this.associations.initialOrgUnits.map(ou => ou.id));
+        const newOrgUnitIds = _.sortBy(toArray(dataset.organisationUnits).map(ou => ou.id));
+        const orgUnitsWereChanged = !_.isEqual(initialOrgUnitIds, newOrgUnitIds);
+        const projectsService = new ProjectsService(this.api, this.config);
+
+        if (project && !_(orgUnits).isEmpty() && orgUnitsWereChanged) {
+            return projectsService
+                .updateOrgUnits(project, orgUnits)
                 .then(() => saving)
-                .catch(err =>
-                    this._addWarnings(saving, [
-                        `Error adding orgUnits to project ${project.displayName}: ${JSON.stringify(
-                            err
-                        )}`,
-                    ])
-                );
+                .catch(err => {
+                    const errStr = JSON.stringify(err);
+                    const msg = `Error adding orgUnits to ${project.displayName}: ${errStr}`;
+                    return this._addWarnings(saving, [msg]);
+                });
         } else {
             return Promise.resolve(saving);
         }

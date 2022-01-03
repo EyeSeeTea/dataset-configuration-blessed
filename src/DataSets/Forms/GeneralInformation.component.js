@@ -10,7 +10,7 @@ import FormHelpers from "../../forms/FormHelpers";
 import { currentUserHasAdminRole } from "../../utils/Dhis2Helpers";
 import DataSetPeriods from "../DataSetPeriods";
 import snackActions from "../../Snackbar/snack.actions";
-import { validateStartEndDate } from "../../models/data-periods";
+import { getPeriodsValidationsErrors } from "../../models/data-periods";
 
 const GeneralInformation = createReactClass({
     mixins: [Translate],
@@ -142,7 +142,10 @@ const GeneralInformation = createReactClass({
     },
 
     getErrorMessage() {
-        return validateStartEndDate(this.props.store);
+        const messages = getPeriodsValidationsErrors(this.props.store, {
+            validateOutputOutcome: this.state.currentUserHasAdminRole,
+        });
+        return messages.join("\n");
     },
 
     _onUpdateFormStatus(status) {
@@ -159,7 +162,7 @@ const GeneralInformation = createReactClass({
         const message = this.getErrorMessage();
         const isValid = this.state.isValid && !message;
 
-        if (message) snackActions.show({ message: this.getTranslation(message) });
+        if (message) snackActions.show({ message });
         this.props.formStatus(isValid);
     },
 

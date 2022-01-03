@@ -99,7 +99,7 @@ const { contextActions, contextMenuIcons, isContextActionAllowed, actions } = se
         icon: "timeline",
         isActive: canUpdate,
         onClick: (datasets, options) => endDateForYearStore.setState({ datasets, options }),
-        options: [currentYear - 1, currentYear, currentYear + 1],
+        options: _.range(currentYear - 1, currentYear + 2 + 1),
     },
     {
         name: "details",

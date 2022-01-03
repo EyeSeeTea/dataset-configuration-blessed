@@ -295,8 +295,44 @@ function formatPeriodDates(dates, years) {
         .join(",");
 }
 
-export function validateStartEndDate(store) {
-    const { dataInputStartDate, dataInputEndDate } = store.associations;
+export function getPeriodsValidationsErrors(store, options) {
+    const { associations } = store;
+    const t = store.d2.i18n.getTranslation.bind(store.d2.i18n);
+
+    const { dataInputStartDate, dataInputEndDate } = associations;
     const areBothDataInputDatesSet = Boolean(dataInputStartDate && dataInputEndDate);
-    return areBothDataInputDatesSet ? null : "cannot_set_only_start_or_end_dates";
+
+    return _.compact([
+        areBothDataInputDatesSet ? null : t("cannot_set_only_start_or_end_dates"),
+        getOutputOutcomeValidation(store, options),
+    ]);
+}
+
+function getOutputOutcomeValidation(store, options) {
+    const { associations } = store;
+    const t = store.d2.i18n.getTranslation.bind(store.d2.i18n);
+
+    if (options.validateOutputOutcome) {
+        const years = store.getPeriodYears();
+
+        const allDatesFilled = _(years).every(year => {
+            const outputPeriod = associations.periodDates.output[year];
+            const outcomePeriod = associations.periodDates.outcome[year];
+
+            return (
+                outputPeriod &&
+                outcomePeriod &&
+                _.every([
+                    outputPeriod.start,
+                    outputPeriod.end,
+                    outcomePeriod.start,
+                    outcomePeriod.end,
+                ])
+            );
+        });
+
+        return allDatesFilled ? null : t("output_outcome_dates_compulsory");
+    } else {
+        return null;
+    }
 }
