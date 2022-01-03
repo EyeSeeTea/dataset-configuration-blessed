@@ -1,11 +1,12 @@
 import React from "react";
-import createReactClass from 'create-react-class';
+import createReactClass from "create-react-class";
 import PropTypes from "prop-types";
 import _ from "lodash";
 import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import FormBuilder from "d2-ui/lib/forms/FormBuilder.component";
 import LinearProgress from "material-ui/LinearProgress/LinearProgress";
 import FormHelpers from "../../forms/FormHelpers";
+import snackActions from "../../Snackbar/snack.actions";
 import moment from "moment";
 
 const InitialConfig = createReactClass({
@@ -62,12 +63,16 @@ const InitialConfig = createReactClass({
 
     UNSAFE_componentWillReceiveProps(props) {
         if (props.validateOnRender) {
-            const { coreCompetencies } = this.props.store.associations;
+            const { coreCompetencies, project } = this.props.store.associations;
+
             if (_.isEmpty(coreCompetencies)) {
                 props.formStatus(false);
                 const error = this.getTranslation("select_one_core_competency");
                 this.setState({ errors: { coreCompetencies: [error] } });
             } else {
+                if (!project) {
+                    snackActions.show({ message: this.getTranslation("no_project_selected") });
+                }
                 props.formStatus(true);
                 this.setState({ errors: {} });
             }
