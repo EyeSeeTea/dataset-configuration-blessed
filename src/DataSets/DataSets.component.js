@@ -44,7 +44,12 @@ import FlatButton from "material-ui/FlatButton/FlatButton";
 import HelpOutlineIcon from "material-ui/svg-icons/action/help-outline";
 import ListIcon from "material-ui/svg-icons/action/list";
 import FormHelpers from "../forms/FormHelpers";
-import { currentUserHasAdminRole, canCreate, getFilteredDatasets } from "../utils/Dhis2Helpers";
+import {
+    currentUserHasAdminRole,
+    canCreate,
+    getFilteredDatasets,
+    currentUserIsSuperuser,
+} from "../utils/Dhis2Helpers";
 import * as sharing from "../models/Sharing";
 import Settings from "../models/Settings";
 import periodsStore from "./periods.store";
@@ -100,6 +105,7 @@ const DataSets = createReactClass({
             dataRows: [],
             d2: this.context.d2,
             currentUserHasAdminRole: currentUserHasAdminRole(this.context.d2),
+            currentUserIsSuperuser: currentUserIsSuperuser(this.context.d2),
             settingsOpen: false,
             sorting: null,
             searchValue: null,
@@ -579,7 +585,7 @@ const DataSets = createReactClass({
 
                     {this.state.currentUserHasAdminRole && renderLogsButton()}
 
-                    {this.state.currentUserHasAdminRole && renderSettingsButton()}
+                    {this.state.currentUserIsSuperuser && renderSettingsButton()}
 
                     <div style={{ float: "right" }}>
                         <Pagination {...paginationProps} />

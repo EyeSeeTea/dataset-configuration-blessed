@@ -1,5 +1,5 @@
 import _ from "../utils/lodash-mixins";
-import { getExistingUserRoleByName } from "../utils/Dhis2Helpers";
+import { currentUserIsSuperuser, getExistingUserRoleByName } from "../utils/Dhis2Helpers";
 import camelCaseToUnderscores from "d2-utilizr/lib/camelCaseToUnderscores";
 
 export default class Settings {
@@ -166,7 +166,7 @@ export default class Settings {
     }
 
     init() {
-        if (this.currentUserIsSuperAdmin()) {
+        if (currentUserIsSuperuser(this.d2)) {
             return this._createOrUpdateAdminRole().then(this._saveInitialConfig.bind(this));
         } else {
             return Promise.resolve(true);
@@ -179,10 +179,6 @@ export default class Settings {
 
     save(config) {
         return this._save(saved => _.imerge(saved, config));
-    }
-
-    currentUserIsSuperAdmin() {
-        return this.d2.currentUser.authorities.has("ALL");
     }
 
     getFields() {

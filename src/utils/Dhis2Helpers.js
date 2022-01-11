@@ -403,8 +403,14 @@ function collectionString(d2, objects, field, maxShown) {
 }
 
 function currentUserHasAdminRole(d2) {
-    const authorities = d2.currentUser.authorities;
-    return authorities.has("ALL");
+    return (
+        _(d2.currentUser.userGroups).some(userGroup => userGroup.name === "GL_AllAdmins") ||
+        currentUserIsSuperuser(d2)
+    );
+}
+
+function currentUserIsSuperuser(d2) {
+    return d2.currentUser.authorities.has("ALL");
 }
 
 const requiredAuthorities = ["F_SECTION_DELETE", "F_SECTION_ADD"];
@@ -597,6 +603,7 @@ export {
     sendMessageToGroups,
     collectionString,
     currentUserHasAdminRole,
+    currentUserIsSuperuser,
     canManage,
     canCreate,
     canDelete,
