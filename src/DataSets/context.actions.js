@@ -97,7 +97,7 @@ const { contextActions, contextMenuIcons, isContextActionAllowed, actions } = se
         name: "end_date_for_year",
         multiple: true,
         icon: "timeline",
-        isActive: canUpdate,
+        isActive: (d2, datasets) => canUpdate(d2, datasets) && currentUserHasAdminRole(d2),
         onClick: (datasets, options) => endDateForYearStore.setState({ datasets, options }),
         options: _.range(currentYear - 1, currentYear + 2 + 1),
     },
