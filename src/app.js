@@ -66,10 +66,17 @@ function configI18n(userSettings) {
  *
  * @param d2 Instance of the d2 library that is returned by the `init` function.
  */
-function startApp(d2) {
+async function startApp(d2) {
     window.d2 = d2;
     i18n.config.d2 = d2; // Init wrapper for component using gettext i18n
+    await addExtraInfoToCurrentUser(d2);
     render(routes, document.getElementById("app"));
+}
+
+async function addExtraInfoToCurrentUser(d2) {
+    const api = d2.Api.getApi();
+    const { userGroups } = await api.get("/me?fields=userGroups[id,name]");
+    d2.currentUser.userGroups = userGroups;
 }
 
 function initSettings(d2) {
