@@ -56,7 +56,7 @@ const InitialConfig = createReactClass({
     },
 
     _getCoreCompetencies() {
-        const fields = ["name", "displayName"];
+        const fields = ["name", "displayName", "code"];
         const degsId = this.props.config.dataElementGroupSetCoreCompetencyId;
         return this._getDataElementGroups(degsId, fields);
     },

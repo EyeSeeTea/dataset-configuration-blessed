@@ -1,15 +1,21 @@
 import _ from "lodash";
 
 export function getCoreCompetencies(d2, config, dataset) {
-    const extractCoreCompetenciesFromSection = section => {
-        const match = section.name.match(/^(.*) (Outputs|Outcomes)(@|$)/);
-        return match ? match[1] : null;
+    const extractCoreCompetenciesCodesFromSection = section => {
+        const { code } = section;
+        if (!code) {
+            console.error(`Section has not code: ${section.id}`);
+            return;
+        }
+        const [_prefix, _type, ...ccCodeParts] = section.code.split("_");
+        return ccCodeParts.join("_");
     };
 
-    const coreCompetencyNames = _(dataset.sections.toArray())
-        .map(extractCoreCompetenciesFromSection)
+    const coreCompetencyCodes = _(dataset.sections.toArray())
+        .map(extractCoreCompetenciesCodesFromSection)
         .compact()
-        .uniq();
+        .uniq()
+        .value();
 
     return d2.models.dataElementGroups
         .filter()
@@ -17,8 +23,8 @@ export function getCoreCompetencies(d2, config, dataset) {
         .equals(config.dataElementGroupSetCoreCompetencyId)
         .list({
             paging: false,
-            filter: `name:in:[${coreCompetencyNames.join(",")}]`,
-            fields: "id,name,displayName",
+            filter: `code:in:[${coreCompetencyCodes.join(",")}]`,
+            fields: "id,code,name,displayName",
         })
         .then(collection => collection.toArray());
 }
