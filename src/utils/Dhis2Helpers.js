@@ -457,7 +457,7 @@ async function getFilteredDatasets(d2, config, page, sorting, filters) {
     const fields =
         "id,name,displayName,displayDescription,shortName,created,lastUpdated,externalAccess," +
         "publicAccess,userAccesses,userGroupAccesses,user,access,attributeValues," +
-        "periodType,sections[id,name],dataInputPeriods~paging(1;1)";
+        "periodType,sections[id,code,name],dataInputPeriods~paging(1;1)";
     const cleanOptions = options =>
         _.omitBy(options, value => _.isArray(value) && _.isEmpty(value));
     const baseFilters = _.compact([searchValue ? `displayName:ilike:${searchValue}` : null]);
