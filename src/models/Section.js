@@ -110,11 +110,11 @@ const validateCoreItemsSelectedForCurrentUser = (d2, config) => {
         errors: [String]
     }
 */
-export const getDataSetInfo = (d2, config, sections) => {
+export const getDataSetInfo = (d2, config, dataset, sections) => {
     const validateCoreSelected = validateCoreItemsSelectedForCurrentUser(d2, config);
 
     const d2Sections = _(sections)
-        .map(section => getD2Section(d2, section))
+        .map(section => getD2Section(d2, dataset, section))
         .map((d2s, index) => _.set(d2s, "sortOrder", index))
         .value();
     const dataElements = _(d2Sections)
@@ -215,6 +215,7 @@ export const processDatasetSections = (d2, config, dataset, stateSections) => {
     const { sections, dataSetElements, indicators, errors } = getDataSetInfo(
         d2,
         config,
+        dataset,
         _.values(stateSections)
     );
 
@@ -321,7 +322,7 @@ const updateSectionsFromD2Sections = (sections, d2Sections, initialCoreCompetenc
     return sections.map(updateSection);
 };
 
-const getD2Section = (d2, section) => {
+const getD2Section = (d2, dataset, section) => {
     const items = _(section.items)
         .values()
         .filter("selected")
@@ -340,9 +341,14 @@ const getD2Section = (d2, section) => {
         .map(ind => ({ id: ind.id, displayName: ind.displayName, name: ind.displayName }))
         .uniqBy("id")
         .value();
+    const sectionTypeCode = section.type.toUpperCase() + "S";
+
+    // On creation, a data set has no ID, use a random string (prefix used only to observe uniqueness)
+    const randomId = dataset.id || getRandomString();
 
     return d2.models.sections.create({
         name: section.name,
+        code: [randomId, sectionTypeCode, section.coreCompetency.code].join("_"),
         displayName: section.name,
         showRowTotals: section.showRowTotals,
         showColumnTotals: section.showColumnTotals,
@@ -651,3 +657,7 @@ const getIndicatorsByGroupName = (d2, coreCompetencies) => {
             .value()
     );
 };
+
+function getRandomString() {
+    return (new Date().getTime().toString() + Math.random()).replace(".", "");
+}
