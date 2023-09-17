@@ -682,6 +682,20 @@ export default class DataSetStore {
         }
     }
 
+    _setDatasetShortName(saving) {
+        const { dataset, warnings } = saving;
+        const shortName = dataset.name.slice(0, 50);
+        const validator = getAsyncUniqueValidator(this.d2.models.dataSet, "shortName");
+
+        return validator(shortName)
+            .then(() => _.imerge(saving, { dataset: update(dataset, { shortName: shortName }) }))
+            .catch(_err =>
+                _.imerge(saving, {
+                    warnings: warnings.concat(["Dataset shortName already used: " + shortName]),
+                })
+            );
+    }
+
     _addSharingToCategoryCombo(saving, categoryCombo) {
         const userGroupSharingByName = _(saving.countryCodes)
             .map(countryCode => [countryCode + "_Users", { access: "r-------" }])
@@ -922,6 +936,7 @@ export default class DataSetStore {
             this._setAttributes,
             this._setDatasetId,
             this._setDatasetCode,
+            this._setDatasetShortName,
             this._addSharingToDataset,
             this._processSections,
             this._processDisaggregation,
