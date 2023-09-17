@@ -1,13 +1,12 @@
 {
     "name": "d2-dataset-configuration",
-    "version": "2.3.0",
+    "version": "2.4.0",
     "description": "Dataset Configuration User Interface",
     "main": "src/index.html",
     "scripts": {
         "coverage": "babel-node node_modules/.bin/isparta cover --root ./src --report text --report html --report lcov node_modules/mocha/bin/_mocha -- --reporter dot --require config/setup.js --recursive test",
         "prebuild": "rm -rf build && mkdir build && d2-manifest package.json manifest.webapp",
-        "build": "webpack",
-        "postbuild": "cp -a includes build/ && cp -a src/i18n build/ && cp index.html build/ && cp icon.png build/ && cp node_modules/jquery/dist/jquery.min.js build/ && cp node_modules/babel-polyfill/dist/polyfill.min.js build/ && cp manifest.webapp build/",
+        "build": "webpack && cp -a includes build/ && cp -a src/i18n build/ && cp index.html build/ && cp icon.png build/ && cp node_modules/jquery/dist/jquery.min.js build/ && cp node_modules/babel-polyfill/dist/polyfill.min.js build/ && cp manifest.webapp build/ && rm -f dataset-configuration.zip && cd build && zip --quiet -r ../dataset-configuration.zip *",
         "test": "mocha --reporter spec --compilers js:babel-core/register --require config/setup.js --recursive test",
         "test-watch": "mocha --reporter spec --compilers js:babel-core/register --require config/setup.js --recursive test --watch",
         "lint": "eslint --fix src",

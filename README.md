@@ -1,13 +1,26 @@
 # dataset-configuration-blessed
 Enhanced dataset manager Dhis2 app (blessed repository)
 
+## Setup
+
+```
+$ nvm use
+$ yarn install
+```
+
+## Build
+
+Create DHIS2 app zip:
+
+```
+$ yarn build
+```
+
 ## Start a development server
 
 Clone the repository and execute:
 
 ```
-$ cd dataset-configuration
-$ yarn install && yarn run build
 $ yarn start
 ```
 
@@ -19,7 +32,7 @@ Clone the d2-ui repository, checkout the branch you want to test and create a li
 $ git clone https://github.com/eyeseetea/d2-ui
 $ cd d2-ui
 $ git checkout BRANCH_TO_TEST
-$ yarn install && yarn run build
+$ yarn install && yarn build
 $ yarn link
 ```
 
@@ -28,7 +41,7 @@ And now, on `dataset-configuration`, run:
 ```
 $ yarn link d2-ui
 ```
- 
+
 ## Enable CORS
 
 To set up your DHIS2 instance to work with the development service you will need to add the development servers address to the CORS whitelist. You can do this within the DHIS2 Settings app under the _access_ tab. On the access tab add `http://localhost:8081` to the CORS Whitelist.
