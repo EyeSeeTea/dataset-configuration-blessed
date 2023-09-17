@@ -13,7 +13,6 @@ import OldMuiThemeProvider from "material-ui/styles/MuiThemeProvider";
 import appTheme from "./app.theme";
 import SnackbarContainer from "../Snackbar/SnackbarContainer.component";
 import SessionDialog from "../SessionDialog/SessionDialog.component";
-import feedbackOptions from "../config/feedback";
 import { MuiThemeProvider } from "@material-ui/core/styles";
 import { createGenerateClassName, StylesProvider } from "@material-ui/styles";
 import { muiTheme } from "./dhis2.theme";
@@ -32,12 +31,6 @@ class App extends AppWithD2 {
     childContextTypes = {
         d2: PropTypes.object,
     };
-
-    componentDidMount() {
-        super.componentDidMount();
-        /*eslint-env jquery*/
-        this.props.d2.then(d2 => $.feedbackDhis2(d2, "dataset-configuration", feedbackOptions));
-    }
 
     render() {
         if (!this.state.d2) {

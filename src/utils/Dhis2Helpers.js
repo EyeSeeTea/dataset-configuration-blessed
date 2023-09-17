@@ -415,8 +415,12 @@ function currentUserIsSuperuser(d2) {
 
 const requiredAuthorities = ["F_SECTION_DELETE", "F_SECTION_ADD"];
 
+function hasAuthorities(d2, authorities) {
+    return authorities.every(authority => d2.currentUser.authorities.has(authority));
+}
+
 function hasRequiredAuthorities(d2) {
-    return requiredAuthorities.every(authority => d2.currentUser.authorities.has(authority));
+    return hasAuthorities(d2, requiredAuthorities);
 }
 
 function canManage(d2, datasets) {
@@ -428,11 +432,24 @@ function canCreate(d2) {
 }
 
 function canDelete(d2, datasets) {
-    return (
-        d2.currentUser.canDelete(d2.models.dataSets) &&
-        _(datasets).every(dataset => dataset.access.delete) &&
-        hasRequiredAuthorities(d2)
-    );
+    const userHasRequiredAuthorities =
+        currentUserIsSuperuser(d2) ||
+        hasAuthorities(d2, [
+            "F_DATASET_DELETE",
+            "F_SECTION_DELETE",
+            // DHIS2 asks for indicator update permissions to remove dataSet references
+            "F_INDICATOR_PUBLIC_ADD",
+            "F_INDICATOR_PRIVATE_ADD",
+        ]);
+
+    const userCanDeleteDataSetsAndUpdateTheirIndicators = _(datasets).every(dataset => {
+        return (
+            dataset.access.delete &&
+            dataset.indicators.toArray().every(indicator => indicator.access.update)
+        );
+    });
+
+    return userHasRequiredAuthorities && userCanDeleteDataSetsAndUpdateTheirIndicators;
 }
 
 function canUpdate(d2, datasets) {
@@ -457,7 +474,7 @@ async function getFilteredDatasets(d2, config, page, sorting, filters) {
     const fields =
         "id,name,displayName,displayDescription,shortName,created,lastUpdated,externalAccess," +
         "publicAccess,userAccesses,userGroupAccesses,user,access,attributeValues," +
-        "periodType,sections[id,code,name],dataInputPeriods~paging(1;1)";
+        "periodType,sections[id,code,name],dataInputPeriods~paging(1;1),indicators[id,access[update]]";
     const cleanOptions = options =>
         _.omitBy(options, value => _.isArray(value) && _.isEmpty(value));
     const baseFilters = _.compact([searchValue ? `displayName:ilike:${searchValue}` : null]);
