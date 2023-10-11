@@ -709,10 +709,9 @@ export default class DataSetStore {
         return update(categoryCombo, sharing.object);
     }
 
-    _getUserGroupName(coreCompetency, countryCode) {
-        // coreCompetency.name = "FOOD SECURITY" -> "${countryCode}_foodsecurityUsers"
-        const key = coreCompetency.name.toLocaleLowerCase().replace(/\W+/g, "");
-        return `${countryCode}_${key}Users`;
+    _getUserGroupName(_coreCompetency, countryCode) {
+        // https://app.clickup.com/t/865d6fte5 - Use only country code
+        return `${countryCode}_Users`;
     }
 
     _addWarnings(saving, msgs) {
