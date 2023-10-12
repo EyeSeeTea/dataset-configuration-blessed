@@ -122,7 +122,7 @@ class Factory {
             periodType: "Monthly",
             dataInputPeriods: [],
             categoryCombo: { id: this.config.categoryComboId },
-            notifyCompletingUser: true,
+            notifyCompletingUser: false,
             noValueRequiresComment: false,
             legendSets: [],
             organisationUnits: [],

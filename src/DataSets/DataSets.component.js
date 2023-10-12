@@ -119,7 +119,7 @@ const DataSets = createReactClass({
             logsPageLast: 0,
             logsOldestDate: null,
             sharing: null,
-            showOnlyCreatedByApp: true,
+            showOnlyCreatedByApp: false,
         };
     },
 
