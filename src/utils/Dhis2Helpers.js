@@ -40,8 +40,8 @@ function redirectToLogin(baseUrl) {
 function getCategoryCombos(d2, { cocFields, filterIds } = {}) {
     return d2.models.categoryCombos.list({
         fields: _([
-            "id,displayName,dataDimensionType,isDefault",
-            "categories[id,displayName,categoryOptions[id,displayName]]",
+            "id,name,displayName,dataDimensionType,isDefault",
+            "categories[id,name,displayName,categoryOptions[id,name,displayName]]",
             cocFields ? `categoryOptionCombos[${cocFields}]` : null,
         ])
             .compact()
@@ -120,12 +120,12 @@ function getDisaggregationForCategories(d2, dataElement, categoryCombos, categor
         const categoryOptions = categories.map(c => toArray(c.categoryOptions));
         const categoryOptionCombos = _.cartesianProduct(...categoryOptions).map(cos => ({
             id: generateUid(),
-            name: cos.map(co => co.displayName).join(", "),
+            name: cos.map(co => co.name).join(", "),
             displayName: cos.map(co => co.displayName).join(", "),
             categoryCombo: { id: newCategoryComboId },
             categoryOptions: cos,
         }));
-        const ccName = allValidCategories.map(cc => cc.displayName).join("/");
+        const ccName = allValidCategories.map(cc => cc.name).join("/");
         const newCategoryCombo = d2.models.categoryCombo.create({
             id: newCategoryComboId,
             dataDimensionType: "DISAGGREGATION",

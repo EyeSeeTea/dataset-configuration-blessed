@@ -539,7 +539,7 @@ const filterDataElements = (dataElements, requiredDegIds) => {
 /* Return object {dataElementGroupId: dataElementGroupSetId} */
 const getDataElementGroupRelations = d2 => {
     return d2.models.dataElementGroupSets
-        .list({ fields: "id,displayName,dataElementGroups[id,displayName]" })
+        .list({ fields: "id,name,displayName,dataElementGroups[id,name,displayName]" })
         .then(collection =>
             toArray(collection).map(degSet =>
                 _(toArray(degSet.dataElementGroups))
@@ -601,11 +601,11 @@ const getDataElements = async (d2, dataElementFilters) => {
         "attributeValues[value,attribute[id]]",
     ];
 
-    const dataElementGroupsFields = "id,displayName";
+    const dataElementGroupsFields = "id,name,displayName";
 
     const categoryComboFields =
-        "id,displayName,categoryOptionCombos[id,displayName,categoryOptions[id,displayName]]," +
-        "categories[id,displayName,categoryOptions[id,displayName]]";
+        "id,name,displayName,categoryOptionCombos[id,name,displayName,categoryOptions[id,displayName]]," +
+        "categories[id,name,displayName,categoryOptions[id,name,displayName]]";
 
     const dataElements = await getFilteredItems(d2.models.dataElements, dataElementFilters, {
         fields: fields.join(","),
