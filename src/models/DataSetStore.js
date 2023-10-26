@@ -330,9 +330,7 @@ export default class DataSetStore {
     async _getCustomForm(saving, categoryCombos_) {
         const { richSections, dataset } = saving;
         const periodDates = this.getPeriodDates();
-        const categoryCombos =
-            categoryCombos_ ||
-            (await getCategoryCombos(this.d2, { cocFields: "id,categoryOptions[id]" }));
+        const categoryCombos = categoryCombos_ || (await this.getCategoryCombos(dataset));
         const id = (dataset.dataEntryForm ? dataset.dataEntryForm.id : null) || generateUid();
 
         return getCustomForm(this.d2, dataset, periodDates, richSections, categoryCombos).then(
@@ -544,6 +542,22 @@ export default class DataSetStore {
         return collectionToArray(this.dataset.sections).length > 0;
     }
 
+    getCategoryCombos(dataset) {
+        const categoryComboIds = _(dataset.dataSetElements)
+            .flatMap(dse => [
+                _.get(dse, "dataElement.categoryCombo.id"),
+                _.get(dse, "categoryCombo.id"),
+            ])
+            .compact()
+            .uniq()
+            .value();
+
+        return getCategoryCombos(this.d2, {
+            cocFields: "id,categoryOptions[id]",
+            filterIds: categoryComboIds,
+        });
+    }
+
     /* Save */
 
     _getInitialSaving() {
@@ -552,7 +566,8 @@ export default class DataSetStore {
         const project$ = project
             ? this.d2.models.categoryOption.get(project.id)
             : Promise.resolve(null);
-        const categoryCombos$ = getCategoryCombos(this.d2, { cocFields: "id,categoryOptions[id]" });
+        const categoryCombos$ = this.getCategoryCombos(this.dataset);
+
         const countryCodes = _(countries)
             .map(getCountryCode)
             .compact()
