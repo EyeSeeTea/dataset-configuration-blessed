@@ -40,7 +40,7 @@ function redirectToLogin(baseUrl) {
 function getCategoryCombos(d2, { cocFields, filterIds } = {}) {
     return d2.models.categoryCombos.list({
         fields: _([
-            "id,name,displayName,dataDimensionType,isDefault",
+            "id,name,displayName,isDefault",
             "categories[id,name,displayName,categoryOptions[id,name,displayName]]",
             cocFields ? `categoryOptionCombos[${cocFields}]` : null,
         ])
