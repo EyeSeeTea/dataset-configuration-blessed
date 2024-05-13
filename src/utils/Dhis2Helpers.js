@@ -100,11 +100,16 @@ function getDisaggregationForCategories(d2, dataElement, categoryCombos, categor
             ? allCategories.filter(category => categoriesById[category.id].name !== "default")
             : allCategories;
     const combinedCategoriesIds = getCategoryIds(allValidCategories);
-    const existingCategoryCombo = categoryCombos.find(cc =>
-        _(getCategoryIds(cc.categories))
-            .sortBy()
-            .isEqual(_.sortBy(combinedCategoriesIds))
-    );
+
+    // Get an existing categoryCombo (with the shortest name, if there are duplicates)
+    // with matching categories (in any order).
+    const existingCategoryCombo = _(categoryCombos)
+        .sortBy(categoryCombo => categoryCombo.name.length)
+        .find(categoryCombo =>
+            _(getCategoryIds(categoryCombo.categories))
+                .sortBy()
+                .isEqual(_.sortBy(combinedCategoriesIds))
+        );
     const cacheKey = combinedCategoriesIds.join(".");
     const cachedCategoryCombo = cachedCategoryCombos[cacheKey];
 
