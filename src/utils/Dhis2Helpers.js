@@ -97,9 +97,7 @@ function getDisaggregationForCategories(d2, dataElement, categoryCombos, categor
     // Special category <default> should be used only when no other category is present, remove otherwise
     const allValidCategories =
         allCategories.length > 1
-            ? allCategories.filter(
-                  category => categoriesById[category.id].displayName !== "default"
-              )
+            ? allCategories.filter(category => categoriesById[category.id].name !== "default")
             : allCategories;
     const combinedCategoriesIds = getCategoryIds(allValidCategories);
     const existingCategoryCombo = categoryCombos.find(cc =>
