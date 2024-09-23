@@ -428,11 +428,16 @@ export default class DataSetStore {
         const projectCountryCode =
             project && project.code ? project.code.slice(0, 2).toUpperCase() : null;
 
+        const dataSetCountryIds = _(toArray(dataset.organisationUnits))
+            .map(ou => ou.path.split("/")[3])
+            .uniq()
+            .value();
+
         if (projectCountryCode && countriesByCode[projectCountryCode]) {
             return [countriesByCode[projectCountryCode]];
         } else {
             return _(countriesById)
-                .at(toArray(dataset.organisationUnits).map(ou => ou.id))
+                .at(dataSetCountryIds)
                 .compact()
                 .value();
         }
