@@ -1,3 +1,3 @@
 import { getModuleForNamespace } from "./i18n-typed";
 
-export default getModuleForNamespace("dhis2-skeleton-app");
+export default getModuleForNamespace("d2-dataset-configuration");
