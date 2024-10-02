@@ -35,7 +35,7 @@ export function getProject(d2, config, dataset) {
             .filter()
             .on("categories.id")
             .equals(config.categoryProjectsId)
-            .list({ fields: "id,displayName", paging: false })
+            .list({ fields: "id,code,displayName", paging: false })
             .then(collection => collection.toArray())
             .then(projects =>
                 _(projects).find(project => _.includes(dataset.name, project.displayName))
