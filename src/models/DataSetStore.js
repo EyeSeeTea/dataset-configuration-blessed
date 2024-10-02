@@ -170,9 +170,10 @@ class Factory {
     }
 
     getUserRolesForCurrentUser() {
-        // Dhis2 has d2.currentUser.getUserRoles(), but the call generates a wrong URL and fails.
-        return this.d2.models.users
-            .get(this.d2.currentUser.id, { fields: "userCredentials[userRoles[id,name]]" })
+        // d2.currentUser.getUserRoles generates an invalid URL. Use directly endpoint /api/me instead.
+        const api = d2.Api.getApi();
+        return api
+            .get("/me", { fields: "userCredentials[userRoles[id,name]]" })
             .then(user => user.userCredentials.userRoles);
     }
 
