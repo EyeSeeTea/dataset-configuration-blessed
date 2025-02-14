@@ -562,15 +562,21 @@ const getFilteredItems = (model, filters, listOptions) => {
         const requests = _(filters)
             .groupBy(([key, _value]) => key)
             .mapValues(pairs => pairs.map(([_key, value]) => value))
-            .map((values, field) =>
-                model
-                    .list({
-                        paging: false,
-                        filter: `${field}:in:[${values.join(",")}]`,
-                        ...listOptions,
-                    })
-                    .then(collectionToArray)
-            );
+            .map((values, field) => {
+                // Split the values in groups to avoid 414-URI Too Long errors
+                return _.chunk(values, 300).map(valuesGroup => {
+                    return model
+                        .list({
+                            paging: false,
+                            filter: `${field}:in:[${valuesGroup.join(",")}]`,
+                            ...listOptions,
+                        })
+                        .then(collectionToArray);
+                });
+            })
+            .flatten()
+            .value();
+
         return Promise.all(requests).then(_.flatten);
     }
 };
