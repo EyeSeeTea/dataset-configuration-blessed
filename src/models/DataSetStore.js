@@ -170,9 +170,10 @@ class Factory {
     }
 
     getUserRolesForCurrentUser() {
-        // Dhis2 has d2.currentUser.getUserRoles(), but the call generates a wrong URL and fails.
-        return this.d2.models.users
-            .get(this.d2.currentUser.id, { fields: "userCredentials[userRoles[id,name]]" })
+        // d2.currentUser.getUserRoles generates an invalid URL. Use directly endpoint /api/me instead.
+        const api = d2.Api.getApi();
+        return api
+            .get("/me", { fields: "userCredentials[userRoles[id,name]]" })
             .then(user => user.userCredentials.userRoles);
     }
 
@@ -427,11 +428,16 @@ export default class DataSetStore {
         const projectCountryCode =
             project && project.code ? project.code.slice(0, 2).toUpperCase() : null;
 
+        const dataSetCountryIds = _(toArray(dataset.organisationUnits))
+            .map(ou => ou.path.split("/")[3])
+            .uniq()
+            .value();
+
         if (projectCountryCode && countriesByCode[projectCountryCode]) {
             return [countriesByCode[projectCountryCode]];
         } else {
             return _(countriesById)
-                .at(toArray(dataset.organisationUnits).map(ou => ou.id))
+                .at(dataSetCountryIds)
                 .compact()
                 .value();
         }
